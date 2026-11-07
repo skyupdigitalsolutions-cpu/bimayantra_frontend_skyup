@@ -1,0 +1,1610 @@
+{
+ "8:389": {
+  "path": "/login",
+  "name": "00 · Login (OTP)",
+  "section": "Auth and dashboard",
+  "folder": "auth"
+ },
+ "5:27": {
+  "path": "/",
+  "name": "01 · Dashboard",
+  "section": "Auth and dashboard",
+  "folder": "auth"
+ },
+ "8:503": {
+  "path": "/leads",
+  "name": "02 · Leads — Board",
+  "section": "Sales pipeline",
+  "folder": "sales"
+ },
+ "8:809": {
+  "path": "/leads/1",
+  "name": "03 · Lead detail",
+  "section": "Sales pipeline",
+  "folder": "sales"
+ },
+ "9:562": {
+  "path": "/customers",
+  "name": "04 · Policy Holders",
+  "section": "Sales pipeline",
+  "folder": "sales"
+ },
+ "9:845": {
+  "path": "/customers/1",
+  "name": "05 · Customer profile",
+  "section": "Sales pipeline",
+  "folder": "sales"
+ },
+ "9:1127": {
+  "path": "/best-fit",
+  "name": "06 · Best fit",
+  "section": "Sales pipeline",
+  "folder": "sales"
+ },
+ "10:803": {
+  "path": "/x/07-quotation-wizard-step-6",
+  "name": "07 · Quotation wizard — Step 6",
+  "section": "Sales pipeline",
+  "folder": "sales"
+ },
+ "10:1093": {
+  "path": "/quotations/1",
+  "name": "08 · Quotation detail",
+  "section": "Sales pipeline",
+  "folder": "sales"
+ },
+ "10:1354": {
+  "path": "/x/09-proposal-nominees",
+  "name": "09 · Proposal — Nominees",
+  "section": "Sales pipeline",
+  "folder": "sales"
+ },
+ "71:9067": {
+  "path": "/quotations",
+  "name": "07L · Quotations list",
+  "section": "Sales pipeline",
+  "folder": "sales"
+ },
+ "71:9417": {
+  "path": "/x/08a-quotation-detail-record-payment",
+  "name": "08a · Quotation detail — Record payment",
+  "section": "Sales pipeline",
+  "folder": "sales"
+ },
+ "71:9783": {
+  "path": "/x/08b-quotation-detail-payment-successful",
+  "name": "08b · Quotation detail — Payment successful",
+  "section": "Sales pipeline",
+  "folder": "sales"
+ },
+ "71:10022": {
+  "path": "/x/08c-quotation-detail-accepted",
+  "name": "08c · Quotation detail — Accepted",
+  "section": "Sales pipeline",
+  "folder": "sales"
+ },
+ "11:1403": {
+  "path": "/policies",
+  "name": "11 · Policies",
+  "section": "Catalogue and after-sale",
+  "folder": "catalogue"
+ },
+ "11:1662": {
+  "path": "/policies/1",
+  "name": "12 · Policy detail",
+  "section": "Catalogue and after-sale",
+  "folder": "catalogue"
+ },
+ "12:1261": {
+  "path": "/renewals",
+  "name": "13 · Renewals",
+  "section": "Catalogue and after-sale",
+  "folder": "catalogue"
+ },
+ "12:1559": {
+  "path": "/communications",
+  "name": "14 · Communications",
+  "section": "Catalogue and after-sale",
+  "folder": "catalogue"
+ },
+ "12:1775": {
+  "path": "/documents",
+  "name": "15 · Documents",
+  "section": "Catalogue and after-sale",
+  "folder": "catalogue"
+ },
+ "38:3490": {
+  "path": "/products",
+  "name": "10 · Products library",
+  "section": "Catalogue and after-sale",
+  "folder": "catalogue"
+ },
+ "53:8333": {
+  "path": "/x/10b-products-compare-variants",
+  "name": "10b · Products — Compare variants",
+  "section": "Catalogue and after-sale",
+  "folder": "catalogue"
+ },
+ "89:10753": {
+  "path": "/products/1",
+  "name": "10c · Product detail",
+  "section": "Catalogue and after-sale",
+  "folder": "catalogue"
+ },
+ "13:1595": {
+  "path": "/settings",
+  "name": "16 · Settings — Profile",
+  "section": "Settings and team",
+  "folder": "settings"
+ },
+ "13:1854": {
+  "path": "/x/17-settings-plan-and-billing",
+  "name": "17 · Settings — Plan and billing",
+  "section": "Settings and team",
+  "folder": "settings"
+ },
+ "47:7203": {
+  "path": "/x/s03-settings-kyc",
+  "name": "S03 · Settings — KYC",
+  "section": "Settings and team",
+  "folder": "settings"
+ },
+ "47:7464": {
+  "path": "/x/s04-settings-my-insurers",
+  "name": "S04 · Settings — My insurers",
+  "section": "Settings and team",
+  "folder": "settings"
+ },
+ "47:7716": {
+  "path": "/x/s05-settings-whatsapp-wallet",
+  "name": "S05 · Settings — WhatsApp wallet",
+  "section": "Settings and team",
+  "folder": "settings"
+ },
+ "47:7954": {
+  "path": "/x/s06-settings-assistants",
+  "name": "S06 · Settings — Assistants",
+  "section": "Settings and team",
+  "folder": "settings"
+ },
+ "47:8206": {
+  "path": "/x/s07-settings-referrers",
+  "name": "S07 · Settings — Referrers",
+  "section": "Settings and team",
+  "folder": "settings"
+ },
+ "48:7887": {
+  "path": "/x/s08-settings-support-access",
+  "name": "S08 · Settings — Support access",
+  "section": "Settings and team",
+  "folder": "settings"
+ },
+ "48:8102": {
+  "path": "/x/s09-settings-export-my-data",
+  "name": "S09 · Settings — Export my data",
+  "section": "Settings and team",
+  "folder": "settings"
+ },
+ "48:8364": {
+  "path": "/x/s10-settings-activity-log",
+  "name": "S10 · Settings — Activity log",
+  "section": "Settings and team",
+  "folder": "settings"
+ },
+ "48:8610": {
+  "path": "/x/s11-settings-security",
+  "name": "S11 · Settings — Security",
+  "section": "Settings and team",
+  "folder": "settings"
+ },
+ "24:1876": {
+  "path": "/q/QT-1042",
+  "name": "19 · Public quotation (customer)",
+  "section": "Public pages and referrer",
+  "folder": "public"
+ },
+ "24:1999": {
+  "path": "/r/suresh-rao",
+  "name": "20 · Public referral form",
+  "section": "Public pages and referrer",
+  "folder": "public"
+ },
+ "24:2076": {
+  "path": "/referrer",
+  "name": "21 · Referrer dashboard",
+  "section": "Public pages and referrer",
+  "folder": "public"
+ },
+ "25:1976": {
+  "path": "/admin",
+  "name": "22 · SkyUp Admin — Home",
+  "section": "SkyUp Admin",
+  "folder": "admin"
+ },
+ "25:2215": {
+  "path": "/x/23-skyup-admin-approvals",
+  "name": "23 · SkyUp Admin — Approvals",
+  "section": "SkyUp Admin",
+  "folder": "admin"
+ },
+ "25:2413": {
+  "path": "/x/24-skyup-admin-advisor-kyc",
+  "name": "24 · SkyUp Admin — Advisor KYC",
+  "section": "SkyUp Admin",
+  "folder": "admin"
+ },
+ "39:3634": {
+  "path": "/x/f1-new-lead",
+  "name": "F1 · New lead",
+  "section": "Flow · Lead to customer",
+  "folder": "flow-lead"
+ },
+ "39:3892": {
+  "path": "/x/f2-convert-lead-to-customer",
+  "name": "F2 · Convert lead to customer",
+  "section": "Flow · Lead to customer",
+  "folder": "flow-lead"
+ },
+ "39:4123": {
+  "path": "/x/f3-new-customer",
+  "name": "F3 · New customer",
+  "section": "Flow · Lead to customer",
+  "folder": "flow-lead"
+ },
+ "40:3995": {
+  "path": "/x/q1-quotation-customer",
+  "name": "Q1 · Quotation — Customer",
+  "section": "Flow · New quotation",
+  "folder": "flow-quotation"
+ },
+ "40:4241": {
+  "path": "/x/q2-quotation-type",
+  "name": "Q2 · Quotation — Type",
+  "section": "Flow · New quotation",
+  "folder": "flow-quotation"
+ },
+ "40:4476": {
+  "path": "/x/q3-quotation-insurance",
+  "name": "Q3 · Quotation — Insurance",
+  "section": "Flow · New quotation",
+  "folder": "flow-quotation"
+ },
+ "40:4729": {
+  "path": "/x/q4-quotation-insurer",
+  "name": "Q4 · Quotation — Insurer",
+  "section": "Flow · New quotation",
+  "folder": "flow-quotation"
+ },
+ "40:4974": {
+  "path": "/x/q5-quotation-product",
+  "name": "Q5 · Quotation — Product",
+  "section": "Flow · New quotation",
+  "folder": "flow-quotation"
+ },
+ "41:4496": {
+  "path": "/x/q6-quotation-details",
+  "name": "Q6 · Quotation — Details",
+  "section": "Flow · New quotation",
+  "folder": "flow-quotation"
+ },
+ "41:4710": {
+  "path": "/x/q7-quotation-riders",
+  "name": "Q7 · Quotation — Riders",
+  "section": "Flow · New quotation",
+  "folder": "flow-quotation"
+ },
+ "41:4960": {
+  "path": "/x/q8-quotation-premium",
+  "name": "Q8 · Quotation — Premium",
+  "section": "Flow · New quotation",
+  "folder": "flow-quotation"
+ },
+ "41:5220": {
+  "path": "/x/q9-quotation-discount",
+  "name": "Q9 · Quotation — Discount",
+  "section": "Flow · New quotation",
+  "folder": "flow-quotation"
+ },
+ "41:5484": {
+  "path": "/x/q10-quotation-review",
+  "name": "Q10 · Quotation — Review",
+  "section": "Flow · New quotation",
+  "folder": "flow-quotation"
+ },
+ "41:5739": {
+  "path": "/x/q11-quotation-generated",
+  "name": "Q11 · Quotation — Generated",
+  "section": "Flow · New quotation",
+  "folder": "flow-quotation"
+ },
+ "42:5439": {
+  "path": "/x/c2-comparison-shared",
+  "name": "C2 · Comparison — Shared",
+  "section": "Flow · Comparison",
+  "folder": "flow-comparison"
+ },
+ "42:5644": {
+  "path": "/x/c3-comparison-customer-chose",
+  "name": "C3 · Comparison — Customer chose",
+  "section": "Flow · Comparison",
+  "folder": "flow-comparison"
+ },
+ "42:5774": {
+  "path": "/x/p1-payment-add-payment-link",
+  "name": "P1 · Payment — Add payment link",
+  "section": "Flow · Record payment",
+  "folder": "flow-payment"
+ },
+ "42:5954": {
+  "path": "/x/p2-payment-record-payment",
+  "name": "P2 · Payment — Record payment",
+  "section": "Flow · Record payment",
+  "folder": "flow-payment"
+ },
+ "42:6143": {
+  "path": "/x/p3-payment-recorded",
+  "name": "P3 · Payment — Recorded",
+  "section": "Flow · Record payment",
+  "folder": "flow-payment"
+ },
+ "45:5821": {
+  "path": "/x/r1-proposal-members",
+  "name": "R1 · Proposal — Members",
+  "section": "Flow · Proposal",
+  "folder": "flow-proposal"
+ },
+ "45:6025": {
+  "path": "/x/r2-proposal-declarations",
+  "name": "R2 · Proposal — Declarations",
+  "section": "Flow · Proposal",
+  "folder": "flow-proposal"
+ },
+ "45:6259": {
+  "path": "/x/r3-proposal-nominees",
+  "name": "R3 · Proposal — Nominees",
+  "section": "Flow · Proposal",
+  "folder": "flow-proposal"
+ },
+ "45:6474": {
+  "path": "/x/r4-proposal-kyc-check",
+  "name": "R4 · Proposal — KYC check",
+  "section": "Flow · Proposal",
+  "folder": "flow-proposal"
+ },
+ "45:6674": {
+  "path": "/x/r5-proposal-premium",
+  "name": "R5 · Proposal — Premium",
+  "section": "Flow · Proposal",
+  "folder": "flow-proposal"
+ },
+ "45:6881": {
+  "path": "/x/r6-proposal-review-and-submit",
+  "name": "R6 · Proposal — Review and submit",
+  "section": "Flow · Proposal",
+  "folder": "flow-proposal"
+ },
+ "45:7141": {
+  "path": "/x/r7-proposal-submitted",
+  "name": "R7 · Proposal — Submitted",
+  "section": "Flow · Proposal",
+  "folder": "flow-proposal"
+ },
+ "46:6554": {
+  "path": "/x/l1-record-issued-policy",
+  "name": "L1 · Record issued policy",
+  "section": "Flow · Policy and renewal",
+  "folder": "flow-policy"
+ },
+ "46:6773": {
+  "path": "/x/l2-policy-issued",
+  "name": "L2 · Policy issued",
+  "section": "Flow · Policy and renewal",
+  "folder": "flow-policy"
+ },
+ "46:6992": {
+  "path": "/x/n1-renewal-detail",
+  "name": "N1 · Renewal detail",
+  "section": "Flow · Policy and renewal",
+  "folder": "flow-policy"
+ },
+ "46:7154": {
+  "path": "/x/n2-renewal-log-contact",
+  "name": "N2 · Renewal — Log contact",
+  "section": "Flow · Policy and renewal",
+  "folder": "flow-policy"
+ },
+ "46:7366": {
+  "path": "/x/n3-renewal-not-renewing",
+  "name": "N3 · Renewal — Not renewing",
+  "section": "Flow · Policy and renewal",
+  "folder": "flow-policy"
+ },
+ "46:7544": {
+  "path": "/x/n4-renewal-renewed",
+  "name": "N4 · Renewal — Renewed",
+  "section": "Flow · Policy and renewal",
+  "folder": "flow-policy"
+ },
+ "72:9670": {
+  "path": "/x/n1b-renewal-quotation",
+  "name": "N1b · Renewal quotation",
+  "section": "Flow · Policy and renewal",
+  "folder": "flow-policy"
+ },
+ "72:9902": {
+  "path": "/x/n1c-renewal-quotation-ready",
+  "name": "N1c · Renewal quotation — Ready",
+  "section": "Flow · Policy and renewal",
+  "folder": "flow-policy"
+ },
+ "55:8054": {
+  "path": "/x/05a-customer-family",
+  "name": "05a · Customer — Family",
+  "section": "Customer profile tabs",
+  "folder": "customer-tabs"
+ },
+ "55:8353": {
+  "path": "/x/05b-customer-consent",
+  "name": "05b · Customer — Consent",
+  "section": "Customer profile tabs",
+  "folder": "customer-tabs"
+ },
+ "55:8652": {
+  "path": "/x/05c-customer-documents",
+  "name": "05c · Customer — Documents",
+  "section": "Customer profile tabs",
+  "folder": "customer-tabs"
+ },
+ "55:8898": {
+  "path": "/x/05d-customer-vehicles",
+  "name": "05d · Customer — Vehicles",
+  "section": "Customer profile tabs",
+  "folder": "customer-tabs"
+ },
+ "55:9116": {
+  "path": "/x/05e-customer-quotations",
+  "name": "05e · Customer — Quotations",
+  "section": "Customer profile tabs",
+  "folder": "customer-tabs"
+ },
+ "56:8633": {
+  "path": "/x/05f-customer-policies",
+  "name": "05f · Customer — Policies",
+  "section": "Customer profile tabs",
+  "folder": "customer-tabs"
+ },
+ "56:8884": {
+  "path": "/x/05g-customer-payments",
+  "name": "05g · Customer — Payments",
+  "section": "Customer profile tabs",
+  "folder": "customer-tabs"
+ },
+ "56:9120": {
+  "path": "/x/05h-customer-renewals",
+  "name": "05h · Customer — Renewals",
+  "section": "Customer profile tabs",
+  "folder": "customer-tabs"
+ },
+ "56:9324": {
+  "path": "/x/05i-customer-activities",
+  "name": "05i · Customer — Activities",
+  "section": "Customer profile tabs",
+  "folder": "customer-tabs"
+ },
+ "73:9826": {
+  "path": "/x/ap1-add-product-category",
+  "name": "AP1 · Add product — Category",
+  "section": "Flow · Add my product",
+  "folder": "flow-add-product"
+ },
+ "73:10040": {
+  "path": "/x/ap2-add-product-company",
+  "name": "AP2 · Add product — Company",
+  "section": "Flow · Add my product",
+  "folder": "flow-add-product"
+ },
+ "73:10261": {
+  "path": "/x/ap3-add-product-product",
+  "name": "AP3 · Add product — Product",
+  "section": "Flow · Add my product",
+  "folder": "flow-add-product"
+ },
+ "73:10485": {
+  "path": "/x/ap4-add-product-variants",
+  "name": "AP4 · Add product — Variants",
+  "section": "Flow · Add my product",
+  "folder": "flow-add-product"
+ },
+ "73:10736": {
+  "path": "/x/ap5-add-product-features",
+  "name": "AP5 · Add product — Features",
+  "section": "Flow · Add my product",
+  "folder": "flow-add-product"
+ },
+ "74:10360": {
+  "path": "/x/ap6-add-product-review-and-submit",
+  "name": "AP6 · Add product — Review and submit",
+  "section": "Flow · Add my product",
+  "folder": "flow-add-product"
+ },
+ "74:11116": {
+  "path": "/x/ap7-products-published",
+  "name": "AP7 · Products — Published",
+  "section": "Flow · Add my product",
+  "folder": "flow-add-product"
+ },
+ "128:14921": {
+  "path": "/x/ap2b-add-product-brochure-premium",
+  "name": "AP2b · Add product — Brochure (Premium)",
+  "section": "Flow · Add my product",
+  "folder": "flow-add-product"
+ },
+ "128:15182": {
+  "path": "/x/ap2c-add-product-reading-brochure",
+  "name": "AP2c · Add product — Reading brochure",
+  "section": "Flow · Add my product",
+  "folder": "flow-add-product"
+ },
+ "128:15470": {
+  "path": "/x/ap2d-add-product-brochure-normal-plan",
+  "name": "AP2d · Add product — Brochure (Normal plan)",
+  "section": "Flow · Add my product",
+  "folder": "flow-add-product"
+ },
+ "137:17434": {
+  "path": "/x/ap3b-add-product-fix-value-launch-date",
+  "name": "AP3b · Add product — Fix value (launch date)",
+  "section": "Flow · Add my product",
+  "folder": "flow-add-product"
+ },
+ "137:17794": {
+  "path": "/x/ap4b-add-product-fix-value-plus-sum-insured",
+  "name": "AP4b · Add product — Fix value (Plus sum insured)",
+  "section": "Flow · Add my product",
+  "folder": "flow-add-product"
+ },
+ "163:17045": {
+  "path": "/x/ap5c-add-product-features-ticked-fixed-adding",
+  "name": "AP5c · Add product — Features (ticked, fixed, adding)",
+  "section": "Flow · Add my product",
+  "folder": "flow-add-product"
+ },
+ "163:17868": {
+  "path": "/x/ap5b-add-product-fix-value-opd",
+  "name": "AP5b · Add product — Fix value (OPD)",
+  "section": "Flow · Add my product",
+  "folder": "flow-add-product"
+ },
+ "97:11244": {
+  "path": "/x/10d-feature-table-health-all",
+  "name": "10d · Feature table — Health · All",
+  "section": "Products — Feature table",
+  "folder": "feature-table"
+ },
+ "97:14048": {
+  "path": "/x/10d-feature-table-health-verified",
+  "name": "10d · Feature table — Health · Verified",
+  "section": "Products — Feature table",
+  "folder": "feature-table"
+ },
+ "97:16408": {
+  "path": "/x/10d-feature-table-health-my-products",
+  "name": "10d · Feature table — Health · My products",
+  "section": "Products — Feature table",
+  "folder": "feature-table"
+ },
+ "98:12712": {
+  "path": "/x/10d-feature-table-motor-all",
+  "name": "10d · Feature table — Motor · All",
+  "section": "Products — Feature table",
+  "folder": "feature-table"
+ },
+ "98:13669": {
+  "path": "/x/10d-feature-table-motor-my-products",
+  "name": "10d · Feature table — Motor · My products",
+  "section": "Products — Feature table",
+  "folder": "feature-table"
+ },
+ "98:13838": {
+  "path": "/x/10d-feature-table-life-and-term-all",
+  "name": "10d · Feature table — Life and Term · All",
+  "section": "Products — Feature table",
+  "folder": "feature-table"
+ },
+ "98:14565": {
+  "path": "/x/10d-feature-table-life-and-term-my-products",
+  "name": "10d · Feature table — Life and Term · My products",
+  "section": "Products — Feature table",
+  "folder": "feature-table"
+ },
+ "98:14734": {
+  "path": "/x/10d-feature-table-travel-all",
+  "name": "10d · Feature table — Travel · All",
+  "section": "Products — Feature table",
+  "folder": "feature-table"
+ },
+ "98:15354": {
+  "path": "/x/10d-feature-table-travel-my-products",
+  "name": "10d · Feature table — Travel · My products",
+  "section": "Products — Feature table",
+  "folder": "feature-table"
+ },
+ "129:15020": {
+  "path": "/x/ad1-skyup-admin-catalogue-product-published",
+  "name": "AD1 · SkyUp Admin — Catalogue (product published)",
+  "section": "Flow · SkyUp product reaches advisors",
+  "folder": "flow-skyup"
+ },
+ "129:15302": {
+  "path": "/x/01b-dashboard-new-product-from-skyup",
+  "name": "01b · Dashboard — New product from SkyUp",
+  "section": "Flow · SkyUp product reaches advisors",
+  "folder": "flow-skyup"
+ },
+ "129:15495": {
+  "path": "/x/10e-products-new-from-skyup",
+  "name": "10e · Products — New from SkyUp",
+  "section": "Flow · SkyUp product reaches advisors",
+  "folder": "flow-skyup"
+ },
+ "133:15701": {
+  "path": "/x/ada-skyup-admin-add-product-reading-brochure",
+  "name": "ADa · SkyUp Admin — Add product (reading brochure)",
+  "section": "Flow · SkyUp product reaches advisors",
+  "folder": "flow-skyup"
+ },
+ "133:15930": {
+  "path": "/x/adb-skyup-admin-review-extracted-values",
+  "name": "ADb · SkyUp Admin — Review extracted values",
+  "section": "Flow · SkyUp product reaches advisors",
+  "folder": "flow-skyup"
+ },
+ "133:16297": {
+  "path": "/x/adc-skyup-admin-review-and-send-for-approval",
+  "name": "ADc · SkyUp Admin — Review and send for approval",
+  "section": "Flow · SkyUp product reaches advisors",
+  "folder": "flow-skyup"
+ },
+ "218:16885": {
+  "path": "/x/cq2-comparison-type",
+  "name": "CQ2 · Comparison — Type",
+  "section": "Flow · Comparative quotation",
+  "folder": "flow-comparative"
+ },
+ "218:17111": {
+  "path": "/x/cq3-comparison-insurance",
+  "name": "CQ3 · Comparison — Insurance",
+  "section": "Flow · Comparative quotation",
+  "folder": "flow-comparative"
+ },
+ "218:17359": {
+  "path": "/x/cq4-comparison-options",
+  "name": "CQ4 · Comparison — Options",
+  "section": "Flow · Comparative quotation",
+  "folder": "flow-comparative"
+ },
+ "218:17642": {
+  "path": "/x/cq5-comparison-details",
+  "name": "CQ5 · Comparison — Details",
+  "section": "Flow · Comparative quotation",
+  "folder": "flow-comparative"
+ },
+ "219:17371": {
+  "path": "/x/cq6-comparison-premiums",
+  "name": "CQ6 · Comparison — Premiums",
+  "section": "Flow · Comparative quotation",
+  "folder": "flow-comparative"
+ },
+ "219:17686": {
+  "path": "/x/cq7-comparison-recommend",
+  "name": "CQ7 · Comparison — Recommend",
+  "section": "Flow · Comparative quotation",
+  "folder": "flow-comparative"
+ },
+ "219:17917": {
+  "path": "/x/cq8-comparison-review",
+  "name": "CQ8 · Comparison — Review",
+  "section": "Flow · Comparative quotation",
+  "folder": "flow-comparative"
+ },
+ "219:18211": {
+  "path": "/x/cq9-comparison-generated",
+  "name": "CQ9 · Comparison — Generated",
+  "section": "Flow · Comparative quotation",
+  "folder": "flow-comparative"
+ },
+ "238:17768": {
+  "path": "/x/fd1-add-family-member",
+  "name": "FD1 · Add family member",
+  "section": "Flow · Family members and documents",
+  "folder": "flow-family-docs"
+ },
+ "238:18135": {
+  "path": "/x/fd2-family-member-added",
+  "name": "FD2 · Family — member added",
+  "section": "Flow · Family members and documents",
+  "folder": "flow-family-docs"
+ },
+ "239:18072": {
+  "path": "/x/fd3-add-document-whose-document",
+  "name": "FD3 · Add document — Whose document",
+  "section": "Flow · Family members and documents",
+  "folder": "flow-family-docs"
+ },
+ "239:18427": {
+  "path": "/x/fd4-add-document-which-document",
+  "name": "FD4 · Add document — Which document",
+  "section": "Flow · Family members and documents",
+  "folder": "flow-family-docs"
+ },
+ "239:18868": {
+  "path": "/x/fd5-add-document-upload",
+  "name": "FD5 · Add document — Upload",
+  "section": "Flow · Family members and documents",
+  "folder": "flow-family-docs"
+ },
+ "239:19269": {
+  "path": "/x/fd6-arjun-hegde-documents",
+  "name": "FD6 · Arjun Hegde — documents",
+  "section": "Flow · Family members and documents",
+  "folder": "flow-family-docs"
+ },
+ "245:18821": {
+  "path": "/x/cs1-record-consent",
+  "name": "CS1 · Record consent",
+  "section": "Flow · Policy holder — consent",
+  "folder": "flow-consent"
+ },
+ "245:19182": {
+  "path": "/x/cs2-consent-recorded",
+  "name": "CS2 · Consent recorded",
+  "section": "Flow · Policy holder — consent",
+  "folder": "flow-consent"
+ },
+ "245:19500": {
+  "path": "/x/cs3-consent-proof",
+  "name": "CS3 · Consent proof",
+  "section": "Flow · Policy holder — consent",
+  "folder": "flow-consent"
+ },
+ "245:19854": {
+  "path": "/x/cs4-withdraw-consent",
+  "name": "CS4 · Withdraw consent",
+  "section": "Flow · Policy holder — consent",
+  "folder": "flow-consent"
+ },
+ "245:20186": {
+  "path": "/x/cs5-consent-withdrawn",
+  "name": "CS5 · Consent withdrawn",
+  "section": "Flow · Policy holder — consent",
+  "folder": "flow-consent"
+ },
+ "245:20499": {
+  "path": "/x/cs6-withdraw-personal-data-consent",
+  "name": "CS6 · Withdraw personal-data consent",
+  "section": "Flow · Policy holder — consent",
+  "folder": "flow-consent"
+ },
+ "245:20833": {
+  "path": "/x/cs7-personal-data-consent-withdrawn",
+  "name": "CS7 · Personal-data consent withdrawn",
+  "section": "Flow · Policy holder — consent",
+  "folder": "flow-consent"
+ },
+ "246:19670": {
+  "path": "/x/pe1-edit-details",
+  "name": "PE1 · Edit details",
+  "section": "Flow · Policy holder — tab actions",
+  "folder": "flow-tab-actions"
+ },
+ "246:19933": {
+  "path": "/x/pe2-pan-shown-30-seconds",
+  "name": "PE2 · PAN shown (30 seconds)",
+  "section": "Flow · Policy holder — tab actions",
+  "folder": "flow-tab-actions"
+ },
+ "246:20161": {
+  "path": "/x/pf1-change-default-nominee",
+  "name": "PF1 · Change default nominee",
+  "section": "Flow · Policy holder — tab actions",
+  "folder": "flow-tab-actions"
+ },
+ "246:20502": {
+  "path": "/x/pf2-link-a-policy-holder",
+  "name": "PF2 · Link a policy holder",
+  "section": "Flow · Policy holder — tab actions",
+  "folder": "flow-tab-actions"
+ },
+ "246:20845": {
+  "path": "/x/pf3-edit-family-member",
+  "name": "PF3 · Edit family member",
+  "section": "Flow · Policy holder — tab actions",
+  "folder": "flow-tab-actions"
+ },
+ "246:21202": {
+  "path": "/x/pd1-check-document-values",
+  "name": "PD1 · Check document values",
+  "section": "Flow · Policy holder — tab actions",
+  "folder": "flow-tab-actions"
+ },
+ "246:21492": {
+  "path": "/x/pd2-document-versions",
+  "name": "PD2 · Document versions",
+  "section": "Flow · Policy holder — tab actions",
+  "folder": "flow-tab-actions"
+ },
+ "247:20759": {
+  "path": "/x/pv1-add-vehicle",
+  "name": "PV1 · Add vehicle",
+  "section": "Flow · Policy holder — tab actions",
+  "folder": "flow-tab-actions"
+ },
+ "247:21041": {
+  "path": "/x/pv2-vehicle-added",
+  "name": "PV2 · Vehicle added",
+  "section": "Flow · Policy holder — tab actions",
+  "folder": "flow-tab-actions"
+ },
+ "247:21303": {
+  "path": "/x/pp1-edit-policy-nominees",
+  "name": "PP1 · Edit policy nominees",
+  "section": "Flow · Policy holder — tab actions",
+  "folder": "flow-tab-actions"
+ },
+ "247:21602": {
+  "path": "/x/pp2-record-existing-policy",
+  "name": "PP2 · Record existing policy",
+  "section": "Flow · Policy holder — tab actions",
+  "folder": "flow-tab-actions"
+ },
+ "247:21783": {
+  "path": "/x/pa1-activities-payments-filter",
+  "name": "PA1 · Activities — Payments filter",
+  "section": "Flow · Policy holder — tab actions",
+  "folder": "flow-tab-actions"
+ },
+ "255:21407": {
+  "path": "/x/rn0-renewal-how-to-renew",
+  "name": "RN0 · Renewal — How to renew",
+  "section": "Flow · Renewal quotation",
+  "folder": "flow-renewal-quotation"
+ },
+ "255:21703": {
+  "path": "/x/rnb1-renewal-new-quotation-product",
+  "name": "RNB1 · Renewal — New quotation · Product",
+  "section": "Flow · Renewal quotation",
+  "folder": "flow-renewal-quotation"
+ },
+ "255:21917": {
+  "path": "/x/rnb2-renewal-new-quotation-details-and-premium",
+  "name": "RNB2 · Renewal — New quotation · Details and premium",
+  "section": "Flow · Renewal quotation",
+  "folder": "flow-renewal-quotation"
+ },
+ "255:22144": {
+  "path": "/x/rnb3-renewal-new-quotation-review",
+  "name": "RNB3 · Renewal — New quotation · Review",
+  "section": "Flow · Renewal quotation",
+  "folder": "flow-renewal-quotation"
+ },
+ "255:22330": {
+  "path": "/x/rnb4-renewal-new-quotation-ready",
+  "name": "RNB4 · Renewal — New quotation ready",
+  "section": "Flow · Renewal quotation",
+  "folder": "flow-renewal-quotation"
+ },
+ "263:25648": {
+  "path": "/x/f1b-new-lead-lead-source-options",
+  "name": "F1b · New lead — Lead source options",
+  "section": "Dashboard — tasks and reminders",
+  "folder": "tasks"
+ },
+ "263:25992": {
+  "path": "/x/le1-edit-lead",
+  "name": "LE1 · Edit lead",
+  "section": "Dashboard — tasks and reminders",
+  "folder": "tasks"
+ },
+ "263:26243": {
+  "path": "/x/02b-leads-list",
+  "name": "02b · Leads — List",
+  "section": "Dashboard — tasks and reminders",
+  "folder": "tasks"
+ },
+ "263:26660": {
+  "path": "/x/02c-leads-list-filtered-by-source",
+  "name": "02c · Leads — List filtered by source",
+  "section": "Dashboard — tasks and reminders",
+  "folder": "tasks"
+ },
+ "272:26780": {
+  "path": "/x/tk1-add-task-empty",
+  "name": "TK1 · Add task — empty",
+  "section": "Dashboard — tasks and reminders",
+  "folder": "tasks"
+ },
+ "272:27214": {
+  "path": "/x/tk2-add-task-validation-errors",
+  "name": "TK2 · Add task — validation errors",
+  "section": "Dashboard — tasks and reminders",
+  "folder": "tasks"
+ },
+ "272:27657": {
+  "path": "/x/tk4-edit-task",
+  "name": "TK4 · Edit task",
+  "section": "Dashboard — tasks and reminders",
+  "folder": "tasks"
+ },
+ "272:28100": {
+  "path": "/x/tk3-task-created",
+  "name": "TK3 · Task created",
+  "section": "Dashboard — tasks and reminders",
+  "folder": "tasks"
+ },
+ "272:29079": {
+  "path": "/x/tk5-task-completed",
+  "name": "TK5 · Task completed",
+  "section": "Dashboard — tasks and reminders",
+  "folder": "tasks"
+ },
+ "272:30032": {
+  "path": "/x/tk6-reschedule-task",
+  "name": "TK6 · Reschedule task",
+  "section": "Dashboard — tasks and reminders",
+  "folder": "tasks"
+ },
+ "264:26241": {
+  "path": "/x/r1-dashboard-tablet-834",
+  "name": "R1 · Dashboard — Tablet (834)",
+  "section": "Responsive — dashboard, tasks and leads",
+  "folder": "responsive"
+ },
+ "266:26531": {
+  "path": "/x/r2-dashboard-mobile-390",
+  "name": "R2 · Dashboard — Mobile (390)",
+  "section": "Responsive — dashboard, tasks and leads",
+  "folder": "responsive"
+ },
+ "266:26833": {
+  "path": "/x/r3-add-task-mobile-bottom-sheet",
+  "name": "R3 · Add task — Mobile bottom sheet",
+  "section": "Responsive — dashboard, tasks and leads",
+  "folder": "responsive"
+ },
+ "266:27118": {
+  "path": "/x/r4-leads-mobile-list",
+  "name": "R4 · Leads — Mobile list",
+  "section": "Responsive — dashboard, tasks and leads",
+  "folder": "responsive"
+ },
+ "266:27267": {
+  "path": "/x/r5-new-lead-mobile-form",
+  "name": "R5 · New lead — Mobile form",
+  "section": "Responsive — dashboard, tasks and leads",
+  "folder": "responsive"
+ },
+ "281:26934": {
+  "path": "/x/a1-login-mobile-number",
+  "name": "A1 · Login — Mobile number",
+  "section": "Missing · Login, account and subscription",
+  "folder": "states-account"
+ },
+ "281:27045": {
+  "path": "/x/a2-login-wrong-or-expired-code",
+  "name": "A2 · Login — Wrong or expired code",
+  "section": "Missing · Login, account and subscription",
+  "folder": "states-account"
+ },
+ "281:27172": {
+  "path": "/x/a3-login-number-locked",
+  "name": "A3 · Login — Number locked",
+  "section": "Missing · Login, account and subscription",
+  "folder": "states-account"
+ },
+ "281:27273": {
+  "path": "/x/a4-sign-up-start-free-trial",
+  "name": "A4 · Sign up — Start free trial",
+  "section": "Missing · Login, account and subscription",
+  "folder": "states-account"
+ },
+ "281:27404": {
+  "path": "/x/a5-account-suspended",
+  "name": "A5 · Account suspended",
+  "section": "Missing · Login, account and subscription",
+  "folder": "states-account"
+ },
+ "281:27509": {
+  "path": "/x/a6-account-closed",
+  "name": "A6 · Account closed",
+  "section": "Missing · Login, account and subscription",
+  "folder": "states-account"
+ },
+ "281:27613": {
+  "path": "/x/a7-subscription-trial-ending",
+  "name": "A7 · Subscription — Trial ending",
+  "section": "Missing · Login, account and subscription",
+  "folder": "states-account"
+ },
+ "281:28246": {
+  "path": "/x/a8-subscription-grace-period",
+  "name": "A8 · Subscription — Grace period",
+  "section": "Missing · Login, account and subscription",
+  "folder": "states-account"
+ },
+ "281:28879": {
+  "path": "/x/a9-subscription-expired-read-only",
+  "name": "A9 · Subscription — Expired (read-only)",
+  "section": "Missing · Login, account and subscription",
+  "folder": "states-account"
+ },
+ "282:28800": {
+  "path": "/x/ls1-lead-change-status",
+  "name": "LS1 · Lead — Change status",
+  "section": "Missing · Lead lifecycle",
+  "folder": "states-lead"
+ },
+ "282:29000": {
+  "path": "/x/ls2-lead-log-contact",
+  "name": "LS2 · Lead — Log contact",
+  "section": "Missing · Lead lifecycle",
+  "folder": "states-lead"
+ },
+ "282:29230": {
+  "path": "/x/ls3-lead-mark-as-lost",
+  "name": "LS3 · Lead — Mark as lost",
+  "section": "Missing · Lead lifecycle",
+  "folder": "states-lead"
+ },
+ "282:29416": {
+  "path": "/x/ls4-lead-lost",
+  "name": "LS4 · Lead — Lost",
+  "section": "Missing · Lead lifecycle",
+  "folder": "states-lead"
+ },
+ "282:29717": {
+  "path": "/x/ls5-lead-reopen",
+  "name": "LS5 · Lead — Reopen",
+  "section": "Missing · Lead lifecycle",
+  "folder": "states-lead"
+ },
+ "282:29893": {
+  "path": "/x/ls6-lead-converted",
+  "name": "LS6 · Lead — Converted",
+  "section": "Missing · Lead lifecycle",
+  "folder": "states-lead"
+ },
+ "283:29629": {
+  "path": "/x/qs1-quotation-ready-not-shared",
+  "name": "QS1 · Quotation — Ready (not shared)",
+  "section": "Missing · Quotation and payment lifecycle",
+  "folder": "states-quotation"
+ },
+ "283:29950": {
+  "path": "/x/qs2-quotation-share",
+  "name": "QS2 · Quotation — Share",
+  "section": "Missing · Quotation and payment lifecycle",
+  "folder": "states-quotation"
+ },
+ "283:30164": {
+  "path": "/x/qs3-quotation-mark-rejected",
+  "name": "QS3 · Quotation — Mark rejected",
+  "section": "Missing · Quotation and payment lifecycle",
+  "folder": "states-quotation"
+ },
+ "283:30360": {
+  "path": "/x/qs4-quotation-rejected",
+  "name": "QS4 · Quotation — Rejected",
+  "section": "Missing · Quotation and payment lifecycle",
+  "folder": "states-quotation"
+ },
+ "283:30549": {
+  "path": "/x/qs5-quotation-expired",
+  "name": "QS5 · Quotation — Expired",
+  "section": "Missing · Quotation and payment lifecycle",
+  "folder": "states-quotation"
+ },
+ "283:30872": {
+  "path": "/x/qs6-quotation-cancel",
+  "name": "QS6 · Quotation — Cancel",
+  "section": "Missing · Quotation and payment lifecycle",
+  "folder": "states-quotation"
+ },
+ "283:31061": {
+  "path": "/x/qs7-quotation-cancelled",
+  "name": "QS7 · Quotation — Cancelled",
+  "section": "Missing · Quotation and payment lifecycle",
+  "folder": "states-quotation"
+ },
+ "283:31388": {
+  "path": "/x/qs8-quotation-revise",
+  "name": "QS8 · Quotation — Revise",
+  "section": "Missing · Quotation and payment lifecycle",
+  "folder": "states-quotation"
+ },
+ "283:31577": {
+  "path": "/x/qs9-quotation-delete-draft",
+  "name": "QS9 · Quotation — Delete draft",
+  "section": "Missing · Quotation and payment lifecycle",
+  "folder": "states-quotation"
+ },
+ "283:31892": {
+  "path": "/x/py1-payment-mark-failed",
+  "name": "PY1 · Payment — Mark failed",
+  "section": "Missing · Quotation and payment lifecycle",
+  "folder": "states-quotation"
+ },
+ "283:32081": {
+  "path": "/x/py2-payment-failed",
+  "name": "PY2 · Payment — Failed",
+  "section": "Missing · Quotation and payment lifecycle",
+  "folder": "states-quotation"
+ },
+ "283:32399": {
+  "path": "/x/py3-payment-link-expired",
+  "name": "PY3 · Payment — Link expired",
+  "section": "Missing · Quotation and payment lifecycle",
+  "folder": "states-quotation"
+ },
+ "283:32712": {
+  "path": "/x/py4-payment-reverse-undo",
+  "name": "PY4 · Payment — Reverse (undo)",
+  "section": "Missing · Quotation and payment lifecycle",
+  "folder": "states-quotation"
+ },
+ "283:32914": {
+  "path": "/x/py5-payment-reversed",
+  "name": "PY5 · Payment — Reversed",
+  "section": "Missing · Quotation and payment lifecycle",
+  "folder": "states-quotation"
+ },
+ "285:31639": {
+  "path": "/proposals",
+  "name": "PRL · Proposals list",
+  "section": "Missing · Proposal, policy and renewal lifecycle",
+  "folder": "states-proposal-policy"
+ },
+ "285:31926": {
+  "path": "/x/prd-proposal-mark-declined",
+  "name": "PRD · Proposal — Mark declined",
+  "section": "Missing · Proposal, policy and renewal lifecycle",
+  "folder": "states-proposal-policy"
+ },
+ "285:32087": {
+  "path": "/x/prd2-proposal-declined",
+  "name": "PRD2 · Proposal — Declined",
+  "section": "Missing · Proposal, policy and renewal lifecycle",
+  "folder": "states-proposal-policy"
+ },
+ "285:32252": {
+  "path": "/x/prc-proposal-cancel",
+  "name": "PRC · Proposal — Cancel",
+  "section": "Missing · Proposal, policy and renewal lifecycle",
+  "folder": "states-proposal-policy"
+ },
+ "285:32464": {
+  "path": "/x/po1-policy-record-cancellation",
+  "name": "PO1 · Policy — Record cancellation",
+  "section": "Missing · Proposal, policy and renewal lifecycle",
+  "folder": "states-proposal-policy"
+ },
+ "285:32611": {
+  "path": "/x/po2-policy-cancelled",
+  "name": "PO2 · Policy — Cancelled",
+  "section": "Missing · Proposal, policy and renewal lifecycle",
+  "folder": "states-proposal-policy"
+ },
+ "285:32846": {
+  "path": "/x/po3-policy-expired",
+  "name": "PO3 · Policy — Expired",
+  "section": "Missing · Proposal, policy and renewal lifecycle",
+  "folder": "states-proposal-policy"
+ },
+ "285:33076": {
+  "path": "/x/po4-policy-renewed",
+  "name": "PO4 · Policy — Renewed",
+  "section": "Missing · Proposal, policy and renewal lifecycle",
+  "folder": "states-proposal-policy"
+ },
+ "285:33305": {
+  "path": "/x/rs1-renewal-in-follow-up",
+  "name": "RS1 · Renewal — In follow-up",
+  "section": "Missing · Proposal, policy and renewal lifecycle",
+  "folder": "states-proposal-policy"
+ },
+ "285:33452": {
+  "path": "/x/rs2-renewal-not-renewing",
+  "name": "RS2 · Renewal — Not renewing",
+  "section": "Missing · Proposal, policy and renewal lifecycle",
+  "folder": "states-proposal-policy"
+ },
+ "285:33618": {
+  "path": "/x/rs3-renewal-reopen",
+  "name": "RS3 · Renewal — Reopen",
+  "section": "Missing · Proposal, policy and renewal lifecycle",
+  "folder": "states-proposal-policy"
+ },
+ "285:33778": {
+  "path": "/x/rs4-renewal-lapsed",
+  "name": "RS4 · Renewal — Lapsed",
+  "section": "Missing · Proposal, policy and renewal lifecycle",
+  "folder": "states-proposal-policy"
+ },
+ "285:33944": {
+  "path": "/x/rs5-renewal-pause-reminders",
+  "name": "RS5 · Renewal — Pause reminders",
+  "section": "Missing · Proposal, policy and renewal lifecycle",
+  "folder": "states-proposal-policy"
+ },
+ "286:33182": {
+  "path": "/x/cu1-policy-holder-deactivate-blocked",
+  "name": "CU1 · Policy holder — Deactivate (blocked)",
+  "section": "Missing · Records, tasks and messages",
+  "folder": "states-records"
+ },
+ "286:33411": {
+  "path": "/x/cu2-policy-holder-inactive",
+  "name": "CU2 · Policy holder — Inactive",
+  "section": "Missing · Records, tasks and messages",
+  "folder": "states-records"
+ },
+ "286:33736": {
+  "path": "/x/fm1-family-member-inactive",
+  "name": "FM1 · Family — member inactive",
+  "section": "Missing · Records, tasks and messages",
+  "folder": "states-records"
+ },
+ "286:34110": {
+  "path": "/x/dl1-document-change-label",
+  "name": "DL1 · Document — Change label",
+  "section": "Missing · Records, tasks and messages",
+  "folder": "states-records"
+ },
+ "286:34407": {
+  "path": "/x/vh1-vehicle-mark-inactive",
+  "name": "VH1 · Vehicle — Mark inactive",
+  "section": "Missing · Records, tasks and messages",
+  "folder": "states-records"
+ },
+ "286:34658": {
+  "path": "/tasks",
+  "name": "TSK · All tasks",
+  "section": "Missing · Records, tasks and messages",
+  "folder": "states-records"
+ },
+ "286:35009": {
+  "path": "/notifications",
+  "name": "NTF · Notifications",
+  "section": "Missing · Records, tasks and messages",
+  "folder": "states-records"
+ },
+ "286:35199": {
+  "path": "/x/cm1-communications-scheduled",
+  "name": "CM1 · Communications — Scheduled",
+  "section": "Missing · Records, tasks and messages",
+  "folder": "states-records"
+ },
+ "286:35386": {
+  "path": "/x/cm2-communications-sent",
+  "name": "CM2 · Communications — Sent",
+  "section": "Missing · Records, tasks and messages",
+  "folder": "states-records"
+ },
+ "286:35593": {
+  "path": "/x/cm3-message-detail",
+  "name": "CM3 · Message detail",
+  "section": "Missing · Records, tasks and messages",
+  "folder": "states-records"
+ },
+ "286:35745": {
+  "path": "/x/cm4-cancel-scheduled-message",
+  "name": "CM4 · Cancel scheduled message",
+  "section": "Missing · Records, tasks and messages",
+  "folder": "states-records"
+ },
+ "287:34616": {
+  "path": "/x/ky1-kyc-not-submitted",
+  "name": "KY1 · KYC — Not submitted",
+  "section": "Missing · Settings states",
+  "folder": "states-settings"
+ },
+ "287:34905": {
+  "path": "/x/ky2-kyc-verified",
+  "name": "KY2 · KYC — Verified",
+  "section": "Missing · Settings states",
+  "folder": "states-settings"
+ },
+ "287:35164": {
+  "path": "/x/ky3-kyc-rejected",
+  "name": "KY3 · KYC — Rejected",
+  "section": "Missing · Settings states",
+  "folder": "states-settings"
+ },
+ "287:35423": {
+  "path": "/x/in1-my-insurers-add-insurer",
+  "name": "IN1 · My insurers — Add insurer",
+  "section": "Missing · Settings states",
+  "folder": "states-settings"
+ },
+ "287:35674": {
+  "path": "/x/in2-my-insurers-deactivate",
+  "name": "IN2 · My insurers — Deactivate",
+  "section": "Missing · Settings states",
+  "folder": "states-settings"
+ },
+ "287:35898": {
+  "path": "/x/in3-my-insurers-inactive-insurer",
+  "name": "IN3 · My insurers — Inactive insurer",
+  "section": "Missing · Settings states",
+  "folder": "states-settings"
+ },
+ "287:36177": {
+  "path": "/x/pv1-product-my-price-versions",
+  "name": "PV1 · Product — My price versions",
+  "section": "Missing · Settings states",
+  "folder": "states-settings"
+ },
+ "287:36354": {
+  "path": "/x/pv2-product-add-price-version",
+  "name": "PV2 · Product — Add price version",
+  "section": "Missing · Settings states",
+  "folder": "states-settings"
+ },
+ "287:36713": {
+  "path": "/x/sa1-support-access-give-access",
+  "name": "SA1 · Support access — Give access",
+  "section": "Missing · Settings states",
+  "folder": "states-settings"
+ },
+ "287:36946": {
+  "path": "/x/ex1-export-ready-to-download",
+  "name": "EX1 · Export — Ready to download",
+  "section": "Missing · Settings states",
+  "folder": "states-settings"
+ },
+ "287:37225": {
+  "path": "/x/wl1-wallet-recharge-pending",
+  "name": "WL1 · Wallet — Recharge pending",
+  "section": "Missing · Settings states",
+  "folder": "states-settings"
+ },
+ "287:37475": {
+  "path": "/x/wl2-wallet-recharge-failed",
+  "name": "WL2 · Wallet — Recharge failed",
+  "section": "Missing · Settings states",
+  "folder": "states-settings"
+ },
+ "287:37735": {
+  "path": "/x/rf1-referrer-new-link",
+  "name": "RF1 · Referrer — New link",
+  "section": "Missing · Settings states",
+  "folder": "states-settings"
+ },
+ "287:37948": {
+  "path": "/x/rf2-referrer-disable",
+  "name": "RF2 · Referrer — Disable",
+  "section": "Missing · Settings states",
+  "folder": "states-settings"
+ },
+ "287:38161": {
+  "path": "/x/rf3-referrer-disabled",
+  "name": "RF3 · Referrer — Disabled",
+  "section": "Missing · Settings states",
+  "folder": "states-settings"
+ },
+ "287:38431": {
+  "path": "/x/as1-assistant-disable",
+  "name": "AS1 · Assistant — Disable",
+  "section": "Missing · Settings states",
+  "folder": "states-settings"
+ },
+ "287:38648": {
+  "path": "/x/as2-assistant-disabled",
+  "name": "AS2 · Assistant — Disabled",
+  "section": "Missing · Settings states",
+  "folder": "states-settings"
+ },
+ "289:37046": {
+  "path": "/x/aa1-admin-advisor-accounts",
+  "name": "AA1 · Admin — Advisor accounts",
+  "section": "Missing · SkyUp Admin",
+  "folder": "states-admin"
+ },
+ "289:37431": {
+  "path": "/x/aa2-admin-account-detail",
+  "name": "AA2 · Admin — Account detail",
+  "section": "Missing · SkyUp Admin",
+  "folder": "states-admin"
+ },
+ "289:37632": {
+  "path": "/x/aa3-admin-suspend-account",
+  "name": "AA3 · Admin — Suspend account",
+  "section": "Missing · SkyUp Admin",
+  "folder": "states-admin"
+ },
+ "289:37787": {
+  "path": "/x/aa4-admin-record-subscription-payment",
+  "name": "AA4 · Admin — Record subscription payment",
+  "section": "Missing · SkyUp Admin",
+  "folder": "states-admin"
+ },
+ "289:37981": {
+  "path": "/x/aa5-admin-reject-kyc",
+  "name": "AA5 · Admin — Reject KYC",
+  "section": "Missing · SkyUp Admin",
+  "folder": "states-admin"
+ },
+ "290:37369": {
+  "path": "/x/aa6-admin-product-corrections",
+  "name": "AA6 · Admin — Product corrections",
+  "section": "Missing · SkyUp Admin",
+  "folder": "states-admin"
+ },
+ "290:37622": {
+  "path": "/x/aa7-advisor-suggest-correction",
+  "name": "AA7 · Advisor — Suggest correction",
+  "section": "Missing · SkyUp Admin",
+  "folder": "states-admin"
+ },
+ "290:37945": {
+  "path": "/x/aa8-admin-message-templates",
+  "name": "AA8 · Admin — Message templates",
+  "section": "Missing · SkyUp Admin",
+  "folder": "states-admin"
+ },
+ "290:38242": {
+  "path": "/x/aa9-admin-skyup-users",
+  "name": "AA9 · Admin — SkyUp users",
+  "section": "Missing · SkyUp Admin",
+  "folder": "states-admin"
+ },
+ "290:38503": {
+  "path": "/x/aa10-admin-configuration",
+  "name": "AA10 · Admin — Configuration",
+  "section": "Missing · SkyUp Admin",
+  "folder": "states-admin"
+ },
+ "290:38759": {
+  "path": "/x/aa11-admin-audit-log",
+  "name": "AA11 · Admin — Audit log",
+  "section": "Missing · SkyUp Admin",
+  "folder": "states-admin"
+ },
+ "290:38974": {
+  "path": "/x/aa12-admin-agent-code-flags",
+  "name": "AA12 · Admin — Agent-code flags",
+  "section": "Missing · SkyUp Admin",
+  "folder": "states-admin"
+ },
+ "290:39177": {
+  "path": "/x/aa13-admin-support-access",
+  "name": "AA13 · Admin — Support access",
+  "section": "Missing · SkyUp Admin",
+  "folder": "states-admin"
+ },
+ "291:37862": {
+  "path": "/x/qx1-public-quotation-link-expired-or-invalid",
+  "name": "QX1 · Public quotation — Link expired or invalid",
+  "section": "Missing · Public links and system states",
+  "folder": "states-public"
+ },
+ "291:37961": {
+  "path": "/x/rx1-referral-link-expired-or-revoked",
+  "name": "RX1 · Referral link — Expired or revoked",
+  "section": "Missing · Public links and system states",
+  "folder": "states-public"
+ },
+ "291:38031": {
+  "path": "/x/oc1-add-product-brochure-reading-failed",
+  "name": "OC1 · Add product — Brochure reading failed",
+  "section": "Missing · Public links and system states",
+  "folder": "states-public"
+ },
+ "291:38329": {
+  "path": "/x/cx1-comparison-expired",
+  "name": "CX1 · Comparison — Expired",
+  "section": "Missing · Public links and system states",
+  "folder": "states-public"
+ },
+ "292:38117": {
+  "path": "/screens/inventory",
+  "name": "INV · Status and screen inventory",
+  "section": "00 · Status and screen inventory",
+  "folder": "inventory"
+ },
+ "298:38324": {
+  "path": "/campaigns",
+  "name": "CA1 · Campaigns — Overview",
+  "section": "Campaigns · Meta Ads, Google Ads and website",
+  "folder": "campaigns"
+ },
+ "298:40033": {
+  "path": "/x/ca2-campaign-detail",
+  "name": "CA2 · Campaign detail",
+  "section": "Campaigns · Meta Ads, Google Ads and website",
+  "folder": "campaigns"
+ },
+ "299:39522": {
+  "path": "/x/cn1-connect-meta-ads-sign-in",
+  "name": "CN1 · Connect Meta Ads — Sign in",
+  "section": "Campaigns · Meta Ads, Google Ads and website",
+  "folder": "campaigns"
+ },
+ "299:39909": {
+  "path": "/x/cn2-connect-meta-ads-account-and-forms",
+  "name": "CN2 · Connect Meta Ads — Account and forms",
+  "section": "Campaigns · Meta Ads, Google Ads and website",
+  "folder": "campaigns"
+ },
+ "299:40330": {
+  "path": "/x/cn3-connect-meta-ads-map-fields",
+  "name": "CN3 · Connect Meta Ads — Map fields",
+  "section": "Campaigns · Meta Ads, Google Ads and website",
+  "folder": "campaigns"
+ },
+ "299:40797": {
+  "path": "/x/cn4-connect-meta-ads-lead-settings",
+  "name": "CN4 · Connect Meta Ads — Lead settings",
+  "section": "Campaigns · Meta Ads, Google Ads and website",
+  "folder": "campaigns"
+ },
+ "299:41223": {
+  "path": "/x/cn5-connect-meta-ads-connected",
+  "name": "CN5 · Connect Meta Ads — Connected",
+  "section": "Campaigns · Meta Ads, Google Ads and website",
+  "folder": "campaigns"
+ },
+ "299:41617": {
+  "path": "/x/cn6-connect-google-ads-sign-in-and-account",
+  "name": "CN6 · Connect Google Ads — Sign in and account",
+  "section": "Campaigns · Meta Ads, Google Ads and website",
+  "folder": "campaigns"
+ },
+ "299:42028": {
+  "path": "/x/cn7-connect-google-ads-map-fields",
+  "name": "CN7 · Connect Google Ads — Map fields",
+  "section": "Campaigns · Meta Ads, Google Ads and website",
+  "folder": "campaigns"
+ },
+ "300:40763": {
+  "path": "/x/cn8-connect-website-choose-method",
+  "name": "CN8 · Connect website — Choose method",
+  "section": "Campaigns · Meta Ads, Google Ads and website",
+  "folder": "campaigns"
+ },
+ "300:41170": {
+  "path": "/x/cn9-connect-website-test-lead-received",
+  "name": "CN9 · Connect website — Test lead received",
+  "section": "Campaigns · Meta Ads, Google Ads and website",
+  "folder": "campaigns"
+ },
+ "300:41547": {
+  "path": "/x/cl1-lead-from-meta-ads-auto-created",
+  "name": "CL1 · Lead from Meta Ads (auto-created)",
+  "section": "Campaigns · Meta Ads, Google Ads and website",
+  "folder": "campaigns"
+ },
+ "300:41742": {
+  "path": "/x/ca1b-campaigns-meta-reconnect-needed",
+  "name": "CA1b · Campaigns — Meta reconnect needed",
+  "section": "Campaigns · Meta Ads, Google Ads and website",
+  "folder": "campaigns"
+ },
+ "305:40638": {
+  "path": "/x/cc1-meta-ads-campaign-leads-and-answers",
+  "name": "CC1 · Meta Ads — Campaign leads and answers",
+  "section": "Campaigns · Meta Ads, Google Ads and website",
+  "folder": "campaigns"
+ },
+ "305:40941": {
+  "path": "/x/cc2-google-ads-campaign-leads-and-answers",
+  "name": "CC2 · Google Ads — Campaign leads and answers",
+  "section": "Campaigns · Meta Ads, Google Ads and website",
+  "folder": "campaigns"
+ },
+ "305:41229": {
+  "path": "/x/cc3-website-form-leads-and-answers",
+  "name": "CC3 · Website — Form leads and answers",
+  "section": "Campaigns · Meta Ads, Google Ads and website",
+  "folder": "campaigns"
+ }
+}
