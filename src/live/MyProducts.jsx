@@ -1,0 +1,346 @@
+// AP1–AP7, OC1 · Add my product · PV1–PV2 · My price versions · 10b · Compare variants — on the live API.
+//   /products/new            GET /my-products/types, /types/:id/template, /insurers · POST /my-products/types|insurers
+//                            brochure: POST /files → POST /my-products/brochure-reading → GET (poll) → PUT decisions /
+//                            accept-high → POST result (prefills the form) · POST /my-products
+//   /products/:id/prices     GET /products/:id/prices, /prices/template · POST /prices/check, /prices, /prices/:pid/cancel
+//   /products/:id/variants   GET /products/:id (variants with their own feature values)
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import AppLayout from '../components/AppLayout'
+import Icon from '../components/Icon'
+import { Stepper, cx } from '../components/ui'
+import { Header, HeadButton, Panel, PanelHead, SmallButton, StatusChip } from '../screens/catalogue/_parts'
+import { api, useQuery } from '../api'
+import { fmtDate, fmtMoney } from '../api/format'
+import { ActionDialog, Field, ErrorNote, useAct, label, dmy, isoDay, inputCls } from './kit'
+import { LoadingPanel, ErrorPanel } from './common'
+import { useToast } from '../components/LiveToast'
+
+const STEPS = ['Category', 'Company', 'Brochure', 'Product', 'Variants', 'Features', 'Review']
+const nums = (v) => String(v ?? '').split(',').map((x) => Number(x.trim().replace(/[₹,\s]/g, ''))).filter((n) => n > 0)
+
+/* ═════════════ AP1–AP7 · Add my product ═════════════ */
+export function LiveAddProduct() {
+  const navigate = useNavigate()
+  const { toast } = useToast()
+  const [step, setStep] = useState(0)
+  const types = useQuery('my-products:types', () => api.myProducts.types())
+  const [typeId, setTypeId] = useState('')
+  const tpl = useQuery(['my-products:template', typeId], () => api.myProducts.typeTemplate(typeId), { enabled: !!typeId })
+  const insurers = useQuery('my-products:insurers', () => api.myProducts.insurers())
+  const [insurerId, setInsurerId] = useState('')
+  const [code, setCode] = useState('')
+  const [d, setD] = useState({ name: '', uin: '', launchDate: '', adultMin: 18, adultMax: 65, coversChildren: false, childMin: '', childMax: '', siOptions: '', siMin: '', siMax: '', policyTerms: '1', pricingMode: 'MANUAL_ENTRY', taxPercent: 18, gracePeriodDays: 30, nomineeRequired: true, brochureFileId: null, sourceLink: '' })
+  const set = (k) => (v) => setD((s) => ({ ...s, [k]: v }))
+  const [features, setFeatures] = useState({}) // key → { value, notStated }
+  const [variants, setVariants] = useState([{ name: 'Standard', coverType: 'INDIVIDUAL', sumInsuredMin: '', sumInsuredMax: '' }])
+  const [ocrJobId, setOcrJobId] = useState(null)
+  const [newCat, setNewCat] = useState('')
+  const [newCo, setNewCo] = useState('')
+  const { act, busy, error, fieldErrors: fe } = useAct()
+
+  // brochure reading (AP2b–AP2d, OC1)
+  const [job, setJob] = useState(null)
+  const [reading, setReading] = useState(false)
+  const [readErr, setReadErr] = useState(null)
+  useEffect(() => {
+    if (!job || !['QUEUED', 'RUNNING', 'PENDING', 'PROCESSING'].includes(job.status)) return undefined
+    const t = setTimeout(async () => { try { setJob((await api.myProducts.reading(job.id)).data) } catch (e) { setReadErr(e) } }, 2500)
+    return () => clearTimeout(t)
+  }, [job])
+  const startReading = async (file) => {
+    setReading(true); setReadErr(null)
+    try {
+      const fileId = (await api.files.upload(file, 'BROCHURE')).data.id
+      set('brochureFileId')(fileId)
+      const r = await api.myProducts.startReading({ typeId, fileId })
+      setJob(r.data)
+    } catch (e) { setReadErr(e) } finally { setReading(false) }
+  }
+  const decide = async (row, decision, value) => {
+    try { setJob((await api.myProducts.readingDecisions(job.id, { decisions: [{ section: row.section, key: row.key, decision, value: value ?? null }] })).data) } catch (e) { setReadErr(e) }
+  }
+  const useReading = async () => {
+    try {
+      const r = (await api.myProducts.readingResult(job.id, {})).data
+      setOcrJobId(r.ocrJobId)
+      const x = r.data || {}
+      setD((s) => ({ ...s, ...Object.fromEntries(['name', 'uin', 'adultMin', 'adultMax', 'childMin', 'childMax', 'pricingMode', 'taxPercent', 'gracePeriodDays'].filter((k) => x[k] != null).map((k) => [k, x[k]])),
+        launchDate: x.launchDate ? isoDay(x.launchDate) : s.launchDate, coversChildren: x.coversChildren ?? s.coversChildren,
+        siOptions: x.sumInsured?.options?.join(', ') ?? s.siOptions, siMin: x.sumInsured?.min ?? s.siMin, siMax: x.sumInsured?.max ?? s.siMax, policyTerms: x.policyTerms?.join(', ') ?? s.policyTerms }))
+      if (x.features) setFeatures(x.features)
+      if (r.variants?.length) setVariants(r.variants.map((v) => ({ ...v, sumInsuredMin: v.sumInsuredMin ?? '', sumInsuredMax: v.sumInsuredMax ?? '' })))
+      toast('Values from the brochure are filled in. Check each step.')
+      setStep(3)
+    } catch (e) { setReadErr(e) }
+  }
+
+  const body = () => ({
+    insurerId, typeId, code: code.trim(), ...(ocrJobId ? { ocrJobId } : {}),
+    data: {
+      name: d.name || undefined, uin: d.uin || undefined, launchDate: d.launchDate ? dmy(d.launchDate) : undefined,
+      adultMin: Number(d.adultMin), adultMax: Number(d.adultMax), coversChildren: !!d.coversChildren,
+      ...(d.coversChildren ? { childMin: Number(d.childMin), childMax: Number(d.childMax) } : {}),
+      sumInsured: { ...(nums(d.siOptions).length ? { options: nums(d.siOptions) } : {}), ...(d.siMin ? { min: Number(d.siMin) } : {}), ...(d.siMax ? { max: Number(d.siMax) } : {}) },
+      policyTerms: nums(d.policyTerms), pricingMode: d.pricingMode, taxPercent: Number(d.taxPercent), gracePeriodDays: Number(d.gracePeriodDays), nomineeRequired: !!d.nomineeRequired,
+      ...(d.brochureFileId ? { brochureFileId: d.brochureFileId } : {}), ...(d.sourceLink ? { sourceLink: d.sourceLink } : {}),
+      features: Object.fromEntries(Object.entries(features).filter(([, f]) => f && (f.notStated || (f.value !== '' && f.value != null)))),
+    },
+    variants: variants.filter((v) => v.name.trim()).map((v) => ({ name: v.name.trim(), coverType: v.coverType || undefined, ...(v.sumInsuredMin ? { sumInsuredMin: Number(v.sumInsuredMin) } : {}), ...(v.sumInsuredMax ? { sumInsuredMax: Number(v.sumInsuredMax) } : {}), ...(v.features ? { features: v.features } : {}) })),
+  })
+  const publish = () => act(() => api.myProducts.create(body()), { invalidates: ['products'], quiet: true, success: 'Product published in your account.', onDone: (r) => navigate(`/products/${r.data.id}`) })
+
+  const T = (types.data || [])
+  const I = (insurers.data || [])
+  const typeName = T.find((t) => t.id === typeId)?.name
+  const insName = I.find((t) => t.id === insurerId)?.name
+  const canNext = [!!typeId, !!insurerId, true, !!code.trim() && !!d.name && !!d.uin, variants.some((v) => v.name.trim()), true, true][step]
+  const feats = tpl.data?.features ?? []
+  const groups = [...new Set(feats.map((f) => f.group || 'Features'))]
+
+  return (
+    <AppLayout active="products">
+      <Header breadcrumb={'CATALOGUE  /  PRODUCTS  /  ADD MY PRODUCT'} title="Add my product" subtitle="Published in your account at once. Only you can see and quote it." />
+      <Stepper className="mt-5" steps={STEPS} current={step} />
+      <div className="mt-6 flex items-start gap-6">
+        <div className="flex w-[756px] flex-col gap-5">
+          {step === 0 && (
+            <Panel className="flex flex-col gap-3">
+              <PanelHead title="Which category?" subtitle="SkyUp's categories, and any you added yourself." />
+              <div className="grid grid-cols-3 gap-3">
+                {T.map((t) => <button key={t.id} type="button" onClick={() => setTypeId(t.id)} className={cx('flex h-[64px] items-center gap-2 rounded-[18px] px-4 text-left text-[14px] font-semibold', typeId === t.id ? 'bg-navy text-white' : 'bg-panel text-ink')}>{t.name}{t.private && <span className="text-[11px] opacity-70">· mine</span>}</button>)}
+              </div>
+              {types.data && !T.length && <p className="text-[13px] font-medium text-muted">No categories yet. Add one below.</p>}
+              <div className="flex items-end gap-3"><Field label="Add a category" value={newCat} onChange={setNewCat} placeholder="e.g. Pet insurance" error={fe.name} />
+                <SmallButton variant="outline" icon="plus" className="mb-[7px]" disabled={!newCat.trim() || busy} onClick={() => act(() => api.myProducts.createType({ name: newCat.trim() }), { invalidates: ['my-products'], onDone: (r) => { setTypeId(r.data.id); setNewCat('') } })}>Add</SmallButton></div>
+            </Panel>
+          )}
+          {step === 1 && (
+            <Panel className="flex flex-col gap-3">
+              <PanelHead title="Which company?" subtitle="Verified insurers, and companies you added yourself." />
+              <select value={insurerId} onChange={(e) => setInsurerId(e.target.value)} className={inputCls}><option value="">Choose</option>{I.map((i) => <option key={i.id} value={i.id}>{i.name}{i.private ? ' (mine)' : ''}</option>)}</select>
+              <div className="flex items-end gap-3"><Field label="Add a company" value={newCo} onChange={setNewCo} />
+                <SmallButton variant="outline" icon="plus" className="mb-[7px]" disabled={!newCo.trim() || busy} onClick={() => act(() => api.myProducts.createInsurer({ name: newCo.trim() }), { invalidates: ['my-products'], onDone: (r) => { setInsurerId(r.data.id); setNewCo('') } })}>Add</SmallButton></div>
+            </Panel>
+          )}
+          {step === 2 && (
+            <Panel className="flex flex-col gap-3">
+              <PanelHead title="Brochure (optional)" subtitle="Upload the PDF and the values are read for you to check. Premium plan and trial." />
+              {!job && (
+                <label className="flex h-[64px] cursor-pointer items-center justify-center gap-2.5 rounded-[18px] border-2 border-dashed border-line text-[14px] font-semibold text-ink hover:bg-panel-2">
+                  <Icon name="folder" size={18} />{reading ? 'Uploading…' : 'Choose brochure PDF'}<input type="file" accept=".pdf" className="hidden" disabled={reading} onChange={(e) => e.target.files?.[0] && startReading(e.target.files[0])} />
+                </label>
+              )}
+              {readErr && <ErrorNote error={readErr} />}
+              {job && ['QUEUED', 'RUNNING', 'PENDING', 'PROCESSING'].includes(job.status) && <p className="flex items-center gap-2 text-[13px] font-semibold text-blue"><span className="size-4 animate-spin rounded-full border-2 border-blue/30 border-t-blue" />Reading the brochure…</p>}
+              {job?.status === 'FAILED' && (
+                <div className="flex items-center gap-3 rounded-[16px] bg-[#fbebec] px-4 py-3 text-[13px] font-semibold text-[#b4323c]"><Icon name="alert" size={16} /><span className="flex-1">{job.error ?? 'The brochure could not be read.'} Enter the values yourself, or try again.</span>
+                  <SmallButton variant="outline" onClick={async () => setJob((await api.myProducts.readingRetry(job.id, {})).data)}>Try again</SmallButton></div>
+              )}
+              {job && ['REVIEW_REQUIRED', 'REVIEWED'].includes(job.status) && (
+                <>
+                  <div className="flex items-center gap-2"><p className="flex-1 text-[13px] font-semibold text-ink">Check each value. Low confidence values are flagged.</p>
+                    <SmallButton variant="outline" onClick={async () => setJob((await api.myProducts.readingAcceptHigh(job.id, {})).data)}>Accept all above {job.threshold}%</SmallButton></div>
+                  {[...(job.details || []).map((r) => ({ ...r, section: 'DETAIL' })), ...(job.rows || []).map((r) => ({ ...r, section: 'FEATURE' })), ...(job.variants || []).map((r) => ({ ...r, section: 'VARIANT' }))].map((r) => (
+                    <div key={`${r.section}${r.key}`} className={cx('flex items-center gap-3 rounded-[14px] px-3 py-2 text-[13px]', r.flagged ? 'bg-[#fbf1e1]' : 'bg-panel')}>
+                      <span className="w-[200px] font-semibold text-ink">{r.label ?? r.key}</span>
+                      <span className="flex-1 truncate font-medium text-ink">{r.editedValue ?? r.value ?? <span className="text-muted">Not found</span>}</span>
+                      <span className="w-[54px] text-muted">{r.confidence != null ? `${Math.round(r.confidence)}%` : ''}{r.page ? ` p${r.page}` : ''}</span>
+                      {r.decision ? <StatusChip tone="green">{label(r.decision)}</StatusChip> : (
+                        <>
+                          {r.value != null && <SmallButton variant="ghost" onClick={() => decide(r, 'ACCEPT')}>Accept</SmallButton>}
+                          <SmallButton variant="ghost" onClick={() => { const v = window.prompt(`Correct value for ${r.label ?? r.key}`, r.value ?? ''); if (v !== null) decide(r, 'EDIT', v) }}>Fix</SmallButton>
+                          <SmallButton variant="ghost" onClick={() => decide(r, 'NOT_STATED')}>Not stated</SmallButton>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                  <SmallButton variant="navy" icon="check" className="self-start" onClick={useReading}>Use these values</SmallButton>
+                </>
+              )}
+              <p className="text-[12px] font-medium text-muted">You can skip this step and type the values.</p>
+            </Panel>
+          )}
+          {step === 3 && (
+            <Panel className="flex flex-col gap-4">
+              <PanelHead title="Product" />
+              <div className="flex gap-3"><Field label="Product code *" value={code} onChange={setCode} error={fe.code} hint="Your own short code, e.g. FS-01" /><Field label="Product name *" value={d.name} onChange={set('name')} error={(fe.name ?? fe['data.name'])} /></div>
+              <div className="flex gap-3"><Field label="UIN *" value={d.uin} onChange={set('uin')} error={(fe.uin ?? fe['data.uin'])} /><Field label="Launch date" type="date" value={d.launchDate} onChange={set('launchDate')} error={(fe.launchDate ?? fe['data.launchDate'])} /></div>
+              <div className="flex gap-3"><Field label="Adult entry age from" type="number" value={d.adultMin} onChange={set('adultMin')} /><Field label="to" type="number" value={d.adultMax} onChange={set('adultMax')} error={(fe.adultMax ?? fe['data.adultMax'])} /></div>
+              <Field type="checkbox" label="Covers children" value={d.coversChildren} onChange={set('coversChildren')} />
+              {d.coversChildren && <div className="flex gap-3"><Field label="Child age from" type="number" value={d.childMin} onChange={set('childMin')} /><Field label="to" type="number" value={d.childMax} onChange={set('childMax')} /></div>}
+              <div className="flex gap-3"><Field label="Sum insured options (₹, comma separated)" value={d.siOptions} onChange={set('siOptions')} placeholder="500000, 1000000" error={(fe.sumInsured ?? fe['data.sumInsured'])} /><Field label="or range from" type="number" value={d.siMin} onChange={set('siMin')} /><Field label="to" type="number" value={d.siMax} onChange={set('siMax')} /></div>
+              <div className="flex gap-3"><Field label="Policy terms (years)" value={d.policyTerms} onChange={set('policyTerms')} placeholder="1, 2, 3" /><Field label="Tax %" type="number" value={d.taxPercent} onChange={set('taxPercent')} /><Field label="Grace period (days)" type="number" value={d.gracePeriodDays} onChange={set('gracePeriodDays')} /></div>
+              <Field label="How the premium is worked out" type="select" value={d.pricingMode} onChange={set('pricingMode')} options={[{ value: 'MANUAL_ENTRY', label: 'Typed from the insurer portal at each quotation' }, { value: 'RATE_TABLE', label: 'From my rate table (add a price version after publishing)' }]} />
+              <Field type="checkbox" label="Nominee required" value={d.nomineeRequired} onChange={set('nomineeRequired')} />
+              <Field label="Source link" value={d.sourceLink} onChange={set('sourceLink')} placeholder="https://" />
+            </Panel>
+          )}
+          {step === 4 && (
+            <Panel className="flex flex-col gap-3">
+              <PanelHead title="Variants" subtitle="Silver, Gold, Plus… Each can have its own sum-insured range." right={<SmallButton variant="outline" icon="plus" onClick={() => setVariants([...variants, { name: '', coverType: 'INDIVIDUAL', sumInsuredMin: '', sumInsuredMax: '' }])}>Add variant</SmallButton>} />
+              {variants.map((v, i) => (
+                <div key={i} className="flex items-end gap-3">
+                  <Field label="Name *" value={v.name} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, name: x } : y)))} />
+                  <Field label="Cover" type="select" value={v.coverType ?? ''} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, coverType: x } : y)))} options={[{ value: 'INDIVIDUAL', label: 'Individual' }, { value: 'FLOATER', label: 'Family floater' }]} />
+                  <Field label="Sum insured from (₹)" type="number" value={v.sumInsuredMin} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, sumInsuredMin: x } : y)))} />
+                  <Field label="to (₹)" type="number" value={v.sumInsuredMax} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, sumInsuredMax: x } : y)))} />
+                  {variants.length > 1 && <button type="button" aria-label="Remove" className="mb-3 text-muted" onClick={() => setVariants(variants.filter((_, j) => j !== i))}><Icon name="x" size={16} /></button>}
+                </div>
+              ))}
+            </Panel>
+          )}
+          {step === 5 && (
+            <Panel className="flex flex-col gap-4">
+              <PanelHead title="Features" subtitle={tpl.data ? `${typeName} template v${tpl.data.template.number}. Leave blank if you don't know; tick "Not stated" when the brochure says nothing.` : 'Loading the template…'} />
+              {groups.map((g) => (
+                <div key={g} className="flex flex-col gap-2">
+                  <p className="text-[12px] font-bold tracking-wide text-muted uppercase">{g}</p>
+                  {feats.filter((f) => (f.group || 'Features') === g).map((f) => {
+                    const cur = features[f.key] ?? {}
+                    const setF = (patch) => setFeatures({ ...features, [f.key]: { ...cur, ...patch } })
+                    return (
+                      <div key={f.key} className="flex items-center gap-3">
+                        <span className="w-[260px] text-[13px] font-semibold text-ink">{f.name}{f.requiredToPublish ? ' *' : ''}</span>
+                        {f.dataType === 'Yes/No'
+                          ? <select value={cur.value === true ? 'yes' : cur.value === false ? 'no' : ''} disabled={cur.notStated} onChange={(e) => setF({ value: e.target.value === '' ? null : e.target.value === 'yes' })} className={cx(inputCls, 'h-[42px] flex-1')}><option value="">—</option><option value="yes">Yes</option><option value="no">No</option></select>
+                          : <input value={cur.value ?? ''} disabled={cur.notStated} onChange={(e) => setF({ value: f.dataType === 'Number' || f.dataType === 'Percent' || f.dataType === 'Amount' ? (e.target.value === '' ? null : Number(e.target.value)) : e.target.value })} className={cx(inputCls, 'h-[42px] flex-1')} placeholder={f.help ?? ''} />}
+                        <label className="flex items-center gap-1.5 text-[12px] font-semibold text-muted"><input type="checkbox" checked={!!cur.notStated} onChange={(e) => setF({ notStated: e.target.checked, value: e.target.checked ? null : cur.value })} />Not stated</label>
+                      </div>
+                    )
+                  })}
+                </div>
+              ))}
+              {tpl.data && !feats.length && <p className="text-[13px] font-medium text-muted">This category has no feature template.</p>}
+            </Panel>
+          )}
+          {step === 6 && (
+            <Panel className="flex flex-col gap-3">
+              <PanelHead title="Review and publish" />
+              {[['Category', typeName], ['Company', insName], ['Code', code], ['Name', d.name], ['UIN', d.uin], ['Entry age', `${d.adultMin}–${d.adultMax}`], ['Sum insured', nums(d.siOptions).map((n) => fmtMoney(n)).join(', ') || (d.siMin ? `${fmtMoney(d.siMin)}–${fmtMoney(d.siMax)}` : '—')], ['Policy terms', d.policyTerms], ['Pricing', d.pricingMode === 'RATE_TABLE' ? 'Rate table' : 'Typed at quotation'], ['Variants', variants.map((v) => v.name).filter(Boolean).join(', ')], ['Features filled', `${Object.values(features).filter((f) => f && (f.notStated || (f.value !== '' && f.value != null))).length} of ${feats.length}`], ['From brochure', ocrJobId ? 'Yes' : 'No']].map(([k, v]) => (
+                <div key={k} className="flex justify-between text-[13px]"><span className="font-medium text-muted">{k}</span><span className="font-semibold text-ink">{v || '—'}</span></div>
+              ))}
+              <ErrorNote error={error} />
+            </Panel>
+          )}
+          <div className="flex justify-between">
+            <SmallButton variant="outline" disabled={step === 0} onClick={() => setStep(step - 1)}>Back</SmallButton>
+            {step < 6 ? <SmallButton variant="navy" icon="arrow" disabled={!canNext} onClick={() => setStep(step + 1)}>{step === 2 && !job ? 'Skip' : 'Next'}</SmallButton>
+              : <SmallButton variant="navy" icon="check" disabled={busy} onClick={publish}>{busy ? 'Publishing…' : 'Publish product'}</SmallButton>}
+          </div>
+        </div>
+        <Panel className="flex w-[400px] flex-col gap-2">
+          <PanelHead title="Your product" />
+          <p className="text-[13px] font-medium text-muted">{[typeName, insName, d.name].filter(Boolean).join(' · ') || 'Nothing chosen yet.'}</p>
+          <p className="text-[12px] font-medium text-muted">Only you see your own products. Corrections to SkyUp products are suggested from the product page instead.</p>
+        </Panel>
+      </div>
+    </AppLayout>
+  )
+}
+
+/* ═════════════ PV1 / PV2 · My price versions ═════════════ */
+export function LivePriceVersions() {
+  const { id } = useParams()
+  const product = useQuery(['product', id], () => api.products.get(id))
+  const list = useQuery(['product', id, 'prices'], () => api.products.prices(id))
+  const tpl = useQuery(['product', id, 'price-template'], () => api.products.priceTemplate(id))
+  const ref = useQuery(['product', id, 'price-ref'], () => api.products.referencePrices(id))
+  const [add, setAdd] = useState(false)
+  const { act, busy } = useAct()
+  if (product.error) return <ErrorPanel active="products" error={product.error} back="/products" />
+  if (!product.data) return <LoadingPanel active="products" />
+  const p = product.data
+  const download = () => {
+    const blob = new Blob([tpl.data.csv], { type: 'text/csv' })
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${p.code}-rate-table.csv`; a.click()
+  }
+  return (
+    <AppLayout active="products">
+      <Header breadcrumb={`CATALOGUE  /  PRODUCTS  /  ${(p.publishedVersion?.data?.name ?? p.code).toUpperCase()}  /  PRICES`} title="My price versions" subtitle="Your premiums for this product. A version applies from its date; older quotations keep the price they used."
+        actions={<><HeadButton variant="white" icon="download" disabled={!tpl.data} onClick={download}>Rate table template</HeadButton><HeadButton icon="plus" onClick={() => setAdd(true)}>Add price version</HeadButton></>} />
+      <div className="mt-6 flex items-start gap-6">
+        <Panel className="flex w-[756px] flex-col gap-3">
+          {(list.data || []).map((v) => (
+            <div key={v.id} className="flex items-center gap-3 border-t border-line pt-3 text-[13px] first:border-0 first:pt-0">
+              <span className="w-[60px] font-bold text-ink">{v.name}</span>
+              <span className="flex-1 font-medium text-muted">From {fmtDate(isoDay(v.effectiveFrom))}{v.effectiveTo ? ` to ${fmtDate(isoDay(v.effectiveTo))}` : ''} · {v.rowCount} rows · tax {v.taxPercent}%{v.sourceNote ? ` · ${v.sourceNote}` : ''}</span>
+              <StatusChip tone={v.status === 'CURRENT' ? 'green' : v.status === 'SCHEDULED' ? 'sky' : 'neutral'}>{label(v.status)}</StatusChip>
+              {v.status === 'SCHEDULED' && <SmallButton variant="danger" disabled={busy} onClick={() => act(() => api.products.cancelPrice(id, v.id), { invalidates: ['product'] })}>Cancel</SmallButton>}
+            </div>
+          ))}
+          {list.data && !list.data.length && <p className="text-[13px] font-medium text-muted">No price versions yet. Download the template, fill in base premiums, then add a version.</p>}
+          {list.error && <ErrorNote error={list.error} />}
+        </Panel>
+        <Panel className="flex w-[400px] flex-col gap-2">
+          <PanelHead title="Rate table columns" />
+          {(tpl.data?.factors || []).map((f) => <p key={f.key} className="text-[13px] text-ink"><b>{f.key}</b> <span className="text-muted">· {f.name} · {(f.choices || []).slice(0, 6).join(', ')}</span></p>)}
+          <p className="text-[13px] text-ink"><b>base_premium</b> <span className="text-muted">· before tax, in ₹</span></p>
+          {ref.data?.length > 0 && <p className="mt-2 text-[12px] font-medium text-muted">SkyUp has {ref.data.length} reference price version{ref.data.length === 1 ? '' : 's'} for this product.</p>}
+          <ErrorNote error={tpl.error} />
+        </Panel>
+      </div>
+      {add && <AddPriceDialog id={id} addOns={p.publishedVersion?.data?.addOns ?? []} tax={p.publishedVersion?.data?.taxPercent ?? 18} onClose={() => setAdd(false)} />}
+    </AppLayout>
+  )
+}
+function AddPriceDialog({ id, addOns, tax, onClose }) {
+  const [f, setF] = useState({ effectiveFrom: '', taxPercent: tax, csv: '', sourceNote: '' })
+  const [riders, setRiders] = useState(Object.fromEntries(addOns.map((a) => [a.name, ''])))
+  const [check, setCheck] = useState(null)
+  const set = (k) => (v) => setF((s) => ({ ...s, [k]: v }))
+  const { act, busy, error, fieldErrors: fe } = useAct()
+  const readFile = (file) => file.text().then((t) => { set('csv')(t); setCheck(null) })
+  const runCheck = () => act(() => api.products.checkPrice(id, { csv: f.csv }), { quiet: true, success: 'Rate table checked.', onDone: (r) => setCheck(r.data) })
+  const save = () => act(() => api.products.addPrice(id, { effectiveFrom: dmy(f.effectiveFrom), taxPercent: Number(f.taxPercent), csv: f.csv, sourceNote: f.sourceNote || undefined,
+    riderPrices: Object.entries(riders).filter(([, v]) => v !== '').map(([name, value]) => ({ name, value: Number(value) })) }), { invalidates: ['product'], onDone: onClose, quiet: true })
+  return (
+    <ActionDialog title="Add price version" body="Upload the filled rate table (CSV). It is checked before saving." confirm="Save price version" busy={busy} error={error} disabled={!f.csv || !f.effectiveFrom} onConfirm={save} onClose={onClose} width={640}>
+      <div className="flex gap-3"><Field label="Effective from *" type="date" value={f.effectiveFrom} onChange={set('effectiveFrom')} error={fe.effectiveFrom} /><Field label="Tax % *" type="number" value={f.taxPercent} onChange={set('taxPercent')} error={fe.taxPercent} /></div>
+      <label className="flex h-[50px] cursor-pointer items-center gap-2.5 rounded-[16px] bg-panel px-4 text-[13px] font-semibold text-ink"><Icon name={f.csv ? 'check' : 'folder'} size={16} />{f.csv ? `${f.csv.trim().split('\n').length - 1} rows loaded` : 'Choose rate table CSV'}<input type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => e.target.files?.[0] && readFile(e.target.files[0])} /></label>
+      {fe.csv && <span className="text-[12px] font-medium text-[#b4323c]">{fe.csv}</span>}
+      {f.csv && <SmallButton variant="outline" className="self-start" disabled={busy} onClick={runCheck}>Check rate table</SmallButton>}
+      {check && <p className="text-[12px] font-semibold text-[#127650]">{check.message ?? `${check.rows ?? check.rowCount ?? ''} rows OK`}</p>}
+      {addOns.length > 0 && <div className="grid grid-cols-2 gap-3">{addOns.map((a) => <Field key={a.name} label={`${a.name} (₹)`} type="number" value={riders[a.name]} onChange={(v) => setRiders({ ...riders, [a.name]: v })} />)}</div>}
+      <Field label="Source note" value={f.sourceNote} onChange={set('sourceNote')} placeholder="e.g. Insurer rate card Nov 2026" />
+    </ActionDialog>
+  )
+}
+
+/* ═════════════ 10b · Compare variants ═════════════ */
+export function LiveCompareVariants() {
+  const { id } = useParams()
+  const q = useQuery(['product', id], () => api.products.get(id))
+  const rows = useMemo(() => q.data?.features ?? [], [q.data])
+  if (q.error) return <ErrorPanel active="products" error={q.error} back="/products" />
+  if (!q.data) return <LoadingPanel active="products" />
+  const p = q.data
+  const vs = p.variants ?? []
+  const show = (v, key) => {
+    const x = v.features?.[key] ?? p.publishedVersion?.data?.features?.[key]
+    if (x == null) return '—'
+    if (x.notStated) return 'Not stated'
+    const val = typeof x === 'object' ? x.value : x
+    return val === true ? 'Yes' : val === false ? 'No' : val == null ? '—' : String(val)
+  }
+  const differs = (key) => new Set(vs.map((v) => show(v, key))).size > 1
+  return (
+    <AppLayout active="products">
+      <Header breadcrumb={`CATALOGUE  /  PRODUCTS  /  ${(p.publishedVersion?.data?.name ?? p.code).toUpperCase()}`} title="Compare variants" subtitle="Rows that differ between variants are highlighted." actions={<HeadButton variant="white" icon="arrow" to={`/products/${id}`}>Back to product</HeadButton>} />
+      <Panel className="mt-6 overflow-x-auto">
+        <table className="w-full text-[13px]">
+          <thead><tr><th className="w-[260px] py-2 text-left font-semibold text-muted">Feature</th>{vs.map((v) => <th key={v.id ?? v.name} className="py-2 text-left font-bold text-ink">{v.name}<div className="text-[11px] font-medium text-muted">{v.sumInsuredMin ? `${fmtMoney(v.sumInsuredMin)}–${fmtMoney(v.sumInsuredMax)}` : ''}</div></th>)}</tr></thead>
+          <tbody>
+            {rows.map((f) => (
+              <tr key={f.key} className={cx('border-t border-line', differs(f.key) && 'bg-[#f3f7ff]')}>
+                <td className="py-2.5 pr-3 font-semibold text-ink">{f.name ?? f.label ?? f.key}</td>
+                {vs.map((v) => <td key={(v.id ?? v.name) + f.key} className="py-2.5 pr-3 text-ink">{show(v, f.key)}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {vs.length < 2 && <p className="mt-3 text-[13px] font-medium text-muted">This product has a single variant.</p>}
+      </Panel>
+    </AppLayout>
+  )
+}

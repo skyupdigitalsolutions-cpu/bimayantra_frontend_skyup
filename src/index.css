@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+/* Design tokens pulled from the Bimayantra Figma file */
+@theme {
+  --font-sans: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  /* Brand */
+  --color-navy: #13294b;          /* primary buttons, logo, icon buttons */
+  --color-navy-700: #1a3460;      /* rail gradient top */
+  --color-navy-900: #0e1f3b;      /* rail gradient bottom */
+  --color-ink: #172b4d;           /* headings / primary text */
+  --color-ink-2: #44526a;         /* nav text, secondary strong */
+  --color-slate: #5b6b80;
+  --color-muted: #7a8699;         /* subtitles */
+  --color-faint: #9aa4b5;         /* placeholders */
+
+  /* Surfaces */
+  --color-panel: #f4f6fb;         /* workspace panel / inputs */
+  --color-panel-2: #f5f7fb;       /* info boxes */
+  --color-chip: #f1f3f8;          /* kbd chip */
+  --color-tile: #f4f6fa;          /* icon circle */
+  --color-line: #e8ecf3;          /* borders */
+  --color-line-2: #edf0f5;
+
+  /* Accents */
+  --color-pink-50: #fff8f9;
+  --color-pink-100: #fde8ec;
+  --color-pink-200: #fbd5dd;
+  --color-pink-300: #f7b9c4;
+  --color-pink-400: #f4afbe;
+  --color-rose: #c2415a;
+  --color-rose-ink: #8b3a4c;
+  --color-blue: #1f5fd6;
+  --color-blue-50: #e8f0fd;
+  --color-blue-100: #d9eafd;
+  --color-violet: #5b3fb8;
+  --color-violet-50: #f0ecfb;
+  --color-violet-100: #e9e3fc;
+  --color-violet-200: #dcd2fb;
+  --color-amber-100: #fde8c9;
+  --color-mint-100: #d4f1e7;
+
+  /* Radii */
+  --radius-field: 16px;
+  --radius-card: 28px;
+  --radius-panel: 40px;
+
+  /* Shadows */
+  --shadow-card: 0px 8px 24px -4px rgba(19, 41, 75, 0.05);
+  --shadow-soft: 0px 6px 18px -8px rgba(19, 41, 75, 0.06);
+  --shadow-navy: 0px 10px 20px -6px rgba(19, 41, 75, 0.25);
+  --shadow-pink: 0px 18px 36px -10px rgba(232, 137, 156, 0.28);
+}
+
+@layer base {
+  html, body, #root { height: 100%; }
+  /* Figma text uses leading-[normal] everywhere */
+  html { line-height: normal; }
+  body {
+    @apply bg-white font-sans text-ink antialiased;
+  }
+  button { cursor: pointer; }
+}
+
+/* Gradients used repeatedly in the design */
+@utility bg-pink-hero { background-image: linear-gradient(to bottom, #fbd3dc, #f6b3c3); }
+@utility bg-rail { background-image: linear-gradient(to bottom, #1a3460, #0e1f3b); }
+@utility bg-violet-cta { background-image: linear-gradient(to right, #e9e3fc, #dcd2fb); }

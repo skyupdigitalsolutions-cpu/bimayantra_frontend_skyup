@@ -1,0 +1,140 @@
+// F3 · New customer and PE1 · Edit details on the live API: POST /customers (Idempotency-Key, duplicate warnings
+// with "Save anyway"), PATCH /customers/:id (version). Lists (genders, states, contact preferences) come from
+// GET /reference.
+import { useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import Icon from '../components/Icon'
+import { cx } from '../components/ui'
+import LeadShell, { FormCard, Row, FField, TInput, SInput, AfterSave, cardShadow } from '../screens/flow-lead/_parts'
+import { api, useQuery, useMutation, ApiError } from '../api'
+import { cleanMobile, fmtMobile, titleCase } from '../api/format'
+import { useAuth } from '../auth/AuthProvider'
+import { useToast } from '../components/LiveToast'
+import { LoadingPanel, ErrorPanel } from './common'
+
+const PREF = { WHATSAPP: 'WhatsApp', PHONE_CALL: 'Phone call', EMAIL: 'Email' }
+const AFTER = [['Customer created', 'Gets the next CU number'], ['Record consent', 'Personal data and messages'], ['Add family and documents', 'Aadhaar, PAN, vehicles'], ['Run Best fit or quote', 'Then pay, propose, issue']]
+const NONE = '—'
+/** "1988-04-12" (API) ⇄ <input type=date>; the API takes DD-MM-YYYY. */
+const toInput = (v) => (v ? String(v).slice(0, 10) : '')
+const toApi = (v) => (v ? v.split('-').reverse().join('-') : null)
+
+export default function LiveCustomerForm({ mode = 'new' }) {
+  const { id } = useParams()
+  const editing = mode === 'edit'
+  const c = useQuery(['customer', id], () => api.customers.get(id), { enabled: editing })
+  if (editing && c.error) return <ErrorPanel active="customers" error={c.error} back="/customers" />
+  if (editing && !c.data) return <LoadingPanel active="customers" />
+  return <Form key={c.data?.version ?? 'new'} c={editing ? c.data : null} />
+}
+
+function DateBox({ value, onChange, error }) {
+  return (
+    <span className={cx('flex h-[50px] items-center gap-2.5 rounded-[16px] bg-panel px-4', error && 'ring-2 ring-[#b4323c]')}>
+      <input type="date" value={value} onChange={(e) => onChange(e.target.value)} className="min-w-0 flex-1 bg-transparent text-[14px] font-semibold text-ink outline-none" />
+    </span>
+  )
+}
+const Err = ({ children }) => (children ? <span className="text-[12px] font-semibold text-[#b4323c]">{children}</span> : null)
+
+function Form({ c }) {
+  const navigate = useNavigate()
+  const { toast } = useToast()
+  const { reference } = useAuth()
+  const genders = reference?.genders ?? []
+  const states = reference?.states ?? []
+  const prefs = reference?.preferredContacts ?? Object.keys(PREF)
+  const [f, setF] = useState(() => ({
+    name: c?.name ?? '', dob: toInput(c?.dob), gender: c?.gender ?? '', mobile: c ? fmtMobile(c.mobile) : '', altMobile: c?.altMobile ? fmtMobile(c.altMobile) : '',
+    email: c?.email ?? '', preferredContact: c?.preferredContact ?? '', occupation: c?.occupation ?? '', anniversary: toInput(c?.anniversary),
+    addressLine1: c?.address?.line1 ?? '', addressLine2: c?.address?.line2 ?? '', city: c?.address?.city ?? c?.city ?? '', state: c?.address?.state ?? '', pin: c?.address?.pin ?? '',
+  }))
+  const set = (k) => (v) => setF((s) => ({ ...s, [k]: v }))
+  const [warnings, setWarnings] = useState(null)
+
+  const save = useMutation(async ({ confirm = [] }, o) => {
+    const body = {
+      name: f.name.trim(), mobile: cleanMobile(f.mobile), altMobile: cleanMobile(f.altMobile) || null, email: f.email.trim() || null,
+      dob: toApi(f.dob), gender: f.gender || null, preferredContact: f.preferredContact || null, occupation: f.occupation.trim() || null,
+      anniversary: toApi(f.anniversary), addressLine1: f.addressLine1.trim() || null, addressLine2: f.addressLine2.trim() || null,
+      city: f.city.trim() || null, state: f.state || null, pin: f.pin.trim() || null, confirm: confirm.length ? confirm : undefined,
+    }
+    return c ? api.customers.update(c.id, { version: c.version, ...body }) : api.customers.create(body, o)
+  }, {
+    invalidates: ['customers', 'customer', 'customers:stats', 'dashboard'],
+    onSuccess: (r) => { toast(r.meta?.message || 'Saved.'); setWarnings(null); navigate(`/customers/${r.data.id}`) },
+    onError: (e) => { if (e instanceof ApiError && e.code === 'CONFIRMATION_REQUIRED') setWarnings(e.details?.warnings ?? [{ message: e.message, messageId: e.messageId }]) },
+  })
+  const fe = save.fieldErrors
+  const general = save.error && !save.error.fields?.length && save.error.code !== 'CONFIRMATION_REQUIRED' ? save.error.message : null
+  const opt = (list, labelOf) => [NONE, ...list.map(labelOf)]
+  const pick = (list, labelOf, k) => (v) => set(k)(v === NONE ? '' : list.find((x) => labelOf(x) === v) ?? '')
+  const genderLabel = (g) => titleCase(g)
+  const prefLabel = (p) => PREF[p] ?? titleCase(p)
+
+  const action = (
+    <button type="button" disabled={save.busy} onClick={() => save.run({})} className="inline-flex h-[46px] items-center gap-2 rounded-[24px] bg-navy pr-5 pl-4 text-[14px] font-semibold text-white shadow-[0px_10px_20px_-6px_rgba(19,41,75,0.3)] hover:bg-navy-700 disabled:opacity-60">
+      <Icon name="check" size={18} />{save.busy ? 'Saving…' : c ? 'Save changes' : 'Save customer'}
+    </button>
+  )
+
+  return (
+    <LeadShell
+      active="customers"
+      breadcrumb={c ? `POLICY HOLDERS  /  ${c.name.toUpperCase()}  /  EDIT DETAILS` : 'POLICY HOLDERS  /  NEW CUSTOMER'}
+      title={c ? `Edit ${c.name}` : 'New customer'}
+      subtitle={c ? `${c.number} · changes are kept in the activity history` : 'Add someone directly, without a lead.'}
+      actions={action}
+      side={
+        <>
+          <aside className={cx('flex flex-col gap-3 rounded-[28px] bg-rail p-6', cardShadow)}>
+            <span className="flex size-12 items-center justify-center rounded-full bg-white/10"><Icon name="lock" size={22} className="text-pink-300" /></span>
+            <p className="text-[16px] font-bold text-white">PAN and Aadhaar come later</p>
+            <p className="text-[13px] leading-[20px] font-medium text-[#c9d6ea]">Record consent to store personal data first, on the Consent tab. Numbers are stored encrypted and always shown masked.</p>
+          </aside>
+          {!c && <AfterSave tone="mt-[60px] bg-linear-to-b from-[#d4f1e7] to-[#b9e8d7]" steps={AFTER} />}
+        </>
+      }
+    >
+      {(general || warnings) && (
+        <div className={cx('mb-[18px] flex items-center gap-2.5 rounded-[16px] px-3.5 py-3', warnings ? 'bg-[#fbf1e1] text-[#8a5a12]' : 'border border-[#f2c4c8] bg-[#fff7f7] text-[#b4323c]')}>
+          <Icon name="alert" size={18} />
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">{(warnings ?? [{ message: general }]).map((w, i) => <p key={i} className="text-[13px] font-bold">{w.message}</p>)}</div>
+          {warnings && <button type="button" onClick={() => save.run({ confirm: warnings.map((w) => w.messageId) })} className="flex h-9 shrink-0 items-center rounded-[18px] border border-line bg-white px-3.5 text-[13px] font-semibold text-ink hover:bg-tile">Save anyway</button>}
+        </div>
+      )}
+      <FormCard title="Identity" gap={16}>
+        <Row>
+          <FField label="Full name *"><TInput value={f.name} onChange={set('name')} /><Err>{fe.name}</Err></FField>
+          <FField label="Date of birth" hint="Some products need it at quotation."><DateBox value={f.dob} onChange={set('dob')} error={fe.dob} /><Err>{fe.dob}</Err></FField>
+          <FField label="Gender"><SInput value={f.gender ? genderLabel(f.gender) : NONE} onChange={pick(genders, genderLabel, 'gender')} options={opt(genders, genderLabel)} /><Err>{fe.gender}</Err></FField>
+        </Row>
+      </FormCard>
+
+      <FormCard title="Contact" gap={16} className="mt-[18px]">
+        <Row>
+          <FField label="Primary mobile *"><TInput prefix="+91" value={f.mobile} onChange={set('mobile')} /><Err>{fe.mobile}</Err></FField>
+          <FField label="Alternate mobile"><TInput prefix="+91" value={f.altMobile} onChange={set('altMobile')} placeholder="Optional" /><Err>{fe.altMobile}</Err></FField>
+          <FField label="Email"><TInput leading="mail" value={f.email} onChange={set('email')} /><Err>{fe.email}</Err></FField>
+        </Row>
+        <Row>
+          <FField label="Preferred contact"><SInput value={f.preferredContact ? prefLabel(f.preferredContact) : NONE} onChange={pick(prefs, prefLabel, 'preferredContact')} options={opt(prefs, prefLabel)} /></FField>
+          <FField label="Occupation"><TInput value={f.occupation} onChange={set('occupation')} /><Err>{fe.occupation}</Err></FField>
+          <FField label="Wedding anniversary"><DateBox value={f.anniversary} onChange={set('anniversary')} error={fe.anniversary} /><Err>{fe.anniversary}</Err></FField>
+        </Row>
+      </FormCard>
+
+      <FormCard title="Address" gap={16} className="mt-[18px]">
+        <Row>
+          <FField label="Address line 1"><TInput value={f.addressLine1} onChange={set('addressLine1')} /><Err>{fe.addressLine1}</Err></FField>
+          <FField label="Address line 2"><TInput value={f.addressLine2} onChange={set('addressLine2')} placeholder="Optional" /><Err>{fe.addressLine2}</Err></FField>
+        </Row>
+        <Row>
+          <FField label="City"><TInput value={f.city} onChange={set('city')} /><Err>{fe.city}</Err></FField>
+          <FField label="State"><SInput value={f.state || NONE} onChange={pick(states, (x) => x, 'state')} options={opt(states, (x) => x)} /><Err>{fe.state}</Err></FField>
+          <FField label="PIN code"><TInput value={f.pin} onChange={set('pin')} /><Err>{fe.pin}</Err></FField>
+        </Row>
+      </FormCard>
+    </LeadShell>
+  )
+}
