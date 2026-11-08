@@ -37,6 +37,7 @@ export function AuthProvider({ children }) {
   const refreshMe = useCallback(async () => {
     try {
       const { data } = await api.auth.me()
+      if (!data?.role) throw new Error('No signed-in user in /auth/me response')
       setUser(data)
       return data
     } catch {
