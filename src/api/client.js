@@ -128,6 +128,12 @@ export async function request(method, path, opts = {}) {
     throw new ApiError({}) // GEN-07: network
   }
 
+  // The API only ever answers JSON or files — never an HTML page. HTML means /v1 hit the static host
+  // (SPA fallback serving index.html) instead of the API: fail loudly rather than treat the page as data.
+  if ((res.headers.get('content-type') || '').includes('text/html')) {
+    throw new ApiError({ status: res.status, code: 'API_UNREACHABLE', message: `The API did not answer at ${API_BASE}. Check the API proxy / VITE_API_BASE setting.` })
+  }
+
   const json = await parse(res).catch(() => ({}))
   if (res.ok) return { data: json?.data ?? null, meta: json?.meta ?? {} }
 
