@@ -17,6 +17,11 @@ behaviour. `docs/SCREEN_GUIDE.md` covers the original Figma prototype build; whe
 A new connected page goes in `src/live/`, is added to `LIVE_ROUTES` with the roles that may open it, and uses
 `AppLayout` + `Header`. Never import mock data (`src/data/*`) into a live page.
 
+Every link a live page uses must have a live route. A fixed sub-path under a section with record pages
+(`/campaigns/guide`, `/quotations/new`) needs its **own** route listed before `/<section>/:id`; otherwise the word is
+read as a record ID and the page shows “Not found”. Prototype frames are not shipped, so a link that only works in
+`npm run dev` is broken in production.
+
 ## 2. Page header
 
 Use `Header` from `screens/catalogue/_parts.jsx`:

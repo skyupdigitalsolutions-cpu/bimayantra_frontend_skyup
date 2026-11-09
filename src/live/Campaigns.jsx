@@ -1,6 +1,6 @@
 // CA1 Campaigns overview · CA2 Campaign detail — connections, campaign KPIs, failed submissions, leads per day.
-import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Icon from '../components/Icon'
 import { cx } from '../components/ui'
@@ -36,7 +36,10 @@ export function LiveCampaigns() {
   const platforms = useQuery('campaigns:platforms', () => api.campaigns.platforms())
   const camps = useQuery('campaigns:list', () => api.campaigns.list())
   const failed = useQuery('campaigns:failed', () => api.campaigns.submissions({ status: 'FAILED' }))
-  const [dlg, setDlg] = useState(null)
+  // ?connect=META (from the Connection guide) opens that channel's Connect form once
+  const [sp, setSp] = useSearchParams()
+  const [dlg, setDlg] = useState(() => (CH[sp.get('connect')] ? { channel: sp.get('connect') } : null))
+  useEffect(() => { if (sp.get('connect')) { const n = new URLSearchParams(sp); n.delete('connect'); setSp(n, { replace: true }) } }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const { act, busy } = useAct()
   const rows = (camps.data || []).filter((r) => (channel === 'all' || r.channel === channel) && matchesQuery(q, r.name, r.channel, r.status, r.category))
   const all = camps.data || []

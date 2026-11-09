@@ -12,6 +12,7 @@ import { LivePolicies, LivePolicyDetail, LiveRenewals, LiveCommunications } from
 import { LiveProducts, LiveProductDetail, LiveQuotations, LiveQuotationDetail, LiveProposals, LiveProposalDetail } from './Deals'
 import { LiveProfile, LiveKyc, LiveInsurers, LiveBilling, LiveWallet, LiveAssistants, LiveReferrers, LiveSupportAccess, LiveExport, LiveActivityLog, LiveSecurity } from './Settings'
 import { LiveCampaigns, LiveCampaignDetail } from './Campaigns'
+import LiveCampaignGuide from './CampaignGuide'
 import LiveBestFit from './BestFit'
 import LiveQuotationWizard from './QuotationWizard'
 import LiveProposalWizard from './ProposalWizard'
@@ -88,6 +89,8 @@ export const LIVE_ROUTES = [
   { path: '/communications', element: <LiveCommunications />, roles: ADVISOR },
   { path: '/best-fit', element: <LiveBestFit />, roles: ADVISOR },
   { path: '/campaigns', element: <LiveCampaigns />, roles: ADVISOR },
+  // before /campaigns/:id: "guide" is a page, not a campaign id (it used to open the detail page and show Not found)
+  { path: '/campaigns/guide', element: <LiveCampaignGuide />, roles: ADVISOR },
   { path: '/campaigns/setup/:id', element: <LiveCampaignSetup />, roles: ['ADV'] },
   { path: '/campaigns/:id', element: <LiveCampaignDetail />, roles: ADVISOR },
   // Settings: advisor only (assistants have no settings access)
