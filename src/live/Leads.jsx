@@ -481,3 +481,65 @@ function ConvertInner({ lead }) {
     </AppLayout>
   )
 }
+
+/* ═════════════ LP1/LP2 · Lead side panel (Figma) ═════════════ */
+function LeadSidePanel({ lead, onClose }) {
+  const q = useQuery(['lead', lead.id], () => api.leads.get(lead.id), { enabled: !!lead.id })
+  const tl = useQuery(['lead', lead.id, 'timeline'], () => api.leads.timeline(lead.id), { enabled: !!lead.id })
+  const L = q.data ?? lead
+  const items = tl.data?.items ?? []
+  const agg = tl.data?.aggregates ?? {}
+  const sm = statusMeta[STATUS_TO_STAGE[L.status]] ?? statusMeta.new
+  return (
+    <div className="fixed inset-y-0 right-0 z-50 flex w-[480px] flex-col border-l border-line bg-white shadow-[-8px_0_24px_-10px_rgba(19,41,75,0.12)]">
+      <div className="flex h-[58px] items-center gap-3 border-b border-line px-5">
+        <button type="button" onClick={onClose} className="flex size-9 items-center justify-center rounded-full bg-panel hover:bg-tile"><Icon name="x" size={16} /></button>
+        <div className="flex-1"><p className="text-[15px] font-bold text-ink">{L.name}</p><p className="text-[12px] font-medium text-muted">{L.number} · {L.source}</p></div>
+        <StatusChip tone={sm.tone}>{sm.label}</StatusChip>
+      </div>
+      <div className="flex-1 overflow-y-auto p-5">
+        {/* Stats row */}
+        <div className="flex gap-2">
+          {[['Last activity', agg.lastActivity ? fmtDate(agg.lastActivity, { year: false }) : '—'],
+            ['Next follow-up', L.nextFollowUpAt ? fmtDate(L.nextFollowUpAt, { year: false }) : '—'],
+            ['Lead age', `${agg.ageDays ?? 0} day${(agg.ageDays ?? 0) === 1 ? '' : 's'}`]
+          ].map(([k, v]) => (
+            <div key={k} className="flex flex-1 flex-col items-center gap-1 rounded-[16px] bg-panel p-3">
+              <p className="text-[10px] font-bold text-muted">{k}</p>
+              <p className="text-[14px] font-bold text-ink">{v}</p>
+            </div>
+          ))}
+        </div>
+        {/* Action buttons */}
+        <div className="mt-4 flex gap-2">
+          <SmallButton variant="navy" icon="chat" onClick={() => window.open(`https://wa.me/91${(L.mobile || '').replace(/\D/g, '')}`)}>WhatsApp</SmallButton>
+          <SmallButton variant="outline" icon="edit">Log contact</SmallButton>
+          <SmallButton variant="outline" icon="refresh">Change status</SmallButton>
+          <SmallButton variant="outline" icon="user-plus">Convert</SmallButton>
+        </div>
+        {/* Details */}
+        <div className="mt-5">
+          <p className="text-[14px] font-bold text-ink">Details</p>
+          <div className="mt-2 flex flex-col gap-2">
+            {[['Priority', L.priority], ['Interest', (L.interests ?? []).join(', ')], ['Source', L.source], ['Campaign', L.campaign], ['Mobile', L.mobile], ['Email', L.email], ['Notes', L.notes]].filter(([, v]) => v).map(([k, v]) => (
+              <div key={k} className="flex justify-between text-[13px]"><span className="font-medium text-muted">{k}</span><span className="text-right font-semibold text-ink">{v}</span></div>
+            ))}
+          </div>
+        </div>
+        {/* Journey */}
+        <div className="mt-5">
+          <p className="text-[14px] font-bold text-ink">Journey</p>
+          <div className="mt-2 flex flex-col gap-3">
+            {items.slice(0, 10).map((it, i) => (
+              <div key={i} className="flex items-start gap-2.5 text-[13px]">
+                <span className="mt-0.5 flex size-[26px] shrink-0 items-center justify-center rounded-full bg-panel"><Icon name={it.type === 'CONTACT' ? 'phone' : it.type === 'STATUS' ? 'refresh' : 'clock'} size={12} className="text-ink" /></span>
+                <div><p className="font-semibold text-ink">{it.title}</p><p className="text-[11px] font-medium text-muted">{fmtDateTime(it.at)}</p></div>
+              </div>
+            ))}
+            {items.length === 0 && <p className="text-[13px] font-medium text-muted">No activity yet.</p>}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

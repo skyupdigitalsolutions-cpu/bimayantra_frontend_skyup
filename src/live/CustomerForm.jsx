@@ -49,8 +49,30 @@ function Form({ c }) {
     email: c?.email ?? '', preferredContact: c?.preferredContact ?? '', occupation: c?.occupation ?? '', anniversary: toInput(c?.anniversary),
     addressLine1: c?.address?.line1 ?? '', addressLine2: c?.address?.line2 ?? '', city: c?.address?.city ?? c?.city ?? '', state: c?.address?.state ?? '', pin: c?.address?.pin ?? '',
   }))
-  const set = (k) => (v) => setF((s) => ({ ...s, [k]: v }))
+  const [clientErr, setClientErr] = useState({})
+  const set = (k) => (v) => {
+    setF((s) => ({ ...s, [k]: v }))
+    setClientErr((e) => (e[k] ? { ...e, [k]: undefined } : e))
+  }
   const [warnings, setWarnings] = useState(null)
+
+  // Client-side checks before hitting the API: required name + mobile, 10-digit mobile(s), email format.
+  const validate = () => {
+    const e = {}
+    if (!f.name.trim()) e.name = "Enter the customer's full name."
+    const m = cleanMobile(f.mobile)
+    if (!m) e.mobile = 'Enter a mobile number.'
+    else if (m.length !== 10) e.mobile = 'Enter a valid 10-digit mobile number.'
+    if (f.altMobile.trim() && cleanMobile(f.altMobile).length !== 10) e.altMobile = 'Enter a valid 10-digit mobile number.'
+    if (f.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) e.email = 'Enter a valid email address.'
+    return e
+  }
+  const submit = (opts = {}) => {
+    const e = validate()
+    setClientErr(e)
+    if (Object.keys(e).length) { toast('Please correct the highlighted fields.', 'error'); return }
+    save.run(opts)
+  }
 
   const save = useMutation(async ({ confirm = [] }, o) => {
     const body = {
@@ -65,7 +87,7 @@ function Form({ c }) {
     onSuccess: (r) => { toast(r.meta?.message || 'Saved.'); setWarnings(null); navigate(`/customers/${r.data.id}`) },
     onError: (e) => { if (e instanceof ApiError && e.code === 'CONFIRMATION_REQUIRED') setWarnings(e.details?.warnings ?? [{ message: e.message, messageId: e.messageId }]) },
   })
-  const fe = save.fieldErrors
+  const fe = { ...save.fieldErrors, ...clientErr }
   const general = save.error && !save.error.fields?.length && save.error.code !== 'CONFIRMATION_REQUIRED' ? save.error.message : null
   const opt = (list, labelOf) => [NONE, ...list.map(labelOf)]
   const pick = (list, labelOf, k) => (v) => set(k)(v === NONE ? '' : list.find((x) => labelOf(x) === v) ?? '')
@@ -73,7 +95,7 @@ function Form({ c }) {
   const prefLabel = (p) => PREF[p] ?? titleCase(p)
 
   const action = (
-    <button type="button" disabled={save.busy} onClick={() => save.run({})} className="inline-flex h-[46px] items-center gap-2 rounded-[24px] bg-navy pr-5 pl-4 text-[14px] font-semibold text-white shadow-[0px_10px_20px_-6px_rgba(19,41,75,0.3)] hover:bg-navy-700 disabled:opacity-60">
+    <button type="button" disabled={save.busy} onClick={() => submit()} className="inline-flex h-[46px] items-center gap-2 rounded-[24px] bg-navy pr-5 pl-4 text-[14px] font-semibold text-white shadow-[0px_10px_20px_-6px_rgba(19,41,75,0.3)] hover:bg-navy-700 disabled:opacity-60">
       <Icon name="check" size={18} />{save.busy ? 'Saving…' : c ? 'Save changes' : 'Save customer'}
     </button>
   )
@@ -125,10 +147,7 @@ function Form({ c }) {
       </FormCard>
 
       <FormCard title="Address" gap={16} className="mt-[18px]">
-        <Row>
-          <FField label="Address line 1"><TInput value={f.addressLine1} onChange={set('addressLine1')} /><Err>{fe.addressLine1}</Err></FField>
-          <FField label="Address line 2"><TInput value={f.addressLine2} onChange={set('addressLine2')} placeholder="Optional" /><Err>{fe.addressLine2}</Err></FField>
-        </Row>
+        <FField label="Address"><TInput value={f.addressLine1} onChange={set('addressLine1')} /><Err>{fe.addressLine1}</Err></FField>
         <Row>
           <FField label="City"><TInput value={f.city} onChange={set('city')} /><Err>{fe.city}</Err></FField>
           <FField label="State"><SInput value={f.state || NONE} onChange={pick(states, (x) => x, 'state')} options={opt(states, (x) => x)} /><Err>{fe.state}</Err></FField>

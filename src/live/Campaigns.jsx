@@ -99,6 +99,8 @@ export function LiveCampaigns() {
       )}
       {dlg?.channel && <ConnectDialog channel={dlg.channel} onClose={() => setDlg(null)} />}
       {dlg?.rotate && <RotateDialog c={dlg.rotate} onClose={() => setDlg(null)} />}
+      {dlg === 'badges' && <BadgesLegend onClose={() => setDlg(null)} />}
+      {dlg === 'sync-log' && <SyncLogDialog campaign={dlg.data} onClose={() => setDlg(null)} />}
     </AppLayout>
   )
 }
@@ -197,3 +199,52 @@ export function LiveCampaignDetail() {
     </AppLayout>
   )
 }
+/* ═════════════ Campaign state banners (Figma CB0–CB10) ═════════════ */
+
+function BadgesLegend({ onClose }) {
+  return (
+    <ActionDialog title="How these badges work" confirm={null} onClose={onClose}>
+      <div className="flex flex-col gap-3">
+        {[['Active', 'green', 'Running and delivering leads.'],
+          ['In review', 'amber', 'Meta or Google is reviewing the ad. No leads until approved.'],
+          ['Paused', 'neutral', 'You paused it. Resume any time.'],
+          ['Not approved', 'rose', 'The platform rejected the ad. Fix and resubmit.'],
+          ['Ended', 'neutral', 'Budget spent or schedule ended. Create a new campaign.'],
+        ].map(([label, tone, desc]) => (
+          <div key={label} className="flex items-start gap-3">
+            <StatusChip tone={tone}>{label}</StatusChip>
+            <p className="flex-1 text-[13px] font-medium text-muted">{desc}</p>
+          </div>
+        ))}
+      </div>
+    </ActionDialog>
+  )
+}
+
+function SyncLogDialog({ campaign, onClose }) {
+  const log = useQuery(['campaign', campaign.id, 'sync-log'], () => api.campaigns.syncLog(campaign.id))
+  return (
+    <ActionDialog title="Sync log" body={`${campaign.name} · last synced ${log.data?.lastSyncAt ? fmtDateTime(log.data.lastSyncAt) : 'never'}`} confirm={null} onClose={onClose} width={600}>
+      <div className="flex flex-col gap-2">
+        {(log.data?.entries ?? []).length === 0 && <p className="text-[13px] font-medium text-muted">{log.loading ? 'Loading…' : 'No sync events yet.'}</p>}
+        {(log.data?.entries ?? []).map((e, i) => (
+          <div key={i} className="flex items-center justify-between rounded-[14px] bg-panel px-3 py-2 text-[13px]">
+            <span className="font-semibold text-ink">{e.event ?? e.type}</span>
+            <span className="font-medium text-muted">{fmtDateTime(e.at)}{e.leadsImported ? ` · ${e.leadsImported} leads` : ''}</span>
+          </div>
+        ))}
+      </div>
+    </ActionDialog>
+  )
+}
+
+function DisconnectDialog({ campaign, onClose }) {
+  const { act, busy, error } = useAct()
+  const save = () => act(() => api.campaigns.disconnect(campaign.id), { invalidates: ['campaigns'], onDone: onClose })
+  return (
+    <ActionDialog title={`Disconnect ${campaign.channel === 'META' ? 'Meta Ads' : campaign.channel === 'GOOGLE' ? 'Google Ads' : 'Website'}?`}
+      body="New leads stop arriving. Existing leads and their data stay."
+      confirm="Disconnect" tone="danger" busy={busy} error={error} onConfirm={save} onClose={onClose} />
+  )
+}
+

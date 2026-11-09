@@ -9,25 +9,35 @@ import { SH8 } from '../screens/states-records/_parts'
 import { matchesQuery, useHeaderSearch, NoMatches } from '../screens/tasks/_filter'
 import { api, useQuery, invalidate } from '../api'
 import { fmtWhen, fmtShortWhen, daysFromToday } from '../api/format'
-import { taskView, TASK_TYPE_LABEL } from './views'
+import { taskView } from './views'
 import TaskDrawer, { useTaskActions } from './TaskDrawer'
 import { useToast } from '../components/LiveToast'
 
 /* ───────── TSK · All tasks ───────── */
-const STATUS_TABS = [['OVERDUE', 'Overdue'], ['TODAY', 'Today'], ['UPCOMING', 'Upcoming'], ['DONE', 'Done'], ['CANCELLED', 'Cancelled']]
-const TYPE_TABS = [['all', 'All types'], ...Object.entries(TASK_TYPE_LABEL)]
+// "Open" is an advisor-facing roll-up of the three open server tabs (the API has no OPEN tab); the rest map 1:1.
+const STATUS_TABS = [['OPEN', 'Open'], ['TODAY', 'Today'], ['OVERDUE', 'Overdue'], ['UPCOMING', 'Upcoming'], ['DONE', 'Done'], ['CANCELLED', 'Cancelled']]
+const OPEN_TABS = ['OVERDUE', 'TODAY', 'UPCOMING']
+const TYPE_TABS = [['all', 'All types'], ['CALL', 'Call'], ['MEETING', 'Meeting'], ['COLLECT_DOCUMENTS', 'Documents'], ['RENEWAL', 'Renewal']]
 const PRIORITY = { High: 'rose', Medium: 'amber', Low: 'neutral' }
 const COLS = [['Task', 330], ['Related to', 210], ['Due', 200], ['Priority', 100], ['Status', 120], ['', 90]]
 
 export function LiveAllTasks() {
-  const [tab, setTab] = useState('TODAY')
+  const [tab, setTab] = useState('OPEN')
   const [type, setType] = useState('all')
   const [drawer, setDrawer] = useState(null)
   const [q, clearQ] = useHeaderSearch()
   const actions = useTaskActions()
-  const list = useQuery(['tasks', tab, type], () => api.tasks.list(tab, type === 'all' ? undefined : type))
-  const counts = list.data?.counts || {}
-  const rows = (list.data?.tasks || []).map(taskView).filter((t) => matchesQuery(q, t.title, t.who, t.when, t.priority))
+  const isOpen = tab === 'OPEN'
+  const typeArg = type === 'all' ? undefined : type
+  const single = useQuery(['tasks', tab, type], () => api.tasks.list(tab, typeArg), { enabled: !isOpen })
+  // "Open" = overdue + today + upcoming across three server calls, merged (counts are identical in every response).
+  const openQ = useQuery(['tasks', 'OPEN', type], () => Promise.all(OPEN_TABS.map((t) => api.tasks.list(t, typeArg)))
+    .then((rs) => ({ data: { tasks: rs.flatMap((r) => r.data?.tasks || []), counts: rs[0]?.data?.counts || {} } })), { enabled: isOpen })
+  const data = isOpen ? openQ.data : single.data
+  const loading = isOpen ? openQ.loading : single.loading
+  const counts = data?.counts || {}
+  const openCount = (counts.OVERDUE ?? 0) + (counts.TODAY ?? 0) + (counts.UPCOMING ?? 0)
+  const rows = (data?.tasks || []).map(taskView).filter((t) => matchesQuery(q, t.title, t.who, t.when, t.priority))
   const statusOf = (t) => (t.raw.status === 'DONE' ? 'done' : t.raw.status === 'CANCELLED' ? 'cancelled' : t.raw.overdue ? 'overdue' : 'open')
   const CHIP = {
     overdue: <StatusChip tone="rose" icon="alert">Overdue</StatusChip>, open: <StatusChip tone="sky" icon="clock">Open</StatusChip>,
@@ -38,7 +48,7 @@ export function LiveAllTasks() {
       <Header breadcrumb={'DASHBOARD  /  TASKS'} title="Tasks" subtitle="Everything you need to do, across leads and policy holders."
         actions={<HeadButton icon="plus" onClick={() => setDrawer({})}>Add task</HeadButton>} />
       <div className="mt-[13px] flex items-center gap-3">
-        <SegTabs items={STATUS_TABS.map(([key, label]) => ({ key, label, count: counts[key] ?? 0 }))} value={tab} onChange={setTab} />
+        <SegTabs items={STATUS_TABS.map(([key, label]) => ({ key, label, count: key === 'OPEN' ? openCount : (counts[key] ?? 0) }))} value={tab} onChange={setTab} />
         <SegTabs items={TYPE_TABS.map(([key, label]) => ({ key, label }))} value={type} onChange={setType} />
       </div>
       <div className={cx('mt-5 w-[1180px] overflow-hidden rounded-[28px] bg-white', SH8)}>
@@ -71,8 +81,8 @@ export function LiveAllTasks() {
             </div>
           )
         })}
-        {list.loading && !rows.length && <p className="border-t border-line px-6 py-5 text-[13px] font-medium text-muted">Loading tasks…</p>}
-        {!list.loading && rows.length === 0 && (
+        {loading && !rows.length && <p className="border-t border-line px-6 py-5 text-[13px] font-medium text-muted">Loading tasks…</p>}
+        {!loading && rows.length === 0 && (
           <NoMatches className="border-t border-line" text={q.trim() ? 'No matches' : 'Nothing here'} sub={q.trim() ? 'No tasks fit this search.' : 'No tasks in this tab.'} onClear={q.trim() ? clearQ : undefined} />
         )}
       </div>
@@ -82,7 +92,7 @@ export function LiveAllTasks() {
 }
 
 /* ───────── NTF · Notifications ───────── */
-const N_TABS = [['ALL', 'All'], ['UNREAD', 'Unread'], ['LEADS', 'Leads'], ['RENEWALS', 'Renewals'], ['PAYMENTS', 'Payments'], ['CATALOGUE', 'Catalogue'], ['KYC', 'KYC'], ['ACCOUNTS', 'Account']]
+const N_TABS = [['ALL', 'All'], ['UNREAD', 'Unread'], ['RENEWALS', 'Renewals'], ['PAYMENTS', 'Payments'], ['CATALOGUE', 'Catalogue']]
 const N_STYLE = {
   LEADS: ['user-plus', 'bg-[#d9eafd]'], RENEWALS: ['refresh', 'bg-[#fde8c9]'], PAYMENTS: ['card', 'bg-[#fde8c9]'], CATALOGUE: ['star', 'bg-[#e9e3fc]'],
   KYC: ['shield', 'bg-[#d4f1e7]'], ACCOUNTS: ['users', 'bg-[#eef1f5]'], CORRECTIONS: ['edit', 'bg-[#e9e3fc]'], TEMPLATES: ['chat', 'bg-[#d4f1e7]'], OTHER: ['bell', 'bg-[#eef1f5]'],
@@ -96,9 +106,13 @@ export function LiveNotifications() {
   const { toast, toastError } = useToast()
   const list = useQuery(['notifications', tab], () => api.notifications.list({ filter: tab }))
   const count = useQuery('notifications:count', () => api.notifications.count())
+  // The count endpoint carries only `unread`; the All badge is the real ALL list size (capped at the page limit → "+").
+  const allList = useQuery('notifications:all', () => api.notifications.list({ filter: 'ALL' }), { enabled: tab !== 'ALL' })
   const items = (list.data?.items || []).filter((n) => matchesQuery(q, n.title, n.subtitle, n.message))
   const unread = count.data?.unread ?? 0
-  const tabs = N_TABS.map(([key, label]) => ({ key, label, ...(key === 'UNREAD' ? { count: unread } : {}) }))
+  const allData = tab === 'ALL' ? list.data : allList.data
+  const total = allData ? `${allData.items.length}${allData.more ? '+' : ''}` : undefined
+  const tabs = N_TABS.map(([key, label]) => ({ key, label, ...(key === 'ALL' ? { count: total } : key === 'UNREAD' ? { count: unread } : {}) }))
   const readAll = () => api.notifications.readAll().then((r) => { toast(r.meta?.message || 'All marked read.'); invalidate('notifications') }).catch(toastError)
   const open = async (n) => {
     try { await api.notifications.open(n.id) } catch { /* opening still works */ }

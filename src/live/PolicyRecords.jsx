@@ -55,7 +55,7 @@ function PolicyDocument({ fileId, name, onChange, error, required }) {
   const [err, setErr] = useState(null)
   return (
     <Panel className="flex flex-col gap-3">
-      <PanelHead title="Policy document" subtitle={required ? 'Required · the insurer’s policy schedule (PDF or image)' : 'Optional · the policy schedule, if you have it'} />
+      <PanelHead title="Policy document" subtitle={required ? 'Required' : 'Optional'} />
       <label className={cx('flex h-[72px] cursor-pointer items-center gap-4 rounded-[20px] border px-4', fileId ? 'border-[#bfe5d4] bg-[#f3faf7]' : 'border-dashed border-line bg-panel', error && 'border-[#b4323c]')}>
         <span className="flex size-10 items-center justify-center rounded-full bg-white"><Icon name={fileId ? 'check' : 'folder'} size={18} className={fileId ? 'text-[#127650]' : 'text-muted'} /></span>
         <span className="flex min-w-0 flex-1 flex-col">
@@ -112,12 +112,12 @@ const fieldsBody = (f) => ({
 
 function CommissionCard({ value, onChange, error }) {
   return (
-    <section className="flex flex-col gap-3 rounded-[28px] bg-rail p-6 text-white">
-      <div className="flex items-center justify-between"><p className="text-[17px] font-bold">Expected commission</p><span className="flex items-center gap-1 rounded-[12px] bg-white/10 px-2.5 py-1 text-[11px] font-semibold"><Icon name="lock" size={12} />Only you</span></div>
-      <span className="flex h-[50px] items-center gap-2 rounded-[16px] bg-white/10 px-4 text-[16px] font-bold">₹
+    <section className="flex flex-col gap-3 rounded-[28px] bg-linear-to-b from-[#1a3460] to-[#0e1f3b] p-6 text-white">
+      <div className="flex items-center justify-between"><p className="text-[16px] font-bold">Expected commission</p><span className="flex items-center gap-1 rounded-[12px] bg-[rgba(255,255,255,0.12)] px-2.5 py-1 text-[11px] font-semibold"><Icon name="lock" size={12} />Only you</span></div>
+      <span className="flex h-[50px] items-center gap-2 rounded-[16px] bg-[rgba(255,255,255,0.08)] px-4 text-[16px] font-bold">₹
         <input type="number" value={value} onChange={(e) => onChange(e.target.value)} placeholder="Optional" className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-white/40" aria-label="Expected commission" />
       </span>
-      {error ? <p className="text-[12px] font-semibold text-pink-200">{error}</p> : <p className="text-[12px] font-medium text-[#c9d6ea]">For your own reference. Never shown to the customer.</p>}
+      {error ? <p className="text-[12px] font-semibold text-pink-200">{error}</p> : <p className="text-[12px] font-medium text-[#c9d6ea]">15% × premium before tax. For your reference.</p>}
     </section>
   )
 }
@@ -163,13 +163,12 @@ function IssueForm({ p }) {
     ['Insured', (p.insured ?? []).map((m) => m.name.split(' ')[0]).join(', ') || '—'],
     ['Nominee', (fr.nominees ?? []).map((n) => `${n.name} · ${n.share}%`).join(', ') || 'None'],
     ['Declared', declared.join('; ') || 'Nothing declared'],
-    ['Paid', fr.payment ? `${fmtMoney(fr.payment.amount, { decimals: 2 })} · ${fr.payment.mode} · ${fmtDate(fr.payment.date, { year: false })}` : '—'],
   ]
   return (
     <AppLayout active="policies">
-      <Header breadcrumb={`POLICIES  /  ${fr.proposal ?? 'PROPOSAL'}  /  RECORD`} title="Record issued policy"
-        titleExtra={<span className="flex items-center gap-1 rounded-[14px] bg-[#efeafd] px-2.5 py-1 text-[12px] font-semibold text-[#5b3fc4]"><Icon name="clock" size={13} />Awaiting issuance</span>}
-        subtitle={[p.customer?.name, p.insurer, p.productName, fr.product?.variantName].filter(Boolean).join(' · ')} />
+      <Header breadcrumb={`POLICIES  /  ${(p.number ?? fr.proposal ?? 'POLICY').toUpperCase()}  /  RECORD`} title="Record issued policy"
+        titleExtra={<span className="flex items-center gap-1 rounded-[14px] bg-[#f0ecfb] px-2.5 py-1 text-[12px] font-semibold text-[#5b3fb8]"><Icon name="clock" size={13} />Awaiting issuance</span>}
+        subtitle={[p.number, p.customer?.name, [p.insurer, p.productName].filter(Boolean).join(' '), fr.product?.variantName].filter(Boolean).join(' · ')} />
       <div className="mt-6 flex items-start gap-6">
         <div className="flex w-[756px] flex-col gap-5">
           <Panel className="flex flex-col gap-4">
@@ -182,9 +181,8 @@ function IssueForm({ p }) {
         <div className="flex w-[400px] flex-col gap-5">
           <CommissionCard value={f.expectedCommission} onChange={(v) => set({ expectedCommission: v })} error={fe.expectedCommission} />
           <Panel className="flex flex-col gap-3">
-            <PanelHead title="From the proposal" subtitle={[fr.quotation, fr.proposal].filter(Boolean).join(' · ')} />
-            {facts.map(([k, v]) => <div key={k} className="flex justify-between gap-4 text-[13px]"><span className="font-medium text-muted">{k}</span><span className="text-right font-semibold text-ink">{v}</span></div>)}
-            <p className="text-[12px] font-medium text-muted">The proposal’s nominees are recorded on the policy. Change them later with Edit nominees.</p>
+            <p className="text-[15px] font-bold text-ink">From the proposal</p>
+            {facts.map(([k, v]) => <div key={k} className="flex items-center justify-between gap-4"><span className="text-[12px] font-medium text-muted">{k}</span><span className="text-right text-[13px] font-bold text-ink">{v}</span></div>)}
           </Panel>
         </div>
       </div>

@@ -14,7 +14,7 @@ import { ActionDialog, Field } from './kit'
 
 const MODES = [
   ['SAME_POLICY', 'refresh', 'bg-[#fdecd2]', 'Renew the same policy', 'Same product, people and sum insured. Enter the premium from the renewal notice. Waiting periods already served continue.'],
-  ['NEW_QUOTATION', 'quote', 'bg-[#e9e3fc]', 'Create a new quotation', 'Change product, insurer, people or sum insured. Moving insurer can be a portability request.'],
+  ['NEW_QUOTATION', 'quote', 'bg-[#e9e3fc]', 'Create a new quotation', 'Change product, insurer, people or sum insured. Moving insurer is a portability request.'],
   ['COMPARISON', 'compare', 'bg-[#d4f1e7]', 'Compare options', 'Show 2 to 3 options side by side before the customer decides.'],
 ]
 

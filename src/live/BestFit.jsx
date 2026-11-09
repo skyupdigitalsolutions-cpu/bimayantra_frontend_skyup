@@ -110,7 +110,7 @@ export default function LiveBestFit() {
                     return (
                       <button key={p.key} type="button" disabled={!p.hasDob} onClick={() => setPeople(on ? people.filter((k) => k !== p.key) : [...(people || []), p.key])}
                         className={cx('flex h-[42px] items-center gap-2 rounded-[21px] border px-4 text-[14px] font-semibold', !p.hasDob ? 'border-line text-faint' : on ? 'border-blue bg-blue-50 text-blue' : 'border-line bg-white text-muted')}>
-                        {on && <Icon name="check" size={14} />}{p.name.split(' ')[0]}{p.hasDob ? '' : ' · no DOB'}
+                        {on && <Icon name="check" size={14} />}{p.name.split(' ')[0]}{p.hasDob ? (p.age != null ? ` · ${p.age}` : '') : ' · no DOB'}
                       </button>
                     )
                   })}

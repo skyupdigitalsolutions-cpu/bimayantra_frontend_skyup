@@ -1,5 +1,8 @@
 // Batch 12 · Documents library (frame 15) on the live API: GET /documents (B-03) — the newest version of every customer
-// and family document in the account. Vehicle RC and photos are not in this list (they live on each vehicle).
+// and family document in the account.
+// NOTE (live Figma 15 adds Policies + Vehicle categories): policy-document PDFs and vehicle RC/photos are NOT returned by
+// GET /documents today (they live on each policy / vehicle). The tabs and per-type styling are in place, so those cards
+// appear automatically once the endpoint includes them; until then those tabs show an empty state.
 // Click a card: unconfirmed Aadhaar / PAN / old policy → check the values (PD1); otherwise open the file.
 import { useState } from 'react'
 import AppLayout from '../components/AppLayout'
@@ -15,13 +18,43 @@ import { AddDocumentDialog, VerifyDialog, needsCheck } from './FamilyDocs'
 import { peopleOf } from './CustomerTabs'
 
 const CATEGORY = {
-  identity: { title: 'Identity', types: ['Aadhaar', 'PAN', 'Address proof', 'Photo'], bg: 'bg-[#fde4e8]', icon: 'lock' },
-  policies: { title: 'Policies', types: ['Old policy'], bg: 'bg-[#fdecd2]', icon: 'shield' },
-  medical: { title: 'Medical', types: ['Medical report'], bg: 'bg-[#d4f1e7]', icon: 'heart' },
-  other: { title: 'Other', types: null, bg: 'bg-[#eef1f6]', icon: 'folder' },
+  identity: { title: 'Identity', types: ['Aadhaar', 'PAN', 'Address proof', 'Photo'] },
+  policies: { title: 'Policies', types: ['Old policy', 'Policy', 'Policy document'] },
+  medical: { title: 'Medical', types: ['Medical report'] },
+  vehicle: { title: 'Vehicle', types: ['Vehicle RC', 'RC', 'Vehicle photo', 'PUC'] },
+  other: { title: 'Other', types: null },
 }
+const FIXED = ['identity', 'policies', 'medical', 'vehicle']
 const categoryOf = (type) => Object.entries(CATEGORY).find(([, c]) => c.types?.includes(type))?.[0] ?? 'other'
+// Thumbnail colour + icon per document type (Figma 15), falling back to the category default.
+const TYPE_STYLE = {
+  Aadhaar: ['bg-[#fde8ec]', 'lock'], PAN: ['bg-[#e9e3fc]', 'lock'], 'Address proof': ['bg-[#fde8ec]', 'lock'], Photo: ['bg-[#d9eafd]', 'eye'],
+  'Medical report': ['bg-[#d4f1e7]', 'heart'], 'Old policy': ['bg-[#eef1f5]', 'folder'], Policy: ['bg-[#fde8c9]', 'shield'], 'Policy document': ['bg-[#fde8c9]', 'shield'],
+  'Vehicle RC': ['bg-[#d9eafd]', 'car'], RC: ['bg-[#d9eafd]', 'car'], 'Vehicle photo': ['bg-[#d9eafd]', 'car'], PUC: ['bg-[#d9eafd]', 'car'],
+}
+const CAT_STYLE = { identity: ['bg-[#fde8ec]', 'lock'], policies: ['bg-[#fde8c9]', 'shield'], medical: ['bg-[#d4f1e7]', 'heart'], vehicle: ['bg-[#d9eafd]', 'car'], other: ['bg-[#eef1f5]', 'folder'] }
+const styleOf = (d) => TYPE_STYLE[d.type] ?? CAT_STYLE[categoryOf(d.type)] ?? CAT_STYLE.other
 const STATUS = { UNCONFIRMED: ['bg-[#fbf1e1] text-[#8a5a12]', 'alert', 'Unconfirmed'], CONFIRMED: ['bg-[#e7f4ee] text-[#127650]', 'check', 'Confirmed'] }
+
+/** Three-dot card menu: open the file / check the unconfirmed values. */
+function MoreMenu({ onOpen, onCheck }) {
+  const [open, setOpen] = useState(false)
+  if (!onOpen && !onCheck) return <Icon name="more" size={18} className="shrink-0 text-muted" />
+  return (
+    <div className="relative shrink-0" onClick={(e) => { e.preventDefault(); e.stopPropagation() }}>
+      <button type="button" aria-label="More" onClick={() => setOpen((o) => !o)} className="flex text-muted hover:text-ink"><Icon name="more" size={18} /></button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute top-6 right-0 z-20 flex w-[160px] flex-col rounded-[14px] border border-line bg-white p-1.5 shadow-[0px_12px_24px_-10px_rgba(19,41,75,0.25)]">
+            {onCheck && <button type="button" onClick={() => { setOpen(false); onCheck() }} className="rounded-[10px] px-3 py-2 text-left text-[13px] font-semibold text-ink hover:bg-panel">Check values</button>}
+            {onOpen && <button type="button" onClick={() => { setOpen(false); onOpen() }} className="rounded-[10px] px-3 py-2 text-left text-[13px] font-semibold text-ink hover:bg-panel">Open file</button>}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
 
 export default function LiveDocumentsLibrary() {
   const [tab, setTab] = useState('all')
@@ -33,8 +66,14 @@ export default function LiveDocumentsLibrary() {
   const all = list.data ?? []
   const counts = Object.fromEntries(Object.keys(CATEGORY).map((k) => [k, all.filter((d) => categoryOf(d.type) === k).length]))
   const rows = tab === 'all' ? all : all.filter((d) => categoryOf(d.type) === tab)
-  const tabs = [{ key: 'all', label: 'All', count: all.length }, ...Object.entries(CATEGORY).filter(([k]) => counts[k] || k === tab).map(([key, c]) => ({ key, label: c.title, count: counts[key] }))]
-  const open = (d) => (needsCheck(d) ? setDlg({ kind: 'verify', doc: d }) : d.file && window.open(api.files.url(d.file.id), '_blank', 'noopener'))
+  const tabs = [
+    { key: 'all', label: 'All', count: all.length },
+    ...FIXED.map((key) => ({ key, label: CATEGORY[key].title, count: counts[key] })),
+    ...(counts.other ? [{ key: 'other', label: 'Other', count: counts.other }] : []),
+  ]
+  const openFile = (d) => d.file && window.open(api.files.url(d.file.id), '_blank', 'noopener')
+  const check = (d) => setDlg({ kind: 'verify', doc: d })
+  const open = (d) => (needsCheck(d) ? check(d) : openFile(d))
   return (
     <AppLayout active="customers">
       <Header breadcrumb="POLICY HOLDERS  /  DOCUMENTS" title="Documents" subtitle="Every upload is kept as a version. Nothing is ever deleted."
@@ -43,29 +82,33 @@ export default function LiveDocumentsLibrary() {
       <ErrorNote error={list.error} />
       <div className="mt-7 grid grid-cols-4 gap-5">
         {rows.map((d) => {
-          const c = CATEGORY[categoryOf(d.type)]
-          const [tone, icon, txt] = STATUS[d.status] ?? ['bg-chip text-muted', null, 'Saved']
+          const [bg, icon] = styleOf(d)
+          const [tone, chipIcon, txt] = STATUS[d.status] ?? ['bg-[#eef1f5] text-[#44526a]', null, 'Saved']
+          const uploader = d.uploadedBy?.name ?? d.uploadedByName ?? d.uploader?.name ?? null
           return (
-            <button key={d.id} type="button" onClick={() => open(d)} className={cx('flex flex-col overflow-hidden rounded-[28px] bg-white text-left transition hover:-translate-y-0.5', SH8)}>
-              <div className={cx('flex h-[130px] items-end justify-center', c.bg)}>
-                <div className="mb-[-14px] flex h-[84px] w-[112px] rotate-[3deg] flex-col gap-2 rounded-[14px] bg-white p-4 shadow-[0px_10px_24px_-12px_rgba(19,41,75,0.35)]">
-                  <Icon name={c.icon} size={16} className="text-ink" />
-                  <span className="h-1.5 w-full rounded bg-line" /><span className="h-1.5 w-3/4 rounded bg-line" />
+            <div key={d.id} role="button" tabIndex={0} onClick={() => open(d)} onKeyDown={(e) => e.key === 'Enter' && open(d)} className={cx('flex cursor-pointer flex-col overflow-hidden rounded-[28px] bg-white text-left transition hover:-translate-y-0.5', SH8)}>
+              <div className={cx('flex h-[130px] items-center justify-center', bg)}>
+                <div className="flex w-[110px] rotate-[4deg] flex-col gap-1.5 rounded-[12px] bg-white px-4 py-3.5 shadow-[0px_8px_8px_rgba(19,41,75,0.12)]">
+                  <Icon name={icon} size={18} className="text-ink" />
+                  <span className="h-[5px] w-[70px] rounded-[3px] bg-[#e3e8f0]" /><span className="h-[5px] w-[54px] rounded-[3px] bg-[#e3e8f0]" /><span className="h-[5px] w-[62px] rounded-[3px] bg-[#e3e8f0]" />
                 </div>
               </div>
-              <div className="flex flex-col gap-1 px-[18px] pt-6 pb-[18px]">
-                <p className="truncate text-[15px] font-bold text-ink">{d.type === 'Other' ? d.name : label(d.type)}</p>
-                <p className="truncate text-[13px] font-medium text-ink-2">{d.personName}{d.customer && d.personName !== d.customer.name ? ` · ${d.customer.name}` : ''}</p>
-                <p className="text-[12px] font-medium text-muted">v{d.version} · {fmtDate(d.uploadedAt, { year: false })}{d.versions > 1 ? ` · ${d.versions} versions` : ''}</p>
-                <span className={cx('mt-1.5 flex w-fit items-center gap-1 rounded-[12px] px-2.5 py-1 text-[12px] font-semibold', tone)}>{icon && <Icon name={icon} size={12} />}{needsCheck(d) ? 'Check values' : txt}</span>
+              <div className="flex flex-col gap-2 px-[18px] pt-4 pb-[18px]">
+                <div className="flex items-center gap-2">
+                  <p className="min-w-0 flex-1 truncate text-[14px] font-bold text-ink">{d.type === 'Other' ? d.name : (d.name || label(d.type))}</p>
+                  <MoreMenu onOpen={d.file ? () => openFile(d) : undefined} onCheck={needsCheck(d) ? () => check(d) : undefined} />
+                </div>
+                <p className="truncate text-[12px] font-semibold text-[#44526a]">{d.personName}{d.customer && d.personName !== d.customer.name ? ` · ${d.customer.name}` : ''}</p>
+                <p className="text-[11px] font-medium text-muted">v{d.version} · {fmtDate(d.uploadedAt, { year: false })}{uploader ? ` · ${uploader}` : ''}</p>
+                <span className={cx('mt-1.5 flex w-fit items-center gap-1 rounded-[14px] px-2.5 py-1 text-[12px] font-semibold', tone)}>{chipIcon && <Icon name={chipIcon} size={12} />}{txt}</span>
               </div>
-            </button>
+            </div>
           )
         })}
       </div>
       {!rows.length && (
         <NoMatches className={cx('rounded-[24px] bg-white', SH8)} text={list.loading ? 'Loading…' : q.trim() ? 'No matches' : 'No documents yet'}
-          sub={q.trim() ? `No documents match “${q.trim()}”.` : 'Add a document for a policy holder or a family member.'} onClear={q.trim() ? clearQ : undefined} />
+          sub={q.trim() ? `No documents match “${q.trim()}”.` : tab === 'all' ? 'Add a document for a policy holder or a family member.' : `No ${CATEGORY[tab]?.title.toLowerCase() ?? ''} documents yet.`} onClear={q.trim() ? clearQ : undefined} />
       )}
       {dlg?.kind === 'verify' && <VerifyDialog documentId={dlg.doc.id} customerId={dlg.doc.customerId} onClose={() => setDlg(null)} />}
       {dlg?.kind === 'pick' && <PickHolder onPick={(c) => setDlg({ kind: 'add', customer: c })} onClose={() => setDlg(null)} />}

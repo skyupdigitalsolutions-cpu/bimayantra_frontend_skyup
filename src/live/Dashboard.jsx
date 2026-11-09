@@ -46,7 +46,7 @@ export default function LiveDashboard() {
     const overdueFollow = follow.data?.overdue ?? 0
     const greeting = {
       title: `${greetingWord()}, ${first}`,
-      sub: `${fmtLongToday()} · ${tc.TODAY ?? 0} tasks today · ${overdueFollow} overdue follow-up${overdueFollow === 1 ? '' : 's'}`,
+      sub: `${fmtLongToday()} · ${tc.TODAY ?? 0} task${(tc.TODAY ?? 0) === 1 ? '' : 's'} today · ${overdueFollow} overdue follow-up${overdueFollow === 1 ? '' : 's'}`,
       subTablet: fmtLongToday(),
       subMobile: `${fmtLongToday().replace(/^(\w{3})\w*,/, '$1,')} · ${overdueFollow} overdue follow-up${overdueFollow === 1 ? '' : 's'}`,
     }
@@ -54,7 +54,7 @@ export default function LiveDashboard() {
     const by = counts.data?.byStatus || {}
     const leadStatuses = [
       { key: 'total', label: 'Total', value: counts.data?.total ?? 0, icon: 'grid', caption: 'All statuses', dark: true, to: leadsList() },
-      ...STATUS_TILES.map(([code, key, label, icon, bg]) => ({ key, label, value: by[code] ?? 0, icon, bg, hideMobile: code === 'LOST', ...(code === 'CONVERTED' ? { caption: 'All time' } : {}) })),
+      ...STATUS_TILES.map(([code, key, label, icon, bg]) => ({ key, label, value: by[code] ?? 0, icon, bg, hideMobile: code === 'LOST', ...(code === 'CONVERTED' ? { caption: 'This month' } : {}) })),
     ]
     const followAlerts = [
       { key: 'today', title: 'Follow-ups due today', titleTablet: 'Follow-ups due today', titleMobile: 'Follow-ups due today', sub: follow.data?.firstToday ? `${follow.data.firstToday.name} · ${fmtTime(follow.data.firstToday.at)}${(follow.data.dueToday ?? 0) > 1 ? ` · +${follow.data.dueToday - 1} more` : ''}` : 'Nothing due today', count: follow.data?.dueToday ?? 0, icon: 'calendar', fg: 'text-[#8a5a12]', bg: 'bg-[#fff9ef]', border: 'border-[#f1d9a8]', to: leadsList('followUp=today') },
@@ -82,7 +82,7 @@ export default function LiveDashboard() {
     const types = catalogue.data?.types || []
     const catalogueTypes = types.slice(0, 5).map((t) => {
       const [icon, bg] = TYPE_STYLE[t.name.toLowerCase().split(' ')[0]] || ['box', 'bg-[#eef1f5]']
-      return { label: t.name, sub: `${t.products} product${t.products === 1 ? '' : 's'}`, icon, bg }
+      return { label: t.name, sub: t.products ? `${t.products} product${t.products === 1 ? '' : 's'}` : 'Coming soon', icon, bg }
     })
     const fresh = types.reduce((a, t) => a + (t.newLast30Days || 0), 0)
 
@@ -103,7 +103,7 @@ export default function LiveDashboard() {
       ...activityViews(activity.data?.events),
       leadSources, leadSourcesTablet, leadSourcesMobile: leadSourcesTablet.slice(0, 4), leadSourcesTotal: sources.data?.total ?? 0, pipeRows,
       renewals: renewalRows,
-      catalogueTypes, catalogueVerified: { text: `${catalogue.data?.total ?? 0} products you can quote · ${fresh} new in 30 days`, fresh },
+      catalogueTypes, catalogueVerified: { text: [`${catalogue.data?.total ?? 0} products`, catalogue.data?.insurers != null && `${catalogue.data.insurers} insurers`, `${fresh} new`].filter(Boolean).join(' · '), fresh },
       TAB_API,
     }
   }, [user, counts.data, follow.data, sources.data, activity.data, catalogue.data, pipes.data, renewals.data, tToday, tUp, tOver, tDone, actions])

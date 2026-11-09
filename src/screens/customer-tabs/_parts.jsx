@@ -8,6 +8,8 @@ import { SChip, PillButton, Dot } from '../sales/_parts'
 import { PANEL_SCRIM, DRAWER_BOX, DIALOG_MAX, useFitTop, useLockScroll } from '../sales/_overlay'
 import { profile as P, profileTabs, members, newMember } from '../../data/customer-tabs'
 import { useHeaderSearch, matches, NoMatches } from './_search'
+import { api, useQuery } from '../../api'
+import { daysFromToday } from '../../api/format'
 
 export { SChip, PillButton, Dot }
 
@@ -39,6 +41,17 @@ function HeaderActions({ live }) {
 
 function ProfileHero({ live }) {
   const P2 = live ?? P
+  // The shared tab shell doesn't load renewals, so the hero's 3rd tile reads them here (live only).
+  const rid = live?.raw?.id
+  const renewals = useQuery(['renewals', rid], () => api.renewals.list({ customerId: rid }), { enabled: !!rid })
+  const renewalMini = () => {
+    const days = (renewals.data || [])
+      .map((r) => (r.daysLeft != null ? r.daysLeft : daysFromToday(r.dueDate)))
+      .filter((v) => v != null)
+    return ['Renewal in', days.length ? `${Math.min(...days)} days` : '—']
+  }
+  // Keep tiles 1–2 from the view model; the 3rd tile is always "Renewal in / {N} days" per Figma.
+  const minis = live ? [P2.minis[0], P2.minis[1], renewalMini()] : P2.minis
   return (
     <div className="mt-[13px] flex h-[120px] items-center gap-[22px] rounded-[32px] bg-linear-to-r from-[#fbd3dc] to-[#f6b3c3] px-[30px] py-[22px] shadow-[0px_18px_36px_-12px_rgba(232,137,156,0.3)]">
       <span className="flex size-[76px] shrink-0 items-center justify-center rounded-full border-4 border-white bg-white text-[24px] font-bold text-navy">
@@ -48,7 +61,7 @@ function ProfileHero({ live }) {
         <p className="text-[22px] font-bold tracking-[-0.2px] text-ink">{P2.name}</p>
         <p className="text-[13px] font-medium text-rose-ink">{P2.tagline}</p>
       </div>
-      {P2.minis.map(([k, v]) => (
+      {minis.map(([k, v]) => (
         <div key={k} className="flex shrink-0 flex-col gap-0.5 rounded-[18px] bg-white/80 px-[18px] py-3">
           <p className="text-[12px] font-semibold whitespace-nowrap text-rose-ink">{k}</p>
           <p className="text-[18px] font-bold whitespace-nowrap text-ink">{v}</p>
