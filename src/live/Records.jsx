@@ -4,13 +4,13 @@ import { Link, useNavigate } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Icon from '../components/Icon'
 import { cx } from '../components/ui'
-import { Header, HeadButton, SegTabs, StatusChip, RingAvatar, Tick } from '../screens/catalogue/_parts'
+import { Header, HeadButton, SegTabs, StatusChip, RingAvatar } from '../screens/catalogue/_parts'
 import { SH8 } from '../screens/states-records/_parts'
 import { matchesQuery, useHeaderSearch, NoMatches } from '../screens/tasks/_filter'
 import { api, useQuery, invalidate } from '../api'
 import { fmtWhen, fmtShortWhen, daysFromToday } from '../api/format'
 import { taskView } from './views'
-import TaskDrawer, { useTaskActions } from './TaskDrawer'
+import TaskDrawer, { useTaskActions, TaskDetailsDialog, MarkDoneButton } from './TaskDrawer'
 import { useToast } from '../components/LiveToast'
 
 /* ───────── TSK · All tasks ───────── */
@@ -19,14 +19,17 @@ const STATUS_TABS = [['OPEN', 'Open'], ['TODAY', 'Today'], ['OVERDUE', 'Overdue'
 const OPEN_TABS = ['OVERDUE', 'TODAY', 'UPCOMING']
 const TYPE_TABS = [['all', 'All types'], ['CALL', 'Call'], ['MEETING', 'Meeting'], ['COLLECT_DOCUMENTS', 'Documents'], ['RENEWAL', 'Renewal']]
 const PRIORITY = { High: 'rose', Medium: 'amber', Low: 'neutral' }
-const COLS = [['Task', 330], ['Related to', 210], ['Due', 200], ['Priority', 100], ['Status', 120], ['', 90]]
+const COLS = [['Task', 230], ['Related to', 170], ['Due', 160], ['Priority', 90], ['Status', 100], ['', 214]]
 
 export function LiveAllTasks() {
   const [tab, setTab] = useState('OPEN')
   const [type, setType] = useState('all')
   const [drawer, setDrawer] = useState(null)
+  const [view, setView] = useState(null) // task shown in "View more"
+  const [busyId, setBusyId] = useState(null)
   const [q, clearQ] = useHeaderSearch()
   const actions = useTaskActions()
+  const toggle = async (t) => { setBusyId(t.id); await actions.toggle(t); setBusyId(null) }
   const isOpen = tab === 'OPEN'
   const typeArg = type === 'all' ? undefined : type
   const single = useQuery(['tasks', tab, type], () => api.tasks.list(tab, typeArg), { enabled: !isOpen })
@@ -59,24 +62,28 @@ export function LiveAllTasks() {
           const st = statusOf(t)
           return (
             <div key={t.id} className="flex h-[53px] items-center gap-4 border-t border-line px-6">
-              <div className="flex w-[330px] shrink-0 items-center gap-2.5">
-                <Tick checked={st === 'done'} onChange={() => st !== 'cancelled' && actions.toggle(t)} />
-                <p className={cx('truncate text-[13px] font-bold', st === 'cancelled' ? 'text-muted' : 'text-ink')}>{t.title}</p>
+              <div className="flex w-[230px] shrink-0 items-center gap-2.5">
+                <span className={cx('flex size-7 shrink-0 items-center justify-center rounded-full text-ink', t.iconBg)}><Icon name={t.icon} size={13} /></span>
+                <button type="button" onClick={() => setView(t)} className={cx('truncate text-left text-[13px] font-bold hover:underline', st === 'cancelled' || st === 'done' ? 'text-muted line-through' : 'text-ink')}>{t.title}</button>
               </div>
-              <Link to={t.to} className="flex w-[210px] shrink-0 items-center gap-2">
-                <RingAvatar initials={t.initials} bg={t.avBg} size={26} text={8} />
-                <p className="truncate text-[12px] font-semibold text-blue">{t.who}{t.whoKind === 'Lead' ? ' · Lead' : ''}</p>
-              </Link>
-              <p className={cx('w-[200px] shrink-0 text-[12px] font-semibold whitespace-nowrap', st === 'overdue' ? 'text-[#b4323c]' : 'text-ink-2')}>{t.when}</p>
-              <div className="w-[100px] shrink-0"><StatusChip tone={PRIORITY[t.priority]}>{t.priority}</StatusChip></div>
-              <div className="w-[120px] shrink-0">{CHIP[st]}</div>
-              <div className="flex w-[90px] shrink-0 gap-1.5">
+              {t.whoKind === 'No record'
+                ? <p className="w-[170px] shrink-0 truncate text-[12px] font-medium text-muted">Not linked</p>
+                : <Link to={t.to} className="flex w-[170px] shrink-0 items-center gap-2">
+                  <RingAvatar initials={t.initials} bg={t.avBg} size={26} text={8} />
+                  <p className="truncate text-[12px] font-semibold text-blue">{t.who}{t.whoKind === 'Lead' ? ' · Lead' : ''}</p>
+                </Link>}
+              <p className={cx('w-[160px] shrink-0 text-[12px] font-semibold whitespace-nowrap', st === 'overdue' ? 'text-[#b4323c]' : 'text-ink-2')}>{t.when}</p>
+              <div className="w-[90px] shrink-0"><StatusChip tone={PRIORITY[t.priority]}>{t.priority}</StatusChip></div>
+              <div className="w-[100px] shrink-0">{CHIP[st]}</div>
+              <div className="flex w-[214px] shrink-0 items-center justify-end gap-1.5">
                 {(st === 'open' || st === 'overdue') && (
                   <>
                     <button type="button" aria-label="Edit task" onClick={() => setDrawer({ task: t.raw })} className="flex size-7 items-center justify-center rounded-full bg-white text-ink shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)] hover:bg-tile"><Icon name="edit" size={11.8} /></button>
                     <button type="button" aria-label="Move to tomorrow" title="Move to tomorrow, 10:00 AM" onClick={() => actions.reschedule(t, 'tomorrow')} className="flex size-7 items-center justify-center rounded-full bg-white text-ink shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)] hover:bg-tile"><Icon name="calendar" size={11.8} /></button>
                   </>
                 )}
+                <button type="button" onClick={() => setView(t)} className="inline-flex h-7 shrink-0 items-center gap-1 rounded-full border border-line bg-white px-2.5 text-[12px] font-semibold text-ink hover:bg-tile"><Icon name="eye" size={12} />View</button>
+                {st !== 'cancelled' && <MarkDoneButton size="sm" done={st === 'done'} busy={busyId === t.id} onClick={() => toggle(t)} />}
               </div>
             </div>
           )
@@ -87,6 +94,7 @@ export function LiveAllTasks() {
         )}
       </div>
       {drawer && <TaskDrawer task={drawer.task} onClose={() => setDrawer(null)} />}
+      {view && <TaskDetailsDialog task={view} actions={actions} onEdit={(t) => setDrawer({ task: t.raw })} onClose={() => setView(null)} />}
     </AppLayout>
   )
 }

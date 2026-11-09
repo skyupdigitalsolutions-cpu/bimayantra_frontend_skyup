@@ -262,7 +262,7 @@ function ActionBtn({ icon, to, onClick, label }) {
 
 function ReschedulePopover({ task, onPick, onCustom }) {
   return (
-    <div className="absolute top-[17px] left-[406px] z-20 flex w-[300px] flex-col gap-1 rounded-[20px] bg-white p-3 shadow-[0px_20px_44px_-10px_rgba(19,41,75,0.3)]">
+    <div className="absolute top-[60px] right-3 z-20 flex w-[300px] flex-col gap-1 rounded-[20px] bg-white p-3 shadow-[0px_20px_44px_-10px_rgba(19,41,75,0.3)]">
       <p className="px-2 pt-1.5 pb-2 text-[12px] font-bold text-muted">Reschedule · {task.title}</p>
       {(onPick ? LIVE_RESCHEDULE : rescheduleOptions).map((o) => (
         <Link key={o.label} to="/" onClick={(e) => { if (onPick) { e.preventDefault(); onPick(o.preset) } }} className={cx('flex h-9 items-center gap-2.5 rounded-[12px] px-2.5 hover:bg-[#f3f7ff]', o.on && 'bg-[#f3f7ff]')}>
@@ -287,7 +287,37 @@ const LIVE_RESCHEDULE = [
   { label: 'Next Monday', when: '10:00 AM', preset: 'next_monday' },
 ]
 
-function TaskRow({ t, done, onToggle, popover, onReschedule, onEdit, onPick, onCustom }) {
+/** Green "Mark done" pill, or a quiet "Reopen" once the task is done. */
+function MarkDonePill({ done, onClick, small }) {
+  return (
+    <button type="button" onClick={onClick}
+      className={cx('inline-flex shrink-0 items-center gap-1.5 rounded-full font-semibold whitespace-nowrap transition', small ? 'h-7 px-2.5 text-[11px]' : 'h-[30px] px-3 text-[12px]',
+        done ? 'border border-line bg-white text-ink-2 hover:bg-tile' : 'bg-[#127650] text-white shadow-[0px_6px_14px_-6px_rgba(18,118,80,0.5)] hover:bg-[#0f6544]')}>
+      <Icon name={done ? 'refresh' : 'check'} size={small ? 12 : 13} />{done ? 'Reopen' : 'Mark done'}
+    </button>
+  )
+}
+function ViewMorePill({ onClick, small }) {
+  return (
+    <button type="button" onClick={onClick}
+      className={cx('inline-flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-white font-semibold whitespace-nowrap text-ink hover:bg-tile', small ? 'h-7 px-2.5 text-[11px]' : 'h-[30px] px-3 text-[12px]')}>
+      <Icon name="eye" size={small ? 12 : 13} />View more
+    </button>
+  )
+}
+/** Who the task is about, or a clear "not linked" line (no empty avatar / dash). */
+function TaskWho({ t }) {
+  if (t.whoKind === 'No record') return <span className="font-medium text-muted">Not linked to a record</span>
+  return (
+    <Link to={t.to} className="flex items-center gap-1.5 hover:underline">
+      <span className={cx('flex size-5 items-center justify-center rounded-full border-2 border-white text-[6px] font-bold text-navy', t.avBg)}>{t.initials}</span>
+      <span className="font-bold text-blue">{t.who}</span>
+      <span className="font-medium text-muted">· {t.whoKind}</span>
+    </Link>
+  )
+}
+
+function TaskRow({ t, done, onToggle, popover, onReschedule, onEdit, onPick, onCustom, onView }) {
   return (
     <div
       className={cx(
@@ -295,20 +325,17 @@ function TaskRow({ t, done, onToggle, popover, onReschedule, onEdit, onPick, onC
         t.fresh ? 'h-[79px] border-2 border-[#9cd8bd] bg-[#f5fbf8]' : cx('h-[77px] border border-line', done ? 'bg-[#f7fbf9]' : 'bg-white'),
       )}
     >
-      <Check checked={done} onChange={onToggle} />
       <span className={cx('flex size-9 shrink-0 items-center justify-center rounded-full text-ink', t.iconBg)}><Icon name={t.icon} size={16} /></span>
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <div className="flex items-center gap-2">
-          <p className={cx('text-[14px] font-bold whitespace-nowrap', done ? 'text-muted line-through' : 'text-ink')}>{t.title}</p>
+        <div className="flex min-w-0 items-center gap-2">
+          {onView
+            ? <button type="button" onClick={() => onView(t)} className={cx('min-w-0 truncate text-left text-[14px] font-bold hover:underline', done ? 'text-muted line-through' : 'text-ink')}>{t.title}</button>
+            : <p className={cx('min-w-0 truncate text-[14px] font-bold', done ? 'text-muted line-through' : 'text-ink')}>{t.title}</p>}
           <Chip className={PRIORITY[t.priority]}>{t.priority}</Chip>
           {done ? <Chip icon="clock" className="bg-[#e7f4ee] text-[#127650]">Done</Chip> : <Chip icon="clock" className="bg-blue-50 text-blue">Open</Chip>}
         </div>
         <div className="flex h-5 items-center gap-2 text-[12px] whitespace-nowrap">
-          <Link to={t.to} className="flex items-center gap-1.5 hover:underline">
-            <span className={cx('flex size-5 items-center justify-center rounded-full border-2 border-white text-[6px] font-bold text-navy', t.avBg)}>{t.initials}</span>
-            <span className="font-bold text-blue">{t.who}</span>
-            <span className="font-medium text-muted">· {t.whoKind}</span>
-          </Link>
+          <TaskWho t={t} />
           <span className="font-bold text-line">·</span>
           <span className="flex items-center gap-[5px]">
             <Icon name="calendar" size={13} className="text-muted" />
@@ -316,32 +343,34 @@ function TaskRow({ t, done, onToggle, popover, onReschedule, onEdit, onPick, onC
           </span>
         </div>
       </div>
-      <div className="flex gap-1.5">
+      <div className="flex shrink-0 items-center gap-1.5">
         {!done && (onEdit ? <ActionBtn icon="edit" onClick={() => onEdit(t)} label="Edit task" /> : <ActionBtn icon="edit" to="/tasks" label="Edit task" />)}
         {!done && <ActionBtn icon="calendar" onClick={onReschedule} label="Reschedule" />}
-        <ActionBtn icon="arrow" to={t.to} label="Open" />
+        {onView ? <ViewMorePill onClick={() => onView(t)} /> : <ActionBtn icon="arrow" to={t.to} label="Open" />}
+        <MarkDonePill done={done} onClick={onToggle} />
       </div>
       {popover && <ReschedulePopover task={t} onPick={onPick} onCustom={onCustom} />}
     </div>
   )
 }
 
-function TaskCardMobile({ t, done, onToggle }) {
+function TaskCardMobile({ t, done, onToggle, onView }) {
   return (
     <div className={cx('flex items-start gap-2.5 rounded-[16px] border border-line p-3', done ? 'bg-[#f7fbf9]' : 'bg-white')}>
-      <Check checked={done} onChange={onToggle} className="mt-px" />
+      <span className={cx('flex size-8 shrink-0 items-center justify-center rounded-full text-ink', t.iconBg)}><Icon name={t.icon} size={14} /></span>
       <div className="flex min-w-0 flex-1 flex-col gap-1 pt-px">
         <p className={cx('text-[13px] leading-[18px] font-bold', done ? 'text-muted line-through' : 'text-ink')}>{t.title}</p>
-        <Link to={t.to} className="text-[12px] font-semibold text-blue">{t.who}{t.whoKind === 'Lead' ? ' · Lead' : ''}</Link>
+        {t.whoKind === 'No record' ? <span className="text-[12px] font-medium text-muted">Not linked to a record</span> : <Link to={t.to} className="text-[12px] font-semibold text-blue">{t.who}{t.whoKind === 'Lead' ? ' · Lead' : ''}</Link>}
         <div className="flex items-center gap-1.5">
           <Icon name="calendar" size={12} className="text-muted" />
           <span className="text-[11px] font-semibold text-ink-2">{t.time}</span>
           <Chip className={PRIORITY[t.priority]}>{t.priority}</Chip>
         </div>
+        <div className="mt-1.5 flex gap-1.5">
+          <MarkDonePill small done={done} onClick={onToggle} />
+          {onView && <ViewMorePill small onClick={() => onView(t)} />}
+        </div>
       </div>
-      <button type="button" aria-label="More" className={cx('mt-px flex size-[30px] shrink-0 items-center justify-center rounded-full bg-white text-ink', SH_SOFT)}>
-        <Icon name="more" size={12.6} />
-      </button>
     </div>
   )
 }
@@ -488,11 +517,11 @@ function LiveTasksSection({ live }) {
         {list.map((t, i) => (
           <TaskRow key={t.id} t={t} done={t.done} onToggle={() => T.onToggle(t)} popover={pop === i}
             onReschedule={() => setPop(pop === i ? null : i)} onEdit={T.onEdit}
-            onPick={(preset) => { setPop(null); T.onReschedule(t, preset) }} onCustom={() => { setPop(null); T.onEdit(t) }} />
+            onPick={(preset) => { setPop(null); T.onReschedule(t, preset) }} onCustom={() => { setPop(null); T.onEdit(t) }} onView={T.onView} />
         ))}
       </div>
       <div className="flex flex-col gap-3 md:hidden">
-        {list.map((t) => <TaskCardMobile key={t.id} t={t} done={t.done} onToggle={() => T.onToggle(t)} />)}
+        {list.map((t) => <TaskCardMobile key={t.id} t={t} done={t.done} onToggle={() => T.onToggle(t)} onView={T.onView} />)}
       </div>
       {!T.loading && list.length === 0 && (
         <NoMatches className="rounded-[18px] border border-line px-4 py-4" text={q.trim() ? 'No matches' : 'Nothing here'}

@@ -6,7 +6,7 @@ import { api, useQuery } from '../api'
 import { fmtDate, fmtLongToday, fmtMoney, fmtTime, greetingWord, initials, avatarClass, daysFromToday } from '../api/format'
 import { useAuth } from '../auth/AuthProvider'
 import { taskView, activityViews } from './views'
-import TaskDrawer, { useTaskActions } from './TaskDrawer'
+import TaskDrawer, { useTaskActions, TaskDetailsDialog } from './TaskDrawer'
 
 const TAB_API = { today: 'TODAY', upcoming: 'UPCOMING', overdue: 'OVERDUE', completed: 'DONE' }
 const STATUS_TILES = [
@@ -26,6 +26,7 @@ export default function LiveDashboard() {
   const { user } = useAuth()
   const actions = useTaskActions()
   const [drawer, setDrawer] = useState(null) // { task } | {}
+  const [view, setView] = useState(null) // task shown in "View more"
 
   const counts = useQuery('dashboard:lead-status', () => api.dashboard.leadStatusCounts())
   const follow = useQuery('dashboard:follow-ups', () => api.dashboard.followUps())
@@ -93,6 +94,7 @@ export default function LiveDashboard() {
       counts: { today: tc.TODAY, upcoming: tc.UPCOMING, overdue: tc.OVERDUE, completed: tc.DONE },
       onAdd: () => setDrawer({}),
       onEdit: (t) => setDrawer({ task: t.raw }),
+      onView: (t) => setView(t),
       onToggle: actions.toggle,
       onReschedule: actions.reschedule,
       onTab: (k) => ({ today: tToday, upcoming: tUp, overdue: tOver, completed: tDone })[k]?.refetch(),
@@ -111,7 +113,10 @@ export default function LiveDashboard() {
   return (
     <DashboardScreen
       live={live}
-      liveDrawer={drawer && <TaskDrawer task={drawer.task} onClose={() => setDrawer(null)} />}
+      liveDrawer={<>
+        {drawer && <TaskDrawer task={drawer.task} onClose={() => setDrawer(null)} />}
+        {view && <TaskDetailsDialog task={view} actions={actions} onEdit={(t) => setDrawer({ task: t.raw })} onClose={() => setView(null)} />}
+      </>}
     />
   )
 }

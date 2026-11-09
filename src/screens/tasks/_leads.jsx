@@ -79,12 +79,12 @@ function SourceTag({ r, withIcon = true }) {
 
 const COLS = ['w-[250px]', 'w-[90px]', 'w-[120px]', 'w-[210px]', 'w-[180px]', 'w-[90px]', 'w-[30px]']
 
-function LeadRow({ r, filtered }) {
+function LeadRow({ r, filtered, onOpen }) {
   // In 02b the two Meta Ads rows carry the campaign under the chip; the Figma frame lets that cell hug its
   // content (102px), which shifts the remaining cells of those rows left. Reproduced as drawn.
   const hug = r.meta && !filtered
   return (
-    <Link to={r.to ?? '/leads/1'} className="flex h-[66px] items-center gap-4 px-6 hover:bg-panel-2">
+    <Link to={r.to ?? '/leads/1'} onClick={onOpen ? (e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; e.preventDefault(); onOpen(r) } : undefined} title={onOpen ? 'Click to update · Ctrl-click to open the lead page' : undefined} className="flex h-[66px] items-center gap-4 px-6 hover:bg-panel-2">
       <span className={cx('flex items-center gap-3', COLS[0])}>
         <span className={cx('flex size-[38px] items-center justify-center rounded-full border-2 border-white text-[12px] font-bold text-navy', r.avBg)}>{r.initials}</span>
         <span className="flex flex-col gap-0.5">
@@ -105,9 +105,9 @@ function LeadRow({ r, filtered }) {
   )
 }
 
-function LeadCardMobile({ r }) {
+function LeadCardMobile({ r, onOpen }) {
   return (
-    <Link to={r.to ?? '/leads/1'} className="flex flex-col gap-2 rounded-[20px] bg-white p-3.5">
+    <Link to={r.to ?? '/leads/1'} onClick={onOpen ? (e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; e.preventDefault(); onOpen(r) } : undefined} className="flex flex-col gap-2 rounded-[20px] bg-white p-3.5">
       <span className="flex items-center gap-2.5">
         <span className={cx('flex size-[34px] items-center justify-center rounded-full border-2 border-white text-[11px] font-bold text-navy', r.avBg)}>{r.initials}</span>
         <span className="min-w-0 flex-1 text-[14px] font-bold text-ink">{r.name}</span>
@@ -239,7 +239,7 @@ export function LeadsListScreen({ filtered = false, live }) {
           </div>
           {visible.map((r) => (
             <div key={r.id} className="border-t border-line">
-              <LeadRow r={r} filtered={filtered} />
+              <LeadRow r={r} filtered={filtered} onOpen={live?.onOpen} />
             </div>
           ))}
           {live?.loading && <p className="border-t border-line px-6 py-5 text-[13px] font-medium text-muted">Loading leads…</p>}
@@ -301,7 +301,7 @@ export function LeadsListScreen({ filtered = false, live }) {
           {menu && <SourceMenu mode="filter" selected={picked} onPick={toggle} onApply={apply} onClear={clearSources} className="absolute top-[41px] left-0 max-w-[calc(100vw-32px)] xl:hidden" />}
         </div>
         <div className="flex flex-col gap-3.5 md:grid md:grid-cols-2">
-          {mobileRows.map((r) => <LeadCardMobile key={r.id} r={r} />)}
+          {mobileRows.map((r) => <LeadCardMobile key={r.id} r={r} onOpen={live?.onOpen} />)}
           {mobileRows.length === 0 && <NoMatches className="rounded-[20px] bg-white px-4 md:col-span-2" onClear={clearAll} />}
         </div>
       </div>

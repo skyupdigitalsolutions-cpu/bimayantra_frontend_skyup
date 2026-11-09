@@ -1,15 +1,16 @@
 // Leads: 02 board, 02b list, F1b new lead / LE1 edit lead, F2 convert — all on the live API.
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Icon from '../components/Icon'
 import { PageHeader, cx } from '../components/ui'
 import { LeadCard, PillButton } from '../screens/sales/_parts'
+import { LeadQuickUpdate } from './LeadDetail'
 import { matchesQuery, useHeaderSearch, NoMatches } from '../screens/tasks/_filter'
 import { LeadsListScreen, SOURCE_KEY, SourceMenu, PageHeading, F, SelectBox, CARD, box, inp } from '../screens/tasks/_leads'
 import { Chip, PriorityTabs, SH_CARD, SH_NAVY } from '../screens/tasks/_parts'
 import { api, useQuery, useMutation, useDebounced, invalidate, ApiError } from '../api'
-import { avatarClass, cleanMobile, daysFromToday, fmtMobile, fmtShortWhen, initials, istDay, titleCase, LEAD_STATUS_LABEL, STAGE_TO_STATUS } from '../api/format'
+import { avatarClass, cleanMobile, daysFromToday, fmtMobile, fmtShortWhen, initials, istDay, titleCase, LEAD_STATUS_LABEL, STAGE_TO_STATUS, typeMobile } from '../api/format'
 import { leadCardView } from './views'
 import { useAuth } from '../auth/AuthProvider'
 import { useToast } from '../components/LiveToast'
@@ -51,13 +52,14 @@ function ViewToggle() {
 }
 
 export function LiveLeadsBoard() {
-  const navigate = useNavigate()
   const { toast, toastError } = useToast()
   const pipes = useQuery('pipelines', () => api.pipelines.list())
   const leads = useAllLeads({ status: 'NEW,CONTACTED,QUALIFIED,FOLLOW_UP' })
   const [pipe, setPipe] = useState(null)
   const [dragId, setDragId] = useState(null)
   const [overrides, setOverrides] = useState({}) // optimistic stage while the move saves
+  const [quick, setQuick] = useState(null) // { id, preset } · quick-update popup
+  const closeQuick = useCallback(() => setQuick(null), [])
   const [q, clearQ] = useHeaderSearch()
   const pipeId = pipe ?? pipes.data?.[0]?.id
   const items = useMemo(() => (leads.data || []).map(leadCardView).map((l) => (overrides[l.id] ? { ...l, stage: overrides[l.id] } : l)), [leads.data, overrides])
@@ -70,7 +72,7 @@ export function LiveLeadsBoard() {
     if (!l || l.stage === stage) return
     const to = STAGE_TO_STATUS[stage]
     if (!l.allowedMoves.includes(to)) return toast(`${LEAD_STATUS_LABEL[l.status]} → ${LEAD_STATUS_LABEL[to]} is not allowed.`, 'error')
-    if (to === 'FOLLOW_UP') return navigate(`/leads/${l.id}?action=status&to=FOLLOW_UP`) // needs a date
+    if (to === 'FOLLOW_UP') return setQuick({ id: l.id, preset: 'FOLLOW_UP' }) // needs a date: ask in the popup, stay on the board
     setOverrides((o) => ({ ...o, [l.id]: stage }))
     try {
       const r = await api.leads.changeStatus(l.id, { version: l.version, status: to })
@@ -86,7 +88,7 @@ export function LiveLeadsBoard() {
   if (pipes.error || leads.error) return <ErrorPanel active="leads" error={pipes.error || leads.error} />
   return (
     <AppLayout active="leads" panelClass="pb-7!">
-      <PageHeader title="Leads" subtitle="Drag a card to an allowed stage. Lost needs a reason."
+      <PageHeader title="Leads" subtitle="Click a card to update it here, or drag it to an allowed stage."
         actions={<><ViewToggle /><PillButton variant="pink" icon="plus" to="/leads/new">New lead</PillButton></>} />
       <div className="mt-[30px] flex gap-2.5">
         {tabs.map((p) => {
@@ -107,15 +109,16 @@ export function LiveLeadsBoard() {
         {leads.loading && !leads.data && <p className="mb-4 text-[13px] font-medium text-muted">Loading leads…</p>}
         <div className="flex gap-5 overflow-x-auto pb-2">
           {leadStages.map((s) => (
-            <Column key={s.key} stage={s} items={shown.filter((l) => l.stage === s.key)} dragId={dragId} setDragId={setDragId} onDrop={move} pipelineId={pipeId} />
+            <Column key={s.key} stage={s} items={shown.filter((l) => l.stage === s.key)} dragId={dragId} setDragId={setDragId} onDrop={move} pipelineId={pipeId} onOpen={(l) => setQuick({ id: l.id })} />
           ))}
         </div>
       </div>
+      {quick && <LeadQuickUpdate key={`${quick.id}${quick.preset ?? ''}`} leadId={quick.id} preset={quick.preset} onClose={closeQuick} />}
     </AppLayout>
   )
 }
 
-function Column({ stage, items, dragId, setDragId, onDrop, pipelineId }) {
+function Column({ stage, items, dragId, setDragId, onDrop, pipelineId, onOpen }) {
   const [over, setOver] = useState(false)
   return (
     <div onDragOver={(e) => { e.preventDefault(); setOver(true) }} onDragLeave={() => setOver(false)} onDrop={(e) => { e.preventDefault(); setOver(false); onDrop(stage.key) }}
@@ -128,7 +131,7 @@ function Column({ stage, items, dragId, setDragId, onDrop, pipelineId }) {
         <span className="rounded-[10px] bg-white px-2.5 py-[3px] text-[12px] font-bold" style={{ color: stage.ink }}>{items.length}</span>
       </div>
       {items.map((l) => (
-        <LeadCard key={l.id} lead={l} to={`/leads/${l.id}`} draggable dragging={dragId === l.id}
+        <LeadCard key={l.id} lead={l} to={`/leads/${l.id}`} draggable dragging={dragId === l.id} onOpen={onOpen}
           onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; setDragId(l.id) }} onDragEnd={() => setDragId(null)} />
       ))}
       <Link to={`/leads/new?pipelineId=${pipelineId ?? ''}`} className="flex h-[46px] w-full shrink-0 items-center justify-center gap-2 rounded-[20px] border border-dashed text-[13px] font-semibold hover:bg-white/40" style={{ borderColor: stage.dash, color: stage.ink }}>
@@ -142,6 +145,8 @@ function Column({ stage, items, dragId, setDragId, onDrop, pipelineId }) {
 const STYLE_OF = { meta: 'meta', google: 'google', website: 'website', social: 'social', 'ref-client': 'referral', 'ref-referrer': 'referral', walkin: 'walkin', campaign: 'campaign', manual: 'campaign', other: 'campaign' }
 
 export function LiveLeadsList() {
+  const [quick, setQuick] = useState(null) // lead id in the quick-update popup
+  const closeQuick = useCallback(() => setQuick(null), [])
   const pipes = useQuery('pipelines', () => api.pipelines.list())
   const leads = useAllLeads()
   const names = useMemo(() => Object.fromEntries((pipes.data || []).map((p) => [p.id, p.name])), [pipes.data])
@@ -157,7 +162,12 @@ export function LiveLeadsList() {
     }
   }), [leads.data, names])
   if (leads.error) return <ErrorPanel active="leads" error={leads.error} />
-  return <LeadsListScreen live={{ rows, pipelines: (pipes.data || []).map((p) => p.name), loading: leads.loading && !leads.data }} />
+  return (
+    <>
+      <LeadsListScreen live={{ rows, pipelines: (pipes.data || []).map((p) => p.name), loading: leads.loading && !leads.data, onOpen: (r) => setQuick(r.id) }} />
+      {quick && <LeadQuickUpdate key={quick} leadId={quick} onClose={closeQuick} />}
+    </>
+  )
 }
 
 /* ───────────────────────── F1b · New lead / LE1 · Edit lead ───────────────────────── */
@@ -166,14 +176,6 @@ const TIMES = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '1
 const t12 = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}` }
 const err = (m) => (m ? <span className="text-[12px] font-medium text-[#b4323c]">{m}</span> : null)
 const errBox = (m) => (m ? 'border-2 border-[#b4323c]' : '')
-/** Mobile input: digits only, max 10, shown as "98765 43210". */
-const typeMobile = (v) => {
-  let d = String(v).replace(/\D/g, '')
-  if (d.length > 10 && d.startsWith('91')) d = d.slice(2) // pasted "+91 98765 43210"
-  else if (d.length === 11 && d.startsWith('0')) d = d.slice(1) // pasted "098765 43210"
-  d = d.slice(0, 10)
-  return d.length > 5 ? `${d.slice(0, 5)} ${d.slice(5)}` : d
-}
 const digits = (v) => String(v || '').replace(/\D/g, '')
 const MOBILE_RE = /^[6-9]\d{9}$/
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
@@ -290,7 +292,7 @@ function LeadFormInner({ lead, presetPipeline }) {
   // Client errors first; a server error stays until that field is edited.
   const serverFe = save.fieldErrors
   const fe = new Proxy({}, { get: (_, k) => errs[k] || (!edited.has(k) ? serverFe[k] : undefined) })
-  const generalError = save.error && !save.error.fields?.length && save.error.code !== 'CONFIRMATION_REQUIRED' ? save.error.message : null
+  const generalError = save.error && save.error.code !== 'CONFIRMATION_REQUIRED' ? save.error.message : null // with field errors this is the API's summary
   const pipeName = pipes.data?.find((p) => p.id === f.pipelineId)?.name ?? '—'
   const sourceLabel = (reference?.allLeadSources ?? []).find((s) => s.code === code)?.label ?? code
 
@@ -464,7 +466,7 @@ function ConvertInner({ lead }) {
       <PageHeading crumb={`LEADS  /  ${lead.name.toUpperCase()}  /  CONVERT`} title={`Convert ${lead.name}`} extra={<Chip className="bg-blue-50 text-blue">{LEAD_STATUS_LABEL[lead.status]}</Chip>} sub={`${lead.number} · ${lead.pipelineName ?? ''} pipeline · ${LEAD_STATUS_LABEL[lead.status]}`} />
       <div className="mt-[21px] flex flex-col gap-5 xl:flex-row">
         <div className="flex min-w-0 flex-col gap-4 xl:w-[760px]">
-          {save.error && !save.error.fields?.length && (
+          {save.error && (
             <div className="flex items-center gap-2.5 rounded-[16px] border border-[#f2c4c8] bg-[#fff7f7] px-3.5 py-3 text-[13px] font-bold text-[#b4323c]">
               <Icon name="alert" size={18} /><span className="flex-1">{save.error.message}</span>
               {save.error.code === 'CONFIRMATION_REQUIRED' && <button type="button" onClick={() => save.run()} className="flex h-9 items-center rounded-[18px] border border-line bg-white px-3.5 text-[13px] font-semibold text-ink">Create anyway</button>}

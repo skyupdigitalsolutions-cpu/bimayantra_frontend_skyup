@@ -8,7 +8,8 @@ import { Header, HeadButton, SmallButton, SegTabs, DataTable, StatusChip, RowChe
 import { matchesQuery, useHeaderSearch } from '../screens/tasks/_filter'
 import { api, useQuery } from '../api'
 import { fmtDate, fmtDateTime, fmtMoney, fmtMobile } from '../api/format'
-import { ActionDialog, Field, ErrorNote, useAct, label } from './kit'
+import { ActionDialog, Field, ErrorNote, useAct, label, check } from './kit'
+import { useToast } from '../components/LiveToast'
 import { LoadingPanel, ErrorPanel } from './common'
 import { LeadAnswersDialog } from './CampaignSetup'
 
@@ -17,6 +18,12 @@ const CH = {
   GOOGLE: { name: 'Google Ads', sub: 'Lead form extensions', icon: 'search', bg: 'bg-[#fde8ec]', oauth: 'google' },
   LINKEDIN: { name: 'LinkedIn Ads', sub: 'Lead Gen Forms', icon: 'users', bg: 'bg-[#eef1f5]', oauth: 'linkedin' },
   WEBSITE: { name: 'Website form', sub: 'Your site or landing page', icon: 'grid', bg: 'bg-[#f0ecfb]', oauth: null },
+}
+function useCopy() {
+  const { toast } = useToast()
+  return async (text, what) => {
+    try { await navigator.clipboard.writeText(text); toast(`${what} copied.`) } catch { toast(`Couldn’t copy. Select the ${what.toLowerCase()} and copy it yourself.`, 'error') }
+  }
 }
 const STATUS_TONE = { CONNECTED: 'green', ACTIVE: 'green', RECONNECT_NEEDED: 'amber', DISCONNECTED: 'neutral', NOT_SYNCING: 'amber', TURNED_OFF: 'neutral', PAUSED: 'amber' }
 
@@ -36,11 +43,11 @@ export function LiveCampaigns() {
     { key: 'l', bg: 'bg-blue-100', icon: 'user-plus', label: 'Leads from campaigns', value: sum('leads'), note: `${sum('newToday')} new today` },
     { key: 'c', bg: 'bg-mint-100', icon: 'check', label: 'Converted', value: sum('converted'), note: sum('leads') ? `${Math.round((sum('converted') * 100) / sum('leads'))}% of leads` : '—' },
     { key: 's', bg: 'bg-amber-100', icon: 'card', label: 'Ad spend', value: spend ? fmtMoney(spend) : '—', note: spend && sum('leads') ? `${fmtMoney(spend / sum('leads'))} per lead` : 'From connected ad accounts' },
-    { key: 'f', bg: 'bg-pink-100', icon: 'alert', label: 'Not imported', value: (failed.data || []).length, note: 'Retry below' },
+    { key: 'f', bg: 'bg-pink-100', icon: 'alert', label: 'Not imported', value: (failed.data || []).length, note: (failed.data || []).length ? 'Retry below' : 'Nothing failed' },
   ]
   const connect = (ch) => {
     const c = (conns.data || []).find((x) => x.channel === ch)
-    if (CH[ch].oauth && ch !== 'GOOGLE') return act(() => api.campaigns.startOAuth(CH[ch].oauth, c ? { connectionId: c.id } : {}), { quiet: true, onDone: (r) => r?.data?.url && window.location.assign(r.data.url) })
+    if (CH[ch].oauth && ch !== 'GOOGLE') return act(() => api.campaigns.startOAuth(CH[ch].oauth, c ? { connectionId: c.id } : {}), { success: false, onDone: (r) => r?.data?.url && window.location.assign(r.data.url) })
     return setDlg({ channel: ch })
   }
   const columns = [
@@ -58,12 +65,13 @@ export function LiveCampaigns() {
     <AppLayout active="campaigns">
       <Header breadcrumb="CAMPAIGNS" title="Campaigns" subtitle="Leads from your ads and website arrive here on their own, in your pipeline." actions={<HeadButton variant="white" icon="list" to="/campaigns/guide">Connection guide</HeadButton>} />
       <div className="mt-[13px] flex gap-5">{stats.map((s) => <StatTile key={s.key} {...s} />)}</div>
+      {conns.error && <div className="mt-6"><ErrorNote error={{ message: `Couldn’t load your connections: ${conns.error.message}` }} /></div>}
       <div className="mt-6 flex gap-4">
         {Object.entries(CH).map(([ch, d]) => {
           const c = (conns.data || []).find((x) => x.channel === ch)
           return (
-            <div key={ch} className="flex w-[280px] flex-col gap-2.5 rounded-[26px] bg-white p-5 shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]">
-              <div className="flex items-center gap-3"><span className={cx('flex size-10 items-center justify-center rounded-full', d.bg)}><Icon name={d.icon} size={18} /></span><div className="flex flex-1 flex-col"><p className="text-[14px] font-bold text-ink">{d.name}</p><p className="text-[11px] font-medium text-muted">{d.sub}</p></div></div>
+            <div key={ch} className="flex min-w-0 flex-1 basis-0 flex-col gap-2.5 rounded-[26px] bg-white p-5 shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]">
+              <div className="flex items-center gap-3"><span className={cx('flex size-10 items-center justify-center rounded-full', d.bg)}><Icon name={d.icon} size={18} /></span><div className="flex min-w-0 flex-1 flex-col"><p className="text-[14px] font-bold text-ink">{d.name}</p><p className="truncate text-[11px] font-medium text-muted">{d.sub}</p></div></div>
               {c ? (
                 <>
                   <div className="flex items-center gap-2"><StatusChip tone={STATUS_TONE[c.status] ?? 'neutral'}>{label(c.status)}</StatusChip><span className="text-[11px] font-medium text-muted">{c.lastLeadAt ? `last lead ${fmtDate(c.lastLeadAt, { year: false })}` : 'no leads yet'}</span></div>
@@ -72,17 +80,22 @@ export function LiveCampaigns() {
                     {c.status === 'RECONNECT_NEEDED' && <SmallButton variant="navy" disabled={busy} onClick={() => connect(ch)}>Sign in again</SmallButton>}
                     {c.status === 'DISCONNECTED'
                       ? <SmallButton variant="outline" disabled={busy} onClick={() => act(() => api.campaigns.reconnect(c.id, {}), { invalidates: ['campaigns'] })}>Turn on</SmallButton>
-                      : <SmallButton variant="danger" disabled={busy} onClick={() => act(() => api.campaigns.disconnect(c.id, {}), { invalidates: ['campaigns'] })}>Turn off</SmallButton>}
+                      : <SmallButton variant="danger" disabled={busy} onClick={() => setDlg({ disconnect: c })}>Turn off</SmallButton>}
                     {c.keyLast4 && <SmallButton variant="ghost" icon="lock" onClick={() => setDlg({ rotate: c })}>Key …{c.keyLast4}</SmallButton>}
                     <SmallButton variant="outline" icon="list" to={`/campaigns/setup/${c.id}`}>Forms and fields</SmallButton>
                   </div>
                 </>
-              ) : <SmallButton variant="navy" icon="plus" className="self-start" disabled={busy} onClick={() => connect(ch)}>Connect</SmallButton>}
+              ) : conns.error ? <span className="text-[12px] font-medium text-muted">Status unavailable</span>
+                : conns.loading && !conns.data ? <span className="text-[12px] font-medium text-muted">Loading…</span>
+                  : <SmallButton variant="navy" icon="plus" className="self-start" disabled={busy} onClick={() => connect(ch)}>Connect</SmallButton>}
             </div>
           )
         })}
       </div>
-      <SegTabs className="mt-6" items={[{ key: 'all', label: 'All' }, ...Object.keys(CH).map((k) => ({ key: k, label: CH[k].name, count: all.filter((r) => r.channel === k).length }))]} value={channel} onChange={setChannel} />
+      <div className="mt-6 flex items-center gap-3">
+      <SegTabs items={[{ key: 'all', label: 'All' }, ...Object.keys(CH).map((k) => ({ key: k, label: CH[k].name, count: all.filter((r) => r.channel === k).length }))]} value={channel} onChange={setChannel} />
+        <button type="button" onClick={() => setDlg({ badges: true })} className="ml-auto flex items-center gap-1.5 text-[12px] font-semibold text-blue hover:underline"><Icon name="alert" size={13} />What do the statuses mean?</button>
+      </div>
       <DataTable className="mt-5 w-[1180px]" columns={columns} rows={rows} rowTo={(r) => `/campaigns/${r.id}`} empty={camps.loading ? 'Loading…' : q.trim() ? `No campaigns match “${q.trim()}”.` : 'No campaigns yet. Connect a channel above.'} onClear={q.trim() ? clearQ : undefined} />
       {(failed.data || []).length > 0 && (
         <Panel className="mt-6 flex w-[1180px] flex-col gap-3">
@@ -99,8 +112,8 @@ export function LiveCampaigns() {
       )}
       {dlg?.channel && <ConnectDialog channel={dlg.channel} onClose={() => setDlg(null)} />}
       {dlg?.rotate && <RotateDialog c={dlg.rotate} onClose={() => setDlg(null)} />}
-      {dlg === 'badges' && <BadgesLegend onClose={() => setDlg(null)} />}
-      {dlg === 'sync-log' && <SyncLogDialog campaign={dlg.data} onClose={() => setDlg(null)} />}
+      {dlg?.badges && <BadgesLegend onClose={() => setDlg(null)} />}
+      {dlg?.disconnect && <DisconnectDialog campaign={dlg.disconnect} onClose={() => setDlg(null)} />}
     </AppLayout>
   )
 }
@@ -110,31 +123,40 @@ function ConnectDialog({ channel, onClose }) {
   const [name, setName] = useState(channel === 'WEBSITE' ? 'Website' : 'Google Ads')
   const [pipelineId, setPipe] = useState('')
   const [out, setOut] = useState(null)
-  const { act, busy, error } = useAct()
-  const save = () => act(() => api.campaigns.connect({ channel, name, pipelineId: pipelineId || null }), { invalidates: ['campaigns'], quiet: true, onDone: (r) => setOut(r.data) })
+  const { act, busy, error, fieldErrors: fe } = useAct()
+  const copy = useCopy()
+  const save = () => act(() => {
+    check({ name: !name.trim() && 'Give this connection a name.' })
+    return api.campaigns.connect({ channel, name: name.trim(), pipelineId: pipelineId || null })
+  }, { invalidates: ['campaigns'], quiet: true, onDone: (r) => setOut(r.data) })
   if (out) {
     return (
       <ActionDialog title="Connected" body="Copy the key now. It is shown only once." icon="check" onClose={onClose}>
-        <Field label="Webhook URL" value={out.connection.webhookUrl ?? ''} onChange={() => {}} readOnly />
+        {out.connection?.webhookUrl && <Field label="Webhook URL" value={out.connection.webhookUrl} onChange={() => {}} readOnly />}
         <Field label="Key" value={out.key} onChange={() => {}} readOnly />
-        <SmallButton variant="outline" icon="list" className="self-start" onClick={() => navigator.clipboard?.writeText(out.key)}>Copy key</SmallButton>
+        <div className="flex gap-2">
+          {out.connection?.webhookUrl && <SmallButton variant="outline" icon="link" onClick={() => copy(out.connection.webhookUrl, 'Webhook URL')}>Copy URL</SmallButton>}
+          <SmallButton variant="navy" icon="lock" onClick={() => copy(out.key, 'Key')}>Copy key</SmallButton>
+        </div>
       </ActionDialog>
     )
   }
   return (
     <ActionDialog title={`Connect ${CH[channel].name}`} confirm="Connect" busy={busy} error={error} onConfirm={save} onClose={onClose}>
-      <Field label="Name *" value={name} onChange={setName} />
+      <Field label="Name *" value={name} onChange={setName} error={fe.name} />
       <Field label="Pipeline for new leads" type="select" value={pipelineId} onChange={setPipe} options={[{ value: '', label: 'Default pipeline' }, ...(pipes.data || []).map((p) => ({ value: p.id, label: p.name }))]} />
     </ActionDialog>
   )
 }
 function RotateDialog({ c, onClose }) {
+  const copy = useCopy()
   const [key, setKey] = useState(null)
   const { act, busy, error } = useAct()
   return (
     <ActionDialog title="Replace the key?" body={key ? 'Copy the new key now. The old key stops working.' : 'The old key stops working at once. Update it where you pasted it.'} icon="lock" confirm={key ? undefined : 'Replace key'} busy={busy} error={error}
       onConfirm={key ? undefined : () => act(() => api.campaigns.rotateKey(c.id), { invalidates: ['campaigns'], quiet: true, onDone: (r) => setKey(r.data.key) })} onClose={onClose}>
       {key && <Field label="New key" value={key} onChange={() => {}} readOnly />}
+      {key && <SmallButton variant="navy" icon="lock" className="self-start" onClick={() => copy(key, 'Key')}>Copy key</SmallButton>}
     </ActionDialog>
   )
 }
@@ -147,10 +169,12 @@ export function LiveCampaignDetail() {
   if (d.error) return <ErrorPanel active="campaigns" error={d.error} back="/campaigns" />
   if (!d.data) return <LoadingPanel active="campaigns" />
   const c = d.data
-  const max = Math.max(1, ...c.leadsPerDay.map((x) => x.leads))
+  const perDay = c.leadsPerDay ?? []
+  const byAd = c.leadsByAd ?? []
+  const max = Math.max(1, ...perDay.map((x) => x.leads || 0))
   const stats = [
     { key: 'l', bg: 'bg-blue-100', icon: 'user-plus', label: 'Leads', value: c.leads, note: `${c.newToday} today` },
-    { key: 'c', bg: 'bg-mint-100', icon: 'check', label: 'Converted', value: c.converted, note: `${c.conversionRate}% conversion` },
+    { key: 'c', bg: 'bg-mint-100', icon: 'check', label: 'Converted', value: c.converted, note: c.conversionRate != null ? `${c.conversionRate}% conversion` : '—' },
     { key: 's', bg: 'bg-amber-100', icon: 'card', label: 'Spend', value: c.spend != null ? fmtMoney(c.spend) : '—', note: c.costPerLead != null ? `${fmtMoney(c.costPerLead)} per lead` : 'Not synced' },
     { key: 't', bg: 'bg-pink-100', icon: 'clock', label: 'Last lead', value: c.lastLeadAt ? fmtDate(c.lastLeadAt, { year: false }) : '—', note: label(c.status) },
   ]
@@ -164,17 +188,20 @@ export function LiveCampaignDetail() {
           <Panel className="flex flex-col gap-3">
             <PanelHead title="Leads per day" subtitle="Last 14 days" />
             <div className="flex h-[140px] items-end gap-2">
-              {c.leadsPerDay.map((x) => (
+              {!perDay.length && <p className="self-center text-[13px] font-medium text-muted">No leads in the last 14 days.</p>}
+              {perDay.map((x) => (
                 <div key={x.date} className="flex flex-1 flex-col items-center gap-1">
                   <span className="text-[10px] font-bold text-ink">{x.leads || ''}</span>
-                  <span className="w-full rounded-t-[6px] bg-[#1f5fd6]" style={{ height: `${(x.leads / max) * 100}px`, minHeight: 2 }} />
-                  <span className="text-[9px] font-medium text-muted">{x.date.slice(8)}</span>
+                  <span className="w-full rounded-t-[6px] bg-[#1f5fd6]" style={{ height: `${((x.leads || 0) / max) * 100}px`, minHeight: 2 }} />
+                  <span className="text-[9px] font-medium text-muted">{String(x.date ?? '').slice(8)}</span>
                 </div>
               ))}
             </div>
           </Panel>
           <Panel className="flex flex-col gap-2">
             <PanelHead title="Leads" subtitle={`${(leads.data || []).length} from this ${c.kind === 'FORM' ? 'form' : 'campaign'}`} />
+            {leads.loading && !leads.data && <p className="text-[13px] font-medium text-muted">Loading leads…</p>}
+            {leads.data && !leads.data.length && <p className="text-[13px] font-medium text-muted">No leads from this {c.kind === 'FORM' ? 'form' : 'campaign'} yet.</p>}
             {(leads.data || []).map((l) => (
               <Link key={l.submissionId} to={`/leads/${l.leadId}`} className="flex items-center gap-3 rounded-[12px] px-2 py-2 text-[13px] hover:bg-panel-2">
                 <span className="flex-1 font-semibold text-ink">{l.name} <span className="font-medium text-muted">· {l.number} · {fmtMobile(l.mobile)}</span></span>
@@ -189,8 +216,8 @@ export function LiveCampaignDetail() {
         <div className="flex w-[400px] flex-col gap-5">
           <Panel className="flex flex-col gap-2">
             <PanelHead title="Leads by ad" />
-            {c.leadsByAd.map((a) => <div key={a.adId} className="flex justify-between text-[13px]"><span className="truncate font-semibold text-ink">{a.name ?? a.adId}{a.adSetName ? ` · ${a.adSetName}` : ''}</span><span className="font-bold text-ink">{a.leads}</span></div>)}
-            {!c.leadsByAd.length && <p className="text-[13px] font-medium text-muted">No ad breakdown for this source.</p>}
+            {byAd.map((a) => <div key={a.adId} className="flex justify-between text-[13px]"><span className="truncate font-semibold text-ink">{a.name ?? a.adId}{a.adSetName ? ` · ${a.adSetName}` : ''}</span><span className="font-bold text-ink">{a.leads}</span></div>)}
+            {!byAd.length && <p className="text-[13px] font-medium text-muted">No ad breakdown for this source.</p>}
           </Panel>
           <ErrorNote error={leads.error} />
         </div>
@@ -203,34 +230,19 @@ export function LiveCampaignDetail() {
 
 function BadgesLegend({ onClose }) {
   return (
-    <ActionDialog title="How these badges work" confirm={null} onClose={onClose}>
+    <ActionDialog title="What the statuses mean" onClose={onClose}>
       <div className="flex flex-col gap-3">
-        {[['Active', 'green', 'Running and delivering leads.'],
-          ['In review', 'amber', 'Meta or Google is reviewing the ad. No leads until approved.'],
-          ['Paused', 'neutral', 'You paused it. Resume any time.'],
-          ['Not approved', 'rose', 'The platform rejected the ad. Fix and resubmit.'],
-          ['Ended', 'neutral', 'Budget spent or schedule ended. Create a new campaign.'],
-        ].map(([label, tone, desc]) => (
-          <div key={label} className="flex items-start gap-3">
-            <StatusChip tone={tone}>{label}</StatusChip>
+        {[['Connected', 'green', 'Working. New leads arrive in your pipeline on their own.'],
+          ['Active', 'green', 'The campaign or form is running and can send leads.'],
+          ['Reconnect needed', 'amber', 'The sign-in expired or access was removed. Use “Sign in again”.'],
+          ['Not syncing', 'amber', 'Leads stopped arriving. Try “Sync now”, then check the connection guide.'],
+          ['Paused', 'amber', 'Paused on the ad platform. Resume it there.'],
+          ['Turned off', 'neutral', 'You turned this form off. Turn it on from Forms and fields.'],
+          ['Disconnected', 'neutral', 'No new leads arrive. Existing leads stay. Use “Turn on” to reconnect.'],
+        ].map(([l, tone, desc]) => (
+          <div key={l} className="flex items-start gap-3">
+            <span className="w-[140px] shrink-0"><StatusChip tone={tone}>{l}</StatusChip></span>
             <p className="flex-1 text-[13px] font-medium text-muted">{desc}</p>
-          </div>
-        ))}
-      </div>
-    </ActionDialog>
-  )
-}
-
-function SyncLogDialog({ campaign, onClose }) {
-  const log = useQuery(['campaign', campaign.id, 'sync-log'], () => api.campaigns.syncLog(campaign.id))
-  return (
-    <ActionDialog title="Sync log" body={`${campaign.name} · last synced ${log.data?.lastSyncAt ? fmtDateTime(log.data.lastSyncAt) : 'never'}`} confirm={null} onClose={onClose} width={600}>
-      <div className="flex flex-col gap-2">
-        {(log.data?.entries ?? []).length === 0 && <p className="text-[13px] font-medium text-muted">{log.loading ? 'Loading…' : 'No sync events yet.'}</p>}
-        {(log.data?.entries ?? []).map((e, i) => (
-          <div key={i} className="flex items-center justify-between rounded-[14px] bg-panel px-3 py-2 text-[13px]">
-            <span className="font-semibold text-ink">{e.event ?? e.type}</span>
-            <span className="font-medium text-muted">{fmtDateTime(e.at)}{e.leadsImported ? ` · ${e.leadsImported} leads` : ''}</span>
           </div>
         ))}
       </div>
@@ -240,11 +252,11 @@ function SyncLogDialog({ campaign, onClose }) {
 
 function DisconnectDialog({ campaign, onClose }) {
   const { act, busy, error } = useAct()
-  const save = () => act(() => api.campaigns.disconnect(campaign.id), { invalidates: ['campaigns'], onDone: onClose })
+  const save = () => act(() => api.campaigns.disconnect(campaign.id, {}), { invalidates: ['campaigns'], onDone: onClose })
   return (
-    <ActionDialog title={`Disconnect ${campaign.channel === 'META' ? 'Meta Ads' : campaign.channel === 'GOOGLE' ? 'Google Ads' : 'Website'}?`}
+    <ActionDialog title={`Turn off ${CH[campaign.channel]?.name ?? 'this connection'}?`}
       body="New leads stop arriving. Existing leads and their data stay."
-      confirm="Disconnect" tone="danger" busy={busy} error={error} onConfirm={save} onClose={onClose} />
+      confirm="Turn off" tone="danger" busy={busy} error={error} onConfirm={save} onClose={onClose} />
   )
 }
 
