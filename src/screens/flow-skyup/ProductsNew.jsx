@@ -36,7 +36,7 @@ function ProductCard({ p, open, onOpen, onCompare }) {
         <button type="button" onClick={onOpen} className={cx('flex h-11 items-center gap-2.5 rounded-[14px] px-3.5 text-left', open ? 'border-2 border-blue bg-white' : 'bg-panel')}>
           <div className="flex flex-1 flex-col gap-px">
             <span className="text-[10px] font-semibold text-muted">Variant</span>
-            <span className="text-[13px] font-bold text-ink">{p.variant}</span>
+            <span className="text-[14px] font-bold text-ink">{p.variants?.[0]?.name?.split(' - ')[0] ?? ''} · {p.variants?.[0]?.name?.split(' - ').slice(1).join(' - ') ?? ''}</span>
           </div>
           <Icon name="chev-down" size={18} className={open ? 'rotate-180 text-blue' : 'text-muted'} />
         </button>
@@ -160,6 +160,26 @@ export default function ProductsNew() {
           <Icon name="compare" size={18} />Compare now
         </Link>
       </div>
-    </AppLayout>
+    
+{/* Figma 10d: Compare tray */}      
+<div className="fixed inset-x-0 bottom-0 z-10 flex h-[84px] items-center justify-between gap-6 border-t-2 border-navy bg-white px-8">
+  <div className="flex items-center gap-3">
+    <p className="text-[14px] font-bold text-ink">Compare ({Object.keys(trayState).length} of 3) <span className="hidden sm:inline">options</span></p>
+    {Object.entries(trayState).map(([id, p]) => (
+      <button key={id} type="button" onClick={() => setTrayState(old => ({ ...old, [id]: !old[id] }))} className="group relative flex items-center gap-3 rounded-[14px] bg-panel px-3 py-2">
+        <div className="flex size-[36px] shrink-0 items-center justify-center rounded-full">
+          <img src={p.logo} alt={p.insurer} className="object-cover object-top h-[36px]" /> 
+        </div>
+        <div className="flex-1 text-left"><p className="text-[13px] font-semibold text-ink">{p.insurer}</p><p className="text-[11px] font-medium text-muted">{p.name}</p></div>
+        <span className="text-[11px] font-bold text-muted group-hover:text-rose">Remove</span>  
+      </button>
+    ))}
+  </div>
+  <button type="button" onClick={compare} disabled={Object.keys(trayState).length < 2} className="flex items-center gap-2 rounded-[10px] bg-navy-light px-4 py-2.5 text-[14px] font-bold text-white shadow-button disabled:pointer-events-none disabled:opacity-40">
+    <span>Compare now</span>
+    <Icon name="right" className="mt-px" />
+  </button>
+</div>
+</AppLayout>
   )
 }
