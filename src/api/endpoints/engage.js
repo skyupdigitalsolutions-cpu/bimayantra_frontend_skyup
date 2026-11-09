@@ -50,6 +50,11 @@ export const campaigns = {
   platforms: () => http.get('/campaigns/platforms'),
   connections: () => http.get('/campaigns/connections'),
   connect: (body, opts) => http.post('/campaigns/connections', body, opts),
+  /** Own-app Meta / LinkedIn: { channel, name, pageId+pageToken+appSecret | accountUrn+accessToken+clientSecret, …details } */
+  connectManual: (body, opts) => http.post('/campaigns/connections/manual', body, opts),
+  updateManual: (id, body) => http.put(p`/campaigns/connections/${id}/manual`, body),
+  /** Edit details: name, pipelineId, defaultStatus, adSetName, parentCampaign, category, contactPageUrl, campaignIds, formIds */
+  saveSettings: (id, body) => http.put(p`/campaigns/connections/${id}/settings`, body),
   rotateKey: (id) => http.post(p`/campaigns/connections/${id}/rotate-key`, {}),
   disconnect: (id, body) => http.post(p`/campaigns/connections/${id}/disconnect`, body),
   reconnect: (id, body) => http.post(p`/campaigns/connections/${id}/reconnect`, body),

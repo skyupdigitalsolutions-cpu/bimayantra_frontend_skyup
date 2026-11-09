@@ -154,7 +154,7 @@ function Editor({ c }) {
               <Field label="Why" type="textarea" value={rec.reason} onChange={(v) => setRec({ ...rec, reason: v })} error={fe.recommendedReason} />
             </Panel>
           )}
-          <ErrorNote error={error && !Object.keys(fe).length ? error : null} />
+          <ErrorNote error={error} />
         </div>
         <Panel className="flex w-[400px] flex-col gap-3">
           <PanelHead title="Review" />

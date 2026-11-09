@@ -222,12 +222,12 @@ export function LiveAddProduct() {
               {job && ['QUEUED', 'RUNNING', 'PENDING', 'PROCESSING'].includes(job.status) && <p className="flex items-center gap-2 text-[13px] font-semibold text-blue"><span className="size-4 animate-spin rounded-full border-2 border-blue/30 border-t-blue" />Reading the brochure…</p>}
               {job?.status === 'FAILED' && (
                 <div className="flex items-center gap-3 rounded-[16px] bg-[#fbebec] px-4 py-3 text-[13px] font-semibold text-[#b4323c]"><Icon name="alert" size={16} /><span className="flex-1">{job.error ?? 'The brochure could not be read.'} Enter the values yourself, or try again.</span>
-                  <SmallButton variant="outline" onClick={async () => setJob((await api.myProducts.readingRetry(job.id, {})).data)}>Try again</SmallButton></div>
+                  <SmallButton variant="outline" onClick={async () => { try { setReadErr(null); setJob((await api.myProducts.readingRetry(job.id, {})).data) } catch (e) { setReadErr(e) } }}>Try again</SmallButton></div>
               )}
               {job && ['REVIEW_REQUIRED', 'REVIEWED'].includes(job.status) && (
                 <>
                   <div className="flex items-center gap-2"><p className="flex-1 text-[13px] font-semibold text-ink">Check each value. Low confidence values are flagged.</p>
-                    <SmallButton variant="outline" onClick={async () => setJob((await api.myProducts.readingAcceptHigh(job.id, {})).data)}>Accept all above {job.threshold}%</SmallButton></div>
+                    <SmallButton variant="outline" onClick={async () => { try { setReadErr(null); setJob((await api.myProducts.readingAcceptHigh(job.id, {})).data) } catch (e) { setReadErr(e) } }}>Accept all above {job.threshold}%</SmallButton></div>
                   {[...(job.details || []).map((r) => ({ ...r, section: 'DETAIL' })), ...(job.rows || []).map((r) => ({ ...r, section: 'FEATURE' })), ...(job.variants || []).map((r) => ({ ...r, section: 'VARIANT' }))].map((r) => (
                     <div key={`${r.section}${r.key}`} className={cx('flex items-center gap-3 rounded-[14px] px-3 py-2 text-[13px]', r.flagged ? 'bg-[#fbf1e1]' : 'bg-panel')}>
                       <span className="w-[200px] font-semibold text-ink">{r.label ?? r.key}</span>

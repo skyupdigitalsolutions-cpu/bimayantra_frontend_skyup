@@ -7,8 +7,8 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import Icon from '../components/Icon'
 import { api, useQuery } from '../api'
-import { fmtMoney, initials } from '../api/format'
-import { ErrorNote, Field } from './kit'
+import { fmtMoney, initials, cleanMobile, mobileError, isEmail } from '../api/format'
+import { ErrorNote, Field, check } from './kit'
 
 const SH = 'shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.12)]'
 const money = (v) => fmtMoney(v, { decimals: 2 })
@@ -134,8 +134,16 @@ export function PublicReferral() {
   const submit = async () => {
     setBusy(true); setError(null)
     try {
+      check({
+        name: !f.name.trim() && 'Enter your name.',
+        mobile: mobileError(f.mobile, { required: true }),
+        email: f.email.trim() && !isEmail(f.email) && 'Enter a valid email, e.g. name@example.com.',
+        relation: !f.relation && 'Choose how you know them.',
+        interest: !f.interest && 'Choose the insurance you’re interested in.',
+        permission: !f.permission && 'Please agree to be contacted.',
+      })
       const r = await api.public.submitReferral(code, {
-        name: f.name.trim(), mobile: f.mobile.replace(/\D/g, ''), email: f.email.trim() || null, relation: f.relation, interest: f.interest,
+        name: f.name.trim(), mobile: cleanMobile(f.mobile), email: f.email.trim() || null, relation: f.relation, interest: f.interest,
         city: f.city.trim() || null, message: f.message.trim() || null, permission: f.permission, ...(f.website ? { website: f.website } : {}),
       })
       setDone(r.meta?.message ?? 'Your details were sent.')
@@ -153,7 +161,7 @@ export function PublicReferral() {
         <section className={`flex min-w-[320px] flex-[1_1_600px] flex-col gap-4 rounded-[32px] bg-white p-7 ${SH}`}>
           <div className="flex flex-wrap gap-3">
             <Field label="Your name *" value={f.name} onChange={set('name')} error={fe.name} />
-            <Field label="Mobile *" value={f.mobile} onChange={set('mobile')} error={fe.mobile} inputMode="tel" placeholder="10-digit number" />
+            <Field label="Mobile *" type="mobile" value={f.mobile} onChange={set('mobile')} error={fe.mobile} />
           </div>
           <div className="flex flex-wrap gap-3">
             <Field label="Email" type="email" value={f.email} onChange={set('email')} error={fe.email} />

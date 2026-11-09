@@ -4,9 +4,9 @@ import { useState } from 'react'
 import Icon from '../components/Icon'
 import { cx } from '../components/ui'
 import { api, useQuery, invalidate } from '../api'
-import { cleanMobile, fmtDate } from '../api/format'
+import { cleanMobile, fmtDate, mobileError, isEmail } from '../api/format'
 import { useAuth } from '../auth/AuthProvider'
-import { Field, ErrorNote, useAct } from './kit'
+import { Field, ErrorNote, useAct, check } from './kit'
 
 const TONE = { New: 'bg-blue-50 text-blue', Contacted: 'bg-[#f0ecfb] text-[#5b3fb8]', 'In progress': 'bg-[#fbf1e1] text-[#8a5a12]', 'Policy taken': 'bg-[#e7f4ee] text-[#127650]', Closed: 'bg-[#eef1f5] text-ink-2' }
 
@@ -70,20 +70,29 @@ function ReferDialog({ onClose }) {
   const [f, setF] = useState({ name: '', mobile: '', email: '', relation: '', interest: 'Health', city: '', message: '', permission: false })
   const set = (k) => (v) => setF((s) => ({ ...s, [k]: v }))
   const { act, busy, error, fieldErrors: fe } = useAct()
-  const save = () => act(() => api.referral.refer({ ...f, mobile: cleanMobile(f.mobile), email: f.email || undefined, city: f.city || undefined, message: f.message || undefined }), {
+  const save = () => act(() => {
+    check({
+      name: !f.name.trim() && 'Enter their name.',
+      mobile: mobileError(f.mobile, { required: true }),
+      relation: !f.relation.trim() && 'Say how you know them.',
+      email: f.email.trim() && !isEmail(f.email) && 'Enter a valid email, e.g. name@example.com.',
+      permission: !f.permission && 'Confirm they agreed to be contacted.',
+    })
+    return api.referral.refer({ ...f, name: f.name.trim(), mobile: cleanMobile(f.mobile), email: f.email.trim() || undefined, city: f.city || undefined, message: f.message || undefined })
+  }, {
     quiet: true, onDone: () => { invalidate('referral'); onClose() },
   })
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0e1f3b]/40 p-4">
       <div className="flex w-[560px] flex-col gap-4 rounded-[28px] bg-white p-7">
         <p className="text-[21px] font-bold text-ink">Refer someone</p>
-        <div className="flex gap-3"><Field label="Their name *" value={f.name} onChange={set('name')} error={fe.name} /><Field label="Mobile *" value={f.mobile} onChange={set('mobile')} error={fe.mobile} /></div>
+        <div className="flex gap-3"><Field label="Their name *" value={f.name} onChange={set('name')} error={fe.name} /><Field label="Mobile *" type="mobile" value={f.mobile} onChange={set('mobile')} error={fe.mobile} /></div>
         <div className="flex gap-3"><Field label="How you know them *" value={f.relation} onChange={set('relation')} error={fe.relation} /><Field label="Insurance they need *" type="select" value={f.interest} onChange={set('interest')} options={['Health', 'Motor', 'Life', 'Term', 'Travel', 'Other']} /></div>
         <div className="flex gap-3"><Field label="Email" value={f.email} onChange={set('email')} error={fe.email} /><Field label="City" value={f.city} onChange={set('city')} /></div>
         <Field label="Message" type="textarea" value={f.message} onChange={set('message')} />
         <Field type="checkbox" label="They agreed to be contacted about insurance. *" value={f.permission} onChange={set('permission')} />
         {fe.permission && <span className="text-[12px] font-medium text-[#b4323c]">{fe.permission}</span>}
-        <ErrorNote error={error && !Object.keys(fe).length ? error : null} />
+        <ErrorNote error={error} />
         <div className="flex gap-2.5">
           <button type="button" onClick={onClose} className="h-[46px] flex-1 rounded-[24px] border border-line text-[14px] font-semibold text-ink">Cancel</button>
           <button type="button" disabled={busy} onClick={save} className="h-[46px] flex-1 rounded-[24px] bg-navy text-[14px] font-semibold text-white disabled:opacity-60">{busy ? 'Sending…' : 'Send referral'}</button>

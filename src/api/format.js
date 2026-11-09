@@ -63,8 +63,36 @@ export function fmtMobile(m) {
   const d = String(m).replace(/\D/g, '').slice(-10)
   return d.length === 10 ? `${d.slice(0, 5)} ${d.slice(5)}` : String(m)
 }
-/** what the API accepts as a mobile: 10 digits */
-export const cleanMobile = (m) => String(m || '').replace(/\D/g, '').slice(-10)
+/**
+ * What the API accepts as a mobile: the digits, with a +91 / 0 prefix removed.
+ * Extra digits are NOT cut off (that used to turn a mistyped number into a different, "valid" one),
+ * so a wrong-length number stays wrong and fails isMobile / the API check.
+ */
+export const cleanMobile = (m) => {
+  const d = String(m || '').replace(/\D/g, '')
+  if (d.length === 12 && d.startsWith('91')) return d.slice(2)
+  if (d.length === 11 && d.startsWith('0')) return d.slice(1)
+  return d
+}
+/** For a mobile <input> as the person types or pastes: digits only, max 10, shown as "98765 43210". */
+export const typeMobile = (v) => {
+  let d = String(v ?? '').replace(/\D/g, '')
+  if (d.length > 10 && d.startsWith('91')) d = d.slice(2) // pasted "+91 98765 43210"
+  else if (d.length === 11 && d.startsWith('0')) d = d.slice(1) // pasted "098765 43210"
+  d = d.slice(0, 10)
+  return d.length > 5 ? `${d.slice(0, 5)} ${d.slice(5)}` : d
+}
+/** Indian mobile: 10 digits starting 6–9. */
+export const isMobile = (m) => /^[6-9]\d{9}$/.test(cleanMobile(m))
+/** Why a mobile is wrong, or '' when it is fine. Empty is fine unless required. */
+export const mobileError = (m, { required = false, label = 'Mobile' } = {}) => {
+  const d = cleanMobile(m)
+  if (!d) return required ? `Enter the ${label.toLowerCase()} number.` : ''
+  if (d.length !== 10) return `${label} must be exactly 10 digits.`
+  if (!/^[6-9]/.test(d)) return `${label} must start with 6, 7, 8 or 9.`
+  return ''
+}
+export const isEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(e || '').trim())
 
 /** ₹21,340 */
 export function fmtMoney(n, { decimals = 0 } = {}) {

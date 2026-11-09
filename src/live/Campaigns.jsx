@@ -8,10 +8,11 @@ import { Header, HeadButton, SmallButton, SegTabs, DataTable, StatusChip, RowChe
 import { matchesQuery, useHeaderSearch } from '../screens/tasks/_filter'
 import { api, useQuery } from '../api'
 import { fmtDate, fmtDateTime, fmtMoney, fmtMobile } from '../api/format'
-import { ActionDialog, Field, ErrorNote, useAct, label, check } from './kit'
+import { ActionDialog, Field, ErrorNote, useAct, label } from './kit'
 import { useToast } from '../components/LiveToast'
 import { LoadingPanel, ErrorPanel } from './common'
 import { LeadAnswersDialog } from './CampaignSetup'
+import { ConnectDialog, ConnectionSettingsDialog, useConnectReturn, START_LABEL } from './CampaignConnect'
 
 const CH = {
   META: { name: 'Meta Ads', sub: 'Facebook and Instagram lead forms', icon: 'chart', bg: 'bg-[#e8f0fd]', oauth: 'meta' },
@@ -30,12 +31,14 @@ const STATUS_TONE = { CONNECTED: 'green', ACTIVE: 'green', RECONNECT_NEEDED: 'am
 export function LiveCampaigns() {
   const [channel, setChannel] = useState('all')
   const [q, clearQ] = useHeaderSearch()
+  useConnectReturn()
   const conns = useQuery('campaigns:connections', () => api.campaigns.connections())
+  const platforms = useQuery('campaigns:platforms', () => api.campaigns.platforms())
   const camps = useQuery('campaigns:list', () => api.campaigns.list())
   const failed = useQuery('campaigns:failed', () => api.campaigns.submissions({ status: 'FAILED' }))
   const [dlg, setDlg] = useState(null)
   const { act, busy } = useAct()
-  const rows = (camps.data || []).filter((r) => (channel === 'all' || r.channel === channel) && matchesQuery(q, r.name, r.channel, r.status))
+  const rows = (camps.data || []).filter((r) => (channel === 'all' || r.channel === channel) && matchesQuery(q, r.name, r.channel, r.status, r.category))
   const all = camps.data || []
   const sum = (k) => all.reduce((a, r) => a + (r[k] || 0), 0)
   const spend = all.reduce((a, r) => a + (r.spend || 0), 0)
@@ -45,13 +48,10 @@ export function LiveCampaigns() {
     { key: 's', bg: 'bg-amber-100', icon: 'card', label: 'Ad spend', value: spend ? fmtMoney(spend) : '—', note: spend && sum('leads') ? `${fmtMoney(spend / sum('leads'))} per lead` : 'From connected ad accounts' },
     { key: 'f', bg: 'bg-pink-100', icon: 'alert', label: 'Not imported', value: (failed.data || []).length, note: (failed.data || []).length ? 'Retry below' : 'Nothing failed' },
   ]
-  const connect = (ch) => {
-    const c = (conns.data || []).find((x) => x.channel === ch)
-    if (CH[ch].oauth && ch !== 'GOOGLE') return act(() => api.campaigns.startOAuth(CH[ch].oauth, c ? { connectionId: c.id } : {}), { success: false, onDone: (r) => r?.data?.url && window.location.assign(r.data.url) })
-    return setDlg({ channel: ch })
-  }
+  /** Sign in again on a connection whose access expired (Meta / LinkedIn). New connections open the connect form. */
+  const signInAgain = (c) => act(() => api.campaigns.startOAuth(CH[c.channel].oauth, { connectionId: c.id }), { success: false, onDone: (r) => r?.data?.url && window.location.assign(r.data.url) })
   const columns = [
-    { key: 'name', label: 'Campaign or form', width: 330, render: (r) => <div className="flex items-center gap-3"><span className={cx('flex size-9 items-center justify-center rounded-full', CH[r.channel]?.bg)}><Icon name={CH[r.channel]?.icon ?? 'chart'} size={16} /></span><div className="flex min-w-0 flex-col"><p className="truncate text-[14px] font-bold text-ink">{r.name}</p><p className="text-[12px] font-medium text-muted">{CH[r.channel]?.name}{r.statusReason ? ` · ${r.statusReason}` : ''}</p></div></div> },
+    { key: 'name', label: 'Campaign or form', width: 330, render: (r) => <div className="flex items-center gap-3"><span className={cx('flex size-9 items-center justify-center rounded-full', CH[r.channel]?.bg)}><Icon name={CH[r.channel]?.icon ?? 'chart'} size={16} /></span><div className="flex min-w-0 flex-col"><p className="truncate text-[14px] font-bold text-ink">{r.name}</p><p className="text-[12px] font-medium text-muted">{CH[r.channel]?.name}{r.category ? ` · ${r.category}` : ''}{r.statusReason ? ` · ${r.statusReason}` : ''}</p></div></div> },
     { key: 'leads', label: 'Leads', width: 90 },
     { key: 'newToday', label: 'Today', width: 80 },
     { key: 'converted', label: 'Converted', width: 100 },
@@ -68,26 +68,37 @@ export function LiveCampaigns() {
       {conns.error && <div className="mt-6"><ErrorNote error={{ message: `Couldn’t load your connections: ${conns.error.message}` }} /></div>}
       <div className="mt-6 flex gap-4">
         {Object.entries(CH).map(([ch, d]) => {
-          const c = (conns.data || []).find((x) => x.channel === ch)
+          const list = (conns.data || []).filter((x) => x.channel === ch)
           return (
-            <div key={ch} className="flex min-w-0 flex-1 basis-0 flex-col gap-2.5 rounded-[26px] bg-white p-5 shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]">
-              <div className="flex items-center gap-3"><span className={cx('flex size-10 items-center justify-center rounded-full', d.bg)}><Icon name={d.icon} size={18} /></span><div className="flex min-w-0 flex-1 flex-col"><p className="text-[14px] font-bold text-ink">{d.name}</p><p className="truncate text-[11px] font-medium text-muted">{d.sub}</p></div></div>
-              {c ? (
-                <>
-                  <div className="flex items-center gap-2"><StatusChip tone={STATUS_TONE[c.status] ?? 'neutral'}>{label(c.status)}</StatusChip><span className="text-[11px] font-medium text-muted">{c.lastLeadAt ? `last lead ${fmtDate(c.lastLeadAt, { year: false })}` : 'no leads yet'}</span></div>
+            <div key={ch} className="flex min-w-0 flex-1 basis-0 flex-col gap-3 rounded-[26px] bg-white p-5 shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]">
+              <div className="flex items-center gap-3"><span className={cx('flex size-10 shrink-0 items-center justify-center rounded-full', d.bg)}><Icon name={d.icon} size={18} /></span><div className="flex min-w-0 flex-1 flex-col"><p className="text-[14px] font-bold text-ink">{d.name}</p><p className="truncate text-[11px] font-medium text-muted">{d.sub}</p></div></div>
+              {list.map((c) => (
+                <div key={c.id} className="flex flex-col gap-2 rounded-[18px] bg-panel p-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <p className="min-w-0 flex-1 truncate text-[13px] font-bold text-ink" title={c.name}>{c.name}</p>
+                    <StatusChip tone={STATUS_TONE[c.status] ?? 'neutral'}>{label(c.status)}</StatusChip>
+                  </div>
+                  <p className="text-[11px] font-medium text-muted">
+                    {c.lastLeadAt ? `Last lead ${fmtDate(c.lastLeadAt, { year: false })}` : 'No leads yet'} · Starts as {START_LABEL[c.defaultStatus] ?? 'New'}{c.category ? ` · ${c.category}` : ''}
+                    {c.campaignFilter?.length ? ` · ${c.campaignFilter.length} campaign filter` : ''}{c.formFilter?.length ? ` · ${c.formFilter.length} form filter` : ''}
+                  </p>
                   <div className="flex flex-wrap gap-1.5">
-                    {c.status === 'CONNECTED' && <SmallButton variant="outline" icon="refresh" disabled={busy} onClick={() => act(() => api.campaigns.syncNow(c.id), { invalidates: ['campaigns'] })}>Sync now</SmallButton>}
-                    {c.status === 'RECONNECT_NEEDED' && <SmallButton variant="navy" disabled={busy} onClick={() => connect(ch)}>Sign in again</SmallButton>}
+                    {c.status === 'CONNECTED' && c.channel !== 'WEBSITE' && <SmallButton variant="outline" icon="refresh" disabled={busy} onClick={() => act(() => api.campaigns.syncNow(c.id), { invalidates: ['campaigns'] })}>Sync</SmallButton>}
+                    {c.status === 'RECONNECT_NEEDED' && (c.mode === 'MANUAL'
+                      ? <SmallButton variant="navy" onClick={() => setDlg({ settings: c })}>Update token</SmallButton>
+                      : <SmallButton variant="navy" disabled={busy} onClick={() => signInAgain(c)}>Sign in again</SmallButton>)}
+                    <SmallButton variant="outline" icon="settings" onClick={() => setDlg({ settings: c })}>Settings</SmallButton>
+                    <SmallButton variant="outline" icon="list" to={`/campaigns/setup/${c.id}`}>Forms</SmallButton>
+                    {c.keyLast4 && <SmallButton variant="ghost" icon="lock" onClick={() => setDlg({ rotate: c })}>Key …{c.keyLast4}</SmallButton>}
                     {c.status === 'DISCONNECTED'
                       ? <SmallButton variant="outline" disabled={busy} onClick={() => act(() => api.campaigns.reconnect(c.id, {}), { invalidates: ['campaigns'] })}>Turn on</SmallButton>
                       : <SmallButton variant="danger" disabled={busy} onClick={() => setDlg({ disconnect: c })}>Turn off</SmallButton>}
-                    {c.keyLast4 && <SmallButton variant="ghost" icon="lock" onClick={() => setDlg({ rotate: c })}>Key …{c.keyLast4}</SmallButton>}
-                    <SmallButton variant="outline" icon="list" to={`/campaigns/setup/${c.id}`}>Forms and fields</SmallButton>
                   </div>
-                </>
-              ) : conns.error ? <span className="text-[12px] font-medium text-muted">Status unavailable</span>
+                </div>
+              ))}
+              {conns.error ? <span className="text-[12px] font-medium text-muted">Status unavailable</span>
                 : conns.loading && !conns.data ? <span className="text-[12px] font-medium text-muted">Loading…</span>
-                  : <SmallButton variant="navy" icon="plus" className="self-start" disabled={busy} onClick={() => connect(ch)}>Connect</SmallButton>}
+                  : <SmallButton variant={list.length ? 'outline' : 'navy'} icon="plus" className="self-start" onClick={() => setDlg({ channel: ch })}>{list.length ? 'Add another' : 'Connect'}</SmallButton>}
             </div>
           )
         })}
@@ -110,7 +121,8 @@ export function LiveCampaigns() {
           ))}
         </Panel>
       )}
-      {dlg?.channel && <ConnectDialog channel={dlg.channel} onClose={() => setDlg(null)} />}
+      {dlg?.channel && <ConnectDialog channel={dlg.channel} platforms={platforms.data} onClose={() => setDlg(null)} />}
+      {dlg?.settings && <ConnectionSettingsDialog c={dlg.settings} onClose={() => setDlg(null)} />}
       {dlg?.rotate && <RotateDialog c={dlg.rotate} onClose={() => setDlg(null)} />}
       {dlg?.badges && <BadgesLegend onClose={() => setDlg(null)} />}
       {dlg?.disconnect && <DisconnectDialog campaign={dlg.disconnect} onClose={() => setDlg(null)} />}
@@ -118,36 +130,6 @@ export function LiveCampaigns() {
   )
 }
 
-function ConnectDialog({ channel, onClose }) {
-  const pipes = useQuery('pipelines', () => api.pipelines.list())
-  const [name, setName] = useState(channel === 'WEBSITE' ? 'Website' : 'Google Ads')
-  const [pipelineId, setPipe] = useState('')
-  const [out, setOut] = useState(null)
-  const { act, busy, error, fieldErrors: fe } = useAct()
-  const copy = useCopy()
-  const save = () => act(() => {
-    check({ name: !name.trim() && 'Give this connection a name.' })
-    return api.campaigns.connect({ channel, name: name.trim(), pipelineId: pipelineId || null })
-  }, { invalidates: ['campaigns'], quiet: true, onDone: (r) => setOut(r.data) })
-  if (out) {
-    return (
-      <ActionDialog title="Connected" body="Copy the key now. It is shown only once." icon="check" onClose={onClose}>
-        {out.connection?.webhookUrl && <Field label="Webhook URL" value={out.connection.webhookUrl} onChange={() => {}} readOnly />}
-        <Field label="Key" value={out.key} onChange={() => {}} readOnly />
-        <div className="flex gap-2">
-          {out.connection?.webhookUrl && <SmallButton variant="outline" icon="link" onClick={() => copy(out.connection.webhookUrl, 'Webhook URL')}>Copy URL</SmallButton>}
-          <SmallButton variant="navy" icon="lock" onClick={() => copy(out.key, 'Key')}>Copy key</SmallButton>
-        </div>
-      </ActionDialog>
-    )
-  }
-  return (
-    <ActionDialog title={`Connect ${CH[channel].name}`} confirm="Connect" busy={busy} error={error} onConfirm={save} onClose={onClose}>
-      <Field label="Name *" value={name} onChange={setName} error={fe.name} />
-      <Field label="Pipeline for new leads" type="select" value={pipelineId} onChange={setPipe} options={[{ value: '', label: 'Default pipeline' }, ...(pipes.data || []).map((p) => ({ value: p.id, label: p.name }))]} />
-    </ActionDialog>
-  )
-}
 function RotateDialog({ c, onClose }) {
   const copy = useCopy()
   const [key, setKey] = useState(null)

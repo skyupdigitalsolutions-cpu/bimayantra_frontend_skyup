@@ -9,7 +9,7 @@ import { cx } from '../../components/ui'
 import { AuthShell, AuthButton, OtpInput, StepChip, StatusHead } from './_parts'
 import { AuthField, Note } from '../states-account/_parts'
 import { api } from '../../api'
-import { cleanMobile, fmtMobile } from '../../api/format'
+import { cleanMobile, fmtMobile, typeMobile } from '../../api/format'
 import { useAuth, homeFor, FullPageSpinner } from '../../auth/AuthProvider'
 import { useToast } from '../../components/LiveToast'
 
@@ -161,7 +161,7 @@ export default function LiveLogin({ mode = 'login' }) {
         <p className="mt-2 text-[15px] font-medium text-muted">Full access during the trial. No card needed.</p>
         {err && <Note icon="alert" className="mt-4 w-[440px] bg-[#fbebec] text-[#b4323c]">{err.message}</Note>}
         <AuthField className="mt-6" label="Full name *" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
-        <AuthField className="mt-3" label="Mobile number *" prefix="+91" inputMode="tel" value={mobile} onChange={(e) => setMobile(e.target.value)} />
+        <AuthField className="mt-3" label="Mobile number *" prefix="+91" inputMode="tel" value={mobile} onChange={(e) => setMobile(typeMobile(e.target.value))} maxLength={11} />
         <AuthField className="mt-3" label="Email" leading="mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         <button type="button" onClick={() => setAgree(!agree)} className="mt-3 flex items-center gap-2.5 text-[13px] font-semibold text-ink">
           <span className={cx('flex size-[22px] items-center justify-center rounded-[7px]', agree ? 'bg-navy text-white' : 'border-[1.5px] border-line bg-white', err?.field === 'termsAccepted' && 'border-[#b4323c]')}>
@@ -190,7 +190,7 @@ export default function LiveLogin({ mode = 'login' }) {
           <span>{err.message}{err.code === 'MOBILE_NOT_REGISTERED' && <> <Link to="/signup" className="underline">Start a free trial</Link></>}</span>
         </Note>
       )}
-      <AuthField className="mt-7" label="Mobile number *" prefix="+91" focus autoFocus inputMode="tel" value={mobile} onChange={(e) => setMobile(e.target.value)} />
+      <AuthField className="mt-7" label="Mobile number *" prefix="+91" focus autoFocus inputMode="tel" value={mobile} onChange={(e) => setMobile(typeMobile(e.target.value))} maxLength={11} />
       <AuthButton type="submit" icon="send" className="mt-6" disabled={busy || cleanMobile(mobile).length !== 10}>{busy ? 'Sending…' : 'Send OTP'}</AuthButton>
       <p className="mt-6 flex gap-1.5 text-[14px]">
         <span className="font-medium text-muted">New to Bimayantra?</span>

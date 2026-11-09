@@ -9,10 +9,10 @@ import { SmallButton, HeadButton } from '../screens/catalogue/_parts'
 import Icon from '../components/Icon'
 import { cx } from '../components/ui'
 import { api, useQuery } from '../api'
-import { fmtDate, fmtDateTime, fmtMobile, fmtMoney, cleanMobile, initials, avatarClass } from '../api/format'
+import { fmtDate, fmtDateTime, fmtMobile, fmtMoney, cleanMobile, initials, avatarClass, mobileError } from '../api/format'
 import { useAuth } from '../auth/AuthProvider'
 import { useToast } from '../components/LiveToast'
-import { ActionDialog, Field, ErrorNote, useAct, label, dmy, isoDay } from './kit'
+import { ActionDialog, Field, ErrorNote, useAct, label, dmy, isoDay, check } from './kit'
 import { openCheckout } from './razorpay'
 
 /* ───────── shared bits ───────── */
@@ -618,14 +618,13 @@ function PersonDialog({ title, body, onSave, inv, onClose, withNote }) {
   const { act, busy, error, fieldErrors: fe } = useAct()
   const save = () => act(() => {
     const mob = cleanMobile(f.mobile)
-    if (!f.name.trim()) throw Object.assign(new Error('Enter a name.'), { fieldErrors: { name: 'Required' } })
-    if (mob.length !== 10) throw Object.assign(new Error('Enter a 10-digit mobile.'), { fieldErrors: { mobile: 'Enter 10 digits' } })
+    check({ name: !f.name.trim() && 'Enter a name.', mobile: mobileError(f.mobile, { required: true }) })
     return onSave({ name: f.name.trim(), mobile: mob, ...(withNote && f.note ? { note: f.note } : {}) })
   }, { invalidates: [inv], quiet: true, onDone: (r) => { if (r?.data?.whatsappUrl) window.open(r.data.whatsappUrl, '_blank', 'noopener'); onClose() } })
   return (
     <ActionDialog title={title} body={body} confirm="Add" busy={busy} error={error} onConfirm={save} onClose={onClose}>
       <Field label="Full name *" value={f.name} onChange={set('name')} error={fe.name} />
-      <Field label="Mobile *" value={f.mobile} onChange={set('mobile')} error={fe.mobile} inputMode="numeric" />
+      <Field label="Mobile *" type="mobile" value={f.mobile} onChange={set('mobile')} error={fe.mobile} />
       {withNote && <Field label="Note" type="textarea" value={f.note} onChange={set('note')} />}
     </ActionDialog>
   )
@@ -1011,17 +1010,16 @@ function ChangeMobileDialog({ onClose }) {
     if (step === 'current') { const r = await act(() => api.auth.mobileCurrentOtp(), { quiet: true }); if (r) setStep('current-code') }
     else if (step === 'current-code') { const r = await act(() => api.auth.mobileCurrentVerify(code), { quiet: true }); if (r) { setToken(r.data.changeToken); setCode(''); setStep('new') } }
     else if (step === 'new') {
-      if (cleanMobile(mobile).length !== 10) { return }
-      const r = await act(() => api.auth.mobileNewOtp({ changeToken: token, newMobile: cleanMobile(mobile) }), { quiet: true }); if (r) setStep('new-code')
+      const r = await act(() => { check({ mobile: mobileError(mobile, { required: true, label: 'New mobile' }) }); return api.auth.mobileNewOtp({ changeToken: token, newMobile: cleanMobile(mobile) }) }, { quiet: true }); if (r) setStep('new-code')
     }
     else { const r = await act(() => api.auth.mobileNewVerify({ changeToken: token, newMobile: cleanMobile(mobile), code }), { quiet: true }); if (r) { onClose(); logout() } }
   }
   const text = { current: 'We send a code to your current mobile first.', 'current-code': 'Enter the code sent to your current mobile.', new: 'Enter the new mobile number.', 'new-code': 'Enter the code sent to the new mobile. You will sign in again after the change.' }[step]
-  const badMobile = step === 'new' && mobile && cleanMobile(mobile).length !== 10
+  const badMobile = step === 'new' && cleanMobile(mobile).length === 10 ? mobileError(mobile, { label: 'New mobile' }) : (error?.fieldErrors?.mobile ?? '')
   return (
     <ActionDialog title="Change login mobile" body={text} icon="phone" confirm={step === 'current' ? 'Send code' : step === 'new' ? 'Send code to new mobile' : 'Verify'} busy={busy} error={error} onConfirm={next} onClose={onClose}>
       {(step === 'current-code' || step === 'new-code') && <Field label="Code" value={code} onChange={setCode} inputMode="numeric" />}
-      {step === 'new' && <Field label="New mobile" value={mobile} onChange={setMobile} inputMode="numeric" error={badMobile ? 'Enter 10 digits' : undefined} />}
+      {step === 'new' && <Field label="New mobile" type="mobile" value={mobile} onChange={setMobile} error={badMobile || undefined} />}
     </ActionDialog>
   )
 }

@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import Icon from '../components/Icon'
 import { api, useQuery } from '../api'
-import { ErrorNote, Field } from './kit'
+import { ErrorNote, Field, check } from './kit'
+import { cleanMobile, mobileError, isEmail } from '../api/format'
 
 export default function PublicWebsiteForm() {
   const { key } = useParams()
@@ -16,7 +17,16 @@ export default function PublicWebsiteForm() {
   const f = q.data
   const send = async () => {
     setBusy(true); setError(null)
-    try { const r = await api.public.submitForm(key, v); setDone(r.meta?.message || 'Thank you. You will hear from us soon.') } catch (e) { setError(e) } finally { setBusy(false) }
+    try {
+      check(Object.fromEntries((f.fields || []).map((x) => {
+        const val = typeof v[x.key] === 'string' ? v[x.key].trim() : v[x.key]
+        if (x.required && !val) return [x.key, x.type === 'checkbox' ? 'Please tick this to continue.' : `Enter ${x.label.toLowerCase()}.`]
+        if (val && x.type === 'email' && !isEmail(val)) return [x.key, 'Enter a valid email, e.g. name@example.com.']
+        if (val && x.type === 'tel') return [x.key, mobileError(val, { label: x.label })]
+        return [x.key, '']
+      })))
+      const body = Object.fromEntries(Object.entries(v).map(([k, val]) => [k, (f.fields || []).find((x) => x.key === k)?.type === 'tel' ? cleanMobile(val) : val]))
+      const r = await api.public.submitForm(key, body); setDone(r.meta?.message || 'Thank you. You will hear from us soon.') } catch (e) { setError(e) } finally { setBusy(false) }
   }
   const fe = error?.fieldErrors ?? {}
   return (
@@ -34,7 +44,7 @@ export default function PublicWebsiteForm() {
               : <Field key={x.key} label={`${x.label}${x.required ? ' *' : ''}`} type={x.type === 'email' ? 'email' : x.type === 'tel' ? 'tel' : 'text'} value={v[x.key] ?? ''} onChange={(t) => setV({ ...v, [x.key]: t })} error={fe[x.key]} />))}
             {/* honeypot: people never fill it, bots do */}
             <input tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" value={v.website ?? ''} onChange={(e) => setV({ ...v, website: e.target.value })} />
-            <ErrorNote error={error && !Object.keys(fe).length ? error : null} />
+            <ErrorNote error={error} />
             <button type="button" disabled={busy} onClick={send} className="flex h-[50px] items-center justify-center rounded-[25px] bg-navy text-[15px] font-semibold text-white disabled:opacity-60">{busy ? 'Sending…' : 'Send'}</button>
           </>
         )}

@@ -7,7 +7,7 @@ import Icon from '../components/Icon'
 import { cx } from '../components/ui'
 import LeadShell, { FormCard, Row, FField, TInput, SInput, AfterSave, cardShadow } from '../screens/flow-lead/_parts'
 import { api, useQuery, useMutation, ApiError } from '../api'
-import { cleanMobile, fmtMobile, titleCase } from '../api/format'
+import { cleanMobile, fmtMobile, titleCase, typeMobile, mobileError, isEmail } from '../api/format'
 import { useAuth } from '../auth/AuthProvider'
 import { useToast } from '../components/LiveToast'
 import { LoadingPanel, ErrorPanel } from './common'
@@ -60,11 +60,12 @@ function Form({ c }) {
   const validate = () => {
     const e = {}
     if (!f.name.trim()) e.name = "Enter the customer's full name."
-    const m = cleanMobile(f.mobile)
-    if (!m) e.mobile = 'Enter a mobile number.'
-    else if (m.length !== 10) e.mobile = 'Enter a valid 10-digit mobile number.'
-    if (f.altMobile.trim() && cleanMobile(f.altMobile).length !== 10) e.altMobile = 'Enter a valid 10-digit mobile number.'
-    if (f.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) e.email = 'Enter a valid email address.'
+    const mErr = mobileError(f.mobile, { required: true })
+    if (mErr) e.mobile = mErr
+    const aErr = mobileError(f.altMobile, { label: 'Alternate mobile' })
+    if (aErr) e.altMobile = aErr
+    else if (f.altMobile.trim() && cleanMobile(f.altMobile) === cleanMobile(f.mobile)) e.altMobile = 'Alternate mobile can’t be the same as the primary.'
+    if (f.email.trim() && !isEmail(f.email)) e.email = 'Enter a valid email address.'
     return e
   }
   const submit = (opts = {}) => {
@@ -88,7 +89,7 @@ function Form({ c }) {
     onError: (e) => { if (e instanceof ApiError && e.code === 'CONFIRMATION_REQUIRED') setWarnings(e.details?.warnings ?? [{ message: e.message, messageId: e.messageId }]) },
   })
   const fe = { ...save.fieldErrors, ...clientErr }
-  const general = save.error && !save.error.fields?.length && save.error.code !== 'CONFIRMATION_REQUIRED' ? save.error.message : null
+  const general = save.error && save.error.code !== 'CONFIRMATION_REQUIRED' ? save.error.message : null // with field errors this is the API's summary
   const opt = (list, labelOf) => [NONE, ...list.map(labelOf)]
   const pick = (list, labelOf, k) => (v) => set(k)(v === NONE ? '' : list.find((x) => labelOf(x) === v) ?? '')
   const genderLabel = (g) => titleCase(g)
@@ -135,8 +136,8 @@ function Form({ c }) {
 
       <FormCard title="Contact" gap={16} className="mt-[18px]">
         <Row>
-          <FField label="Primary mobile *"><TInput prefix="+91" value={f.mobile} onChange={set('mobile')} /><Err>{fe.mobile}</Err></FField>
-          <FField label="Alternate mobile"><TInput prefix="+91" value={f.altMobile} onChange={set('altMobile')} placeholder="Optional" /><Err>{fe.altMobile}</Err></FField>
+          <FField label="Primary mobile *"><TInput prefix="+91" value={f.mobile} onChange={(v) => set('mobile')(typeMobile(v))} placeholder="98765 43210" /><Err>{fe.mobile}</Err></FField>
+          <FField label="Alternate mobile"><TInput prefix="+91" value={f.altMobile} onChange={(v) => set('altMobile')(typeMobile(v))} placeholder="Optional" /><Err>{fe.altMobile}</Err></FField>
           <FField label="Email"><TInput leading="mail" value={f.email} onChange={set('email')} /><Err>{fe.email}</Err></FField>
         </Row>
         <Row>

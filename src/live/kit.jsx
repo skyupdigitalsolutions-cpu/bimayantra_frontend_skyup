@@ -5,11 +5,11 @@ import Icon from '../components/Icon'
 import { Modal, cx } from '../components/ui'
 import { invalidate, useQuery } from '../api'
 import { useToast } from '../components/LiveToast'
-import { titleCase } from '../api/format'
+import { titleCase, typeMobile } from '../api/format'
 
 export const inputCls = 'h-[50px] w-full rounded-[16px] bg-panel px-4 text-[14px] font-semibold text-ink outline-none placeholder:font-medium placeholder:text-faint focus:ring-2 focus:ring-blue/25'
 
-/** Label + control + error. type: text | number | date | select | textarea | checkbox */
+/** Label + control + error. type: text | number | date | select | textarea | checkbox | mobile (digits only, max 10) */
 export function Field({ label, type = 'text', value, onChange, options = [], error, hint, placeholder, className = '', ...rest }) {
   const id = rest.id || label
   let control
@@ -27,6 +27,14 @@ export function Field({ label, type = 'text', value, onChange, options = [], err
         <input type="checkbox" checked={!!value} onChange={(e) => onChange(e.target.checked)} className="size-[18px] accent-[#13294b]" {...rest} />
         {label}
       </label>
+    )
+  } else if (type === 'mobile') {
+    control = (
+      <span className={cx(inputCls, 'flex items-center gap-2 focus-within:ring-2 focus-within:ring-blue/25', error && 'ring-2 ring-[#b4323c]')}>
+        <span className="text-muted">+91</span>
+        <input id={id} value={value ?? ''} placeholder={placeholder ?? '98765 43210'} onChange={(e) => onChange(typeMobile(e.target.value))}
+          inputMode="numeric" autoComplete="tel-national" maxLength={11} className="min-w-0 flex-1 bg-transparent outline-none placeholder:font-medium placeholder:text-faint" {...rest} />
+      </span>
     )
   } else {
     control = <input id={id} type={type} value={value ?? ''} placeholder={placeholder} onChange={(e) => onChange(type === 'number' ? (e.target.value === '' ? '' : Number(e.target.value)) : e.target.value)} className={cx(inputCls, error && 'ring-2 ring-[#b4323c]')} {...rest} />
@@ -78,6 +86,21 @@ export function ActionDialog({ title, body, icon, tone = 'navy', confirm = 'Save
       </div>
     </Modal>
   )
+}
+
+/**
+ * check({ field: message | '' }): use inside act(() => { check(...); return api… }).
+ * Any non-empty message stops the save; the fields show their messages and the dialog / toast shows a summary,
+ * exactly like a refusal from the API.
+ */
+export function check(errs) {
+  const e = Object.fromEntries(Object.entries(errs).filter(([, v]) => v))
+  const n = Object.keys(e).length
+  if (!n) return
+  const err = new Error(n === 1 ? Object.values(e)[0] : `Please correct the ${n} highlighted fields.`)
+  err.fieldErrors = e
+  err.fields = Object.entries(e).map(([field, message]) => ({ field, message }))
+  throw err
 }
 
 /**

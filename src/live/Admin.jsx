@@ -7,9 +7,9 @@ import Icon from '../components/Icon'
 import { cx } from '../components/ui'
 import { AdminLayout, AdminHeader, ACard, ACardHead, Pill, SButton, SegTabs } from '../screens/admin/_parts'
 import { api, useQuery } from '../api'
-import { fmtDate, fmtDateTime, fmtMoney } from '../api/format'
+import { fmtDate, fmtDateTime, fmtMoney, cleanMobile, mobileError, isEmail } from '../api/format'
 import { useAuth } from '../auth/AuthProvider'
-import { ActionDialog, Field, ErrorNote, useAct, label, dmy } from './kit'
+import { ActionDialog, Field, ErrorNote, useAct, label, dmy, check } from './kit'
 
 const Line = ({ children, className = '' }) => <div className={cx('flex items-center gap-3 border-t border-line pt-3 text-[13px] first:border-0 first:pt-0', className)}>{children}</div>
 const Empty = ({ q, text = 'Nothing here.' }) => (q?.error ? <ErrorNote error={q.error} /> : q?.loading && !q?.data ? <p className="text-[13px] font-medium text-muted">Loading…</p> : <p className="text-[13px] font-medium text-muted">{text}</p>)
@@ -350,8 +350,11 @@ function StaffDialog({ onClose }) {
   const set = (k) => (v) => setF((s) => ({ ...s, [k]: v }))
   const { act, busy, error, fieldErrors: fe } = useAct()
   return (
-    <ActionDialog title="Add SkyUp user" confirm="Add" busy={busy} error={error} onConfirm={() => act(() => api.staff.create({ name: f.name, mobile: f.mobile.replace(/\D/g, '').slice(-10), email: f.email || undefined, role: f.role }), { invalidates: ['admin'], onDone: onClose, quiet: true })} onClose={onClose}>
-      <Field label="Name *" value={f.name} onChange={set('name')} error={fe.name} /><div className="flex gap-3"><Field label="Mobile *" value={f.mobile} onChange={set('mobile')} error={fe.mobile} /><Field label="Email" value={f.email} onChange={set('email')} /></div>
+    <ActionDialog title="Add SkyUp user" confirm="Add" busy={busy} error={error} onConfirm={() => act(() => {
+      check({ name: !f.name.trim() && 'Enter a name.', mobile: mobileError(f.mobile, { required: true }), email: f.email.trim() && !isEmail(f.email) && 'Enter a valid email.' })
+      return api.staff.create({ name: f.name.trim(), mobile: cleanMobile(f.mobile), email: f.email.trim() || undefined, role: f.role })
+    }, { invalidates: ['admin'], onDone: onClose, quiet: true })} onClose={onClose}>
+      <Field label="Name *" value={f.name} onChange={set('name')} error={fe.name} /><div className="flex gap-3"><Field label="Mobile *" type="mobile" value={f.mobile} onChange={set('mobile')} error={fe.mobile} /><Field label="Email" value={f.email} onChange={set('email')} error={fe.email} /></div>
       <Field label="Role" type="select" value={f.role} onChange={set('role')} options={[{ value: 'STF', label: 'SkyUp staff' }, { value: 'ADM', label: 'SkyUp admin' }]} />
     </ActionDialog>
   )
@@ -544,8 +547,10 @@ export function AdminProduct() {
   const set = (k) => (v) => setData({ ...d, [k]: v })
   const inv = ['admin']
   const read = async (file) => {
-    const fileId = (await api.files.upload(file, 'BROCHURE')).data.id
-    return act(() => api.adminCatalogue.startVersionOcr(draft.id, { fileId }), { invalidates: inv })
+    return act(async () => {
+      const fileId = (await api.files.upload(file, 'BROCHURE')).data.id
+      return api.adminCatalogue.startVersionOcr(draft.id, { fileId })
+    }, { invalidates: inv })
   }
   const job = ocr.data
   return (

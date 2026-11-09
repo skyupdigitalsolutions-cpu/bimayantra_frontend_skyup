@@ -5,10 +5,10 @@
 // Every flow is a dialog on the Family / Documents tab, so the page behind it refreshes by itself.
 import { useEffect, useMemo, useState } from 'react'
 import { api, useQuery } from '../api'
-import { fmtDateTime } from '../api/format'
+import { fmtDateTime, cleanMobile, fmtMobile, mobileError, isEmail } from '../api/format'
 import { useAuth } from '../auth/AuthProvider'
 import Icon from '../components/Icon'
-import { ActionDialog, ErrorNote, Field, label, useAct } from './kit'
+import { ActionDialog, ErrorNote, Field, label, useAct, check } from './kit'
 
 const CUSTOMER_CHANGED = ['customer', 'customers', 'consents', 'documents', 'document', 'links', 'default-nominee', 'activity']
 const toApi = (v) => v || null
@@ -19,17 +19,26 @@ export function FamilyDialog({ customerId, member, onClose }) {
   const editing = !!member
   const [f, setF] = useState(() => ({
     name: member?.name ?? '', relationship: member?.relationship ?? '', dob: member?.dob?.slice(0, 10) ?? '', gender: member?.gender ?? '',
-    mobile: member?.mobile ?? '', email: member?.email ?? '', anniversary: member?.anniversary?.slice(0, 10) ?? '',
+    mobile: member?.mobile ? fmtMobile(member.mobile) : '', email: member?.email ?? '', anniversary: member?.anniversary?.slice(0, 10) ?? '',
   }))
   const set = (k) => (v) => setF((s) => ({ ...s, [k]: v }))
   const { act, busy, error, fieldErrors } = useAct()
   const save = () => {
     const body = {
       name: f.name.trim(), relationship: f.relationship, dob: toApi(f.dob), gender: toApi(f.gender),
-      mobile: f.mobile.replace(/\D/g, '').slice(-10) || null, email: f.email.trim() || null, anniversary: toApi(f.anniversary),
+      mobile: cleanMobile(f.mobile) || null, email: f.email.trim() || null, anniversary: toApi(f.anniversary),
     }
     return act(
-      () => (editing ? api.customers.updateFamily(customerId, member.id, { ...body, version: member.version }) : api.customers.addFamily(customerId, body)),
+      () => {
+        check({
+          name: !f.name.trim() && 'Enter the full name.',
+          relationship: !f.relationship && 'Choose the relationship.',
+          mobile: mobileError(f.mobile),
+          email: f.email.trim() && !isEmail(f.email) && 'Enter a valid email.',
+          dob: f.dob && f.dob > new Date().toISOString().slice(0, 10) && 'Date of birth can’t be in the future.',
+        })
+        return editing ? api.customers.updateFamily(customerId, member.id, { ...body, version: member.version }) : api.customers.addFamily(customerId, body)
+      },
       { invalidates: CUSTOMER_CHANGED, onDone: onClose, quiet: true },
     )
   }
@@ -45,7 +54,7 @@ export function FamilyDialog({ customerId, member, onClose }) {
         <Field label="Gender" type="select" value={f.gender} onChange={set('gender')} error={fieldErrors.gender} options={['', ...(reference?.genders ?? [])].map((g) => ({ value: g, label: g ? label(g) : 'Not given' }))} />
       </div>
       <div className="flex gap-3">
-        <Field label="Mobile" value={f.mobile} onChange={set('mobile')} placeholder="10-digit number" error={fieldErrors.mobile} hint={editing && member.mobile !== (f.mobile || null) ? 'Changing the number resets WhatsApp and SMS consent for this person.' : undefined} />
+        <Field label="Mobile" type="mobile" value={f.mobile} onChange={set('mobile')} placeholder="Optional" error={fieldErrors.mobile} hint={editing && cleanMobile(member.mobile) !== cleanMobile(f.mobile) ? 'Changing the number resets WhatsApp and SMS consent for this person.' : undefined} />
         <Field label="Email" value={f.email} onChange={set('email')} error={fieldErrors.email} />
       </div>
       <Field label="Wedding anniversary" type="date" value={f.anniversary} onChange={set('anniversary')} error={fieldErrors.anniversary} />

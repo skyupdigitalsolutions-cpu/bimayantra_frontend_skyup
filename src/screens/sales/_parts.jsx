@@ -132,10 +132,13 @@ export function Dot({ initials, bg = '#fde8c9', size = 38, font = 12, border = 2
 
 /* ───────────── Lead Card (Figma Components › Lead Card 8:387 — Default / Hover) ───────────── */
 
-export function LeadCard({ lead, to = "/leads/1" /* only one lead-detail design exists */, draggable, onDragStart, onDragEnd, dragging }) {
+/** onOpen(lead): a plain click opens a quick-update popup instead of the lead page (Ctrl/⌘-click still opens the page). */
+export function LeadCard({ lead, to = "/leads/1" /* only one lead-detail design exists */, draggable, onDragStart, onDragEnd, dragging, onOpen }) {
   return (
     <Link
       to={to}
+      onClick={onOpen ? (e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; e.preventDefault(); onOpen(lead) } : undefined}
+      title={onOpen ? 'Click to update · Ctrl-click to open the lead page' : undefined}
       draggable={draggable}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
@@ -154,9 +157,10 @@ export function LeadCard({ lead, to = "/leads/1" /* only one lead-detail design 
         <span
           role="button"
           tabIndex={0}
-          onClick={(e) => e.preventDefault()}
-          className="rounded-full text-muted hover:text-ink"
-          aria-label="More"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onOpen?.(lead) }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onOpen?.(lead) } }}
+          className="flex size-7 items-center justify-center rounded-full text-muted hover:bg-panel hover:text-ink"
+          aria-label="Quick update"
         >
           <Icon name="more" size={18} />
         </span>

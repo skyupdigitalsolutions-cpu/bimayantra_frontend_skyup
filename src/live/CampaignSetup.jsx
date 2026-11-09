@@ -39,7 +39,7 @@ export function LiveCampaignSetup() {
         actions={<>{c.channel !== 'WEBSITE' && <HeadButton variant="white" icon="refresh" disabled={busy} onClick={() => act(() => api.campaigns.syncNow(c.id), { invalidates: ['campaigns'] })}>Sync now</HeadButton>}<HeadButton variant="white" icon="arrow" to="/campaigns">Back to campaigns</HeadButton></>} />
       {c.status === 'RECONNECT_NEEDED' && (
         <div className="mt-4 flex items-center gap-3 rounded-[16px] bg-[#fbf1e1] px-4 py-3 text-[13px] font-semibold text-[#8a5a12]"><Icon name="alert" size={16} /><span className="flex-1">Sign-in has expired. New leads are kept and imported after you sign in again.</span>
-          <SmallButton variant="navy" disabled={busy} onClick={() => act(() => api.campaigns.startOAuth(c.channel.toLowerCase(), { connectionId: c.id }), { quiet: true, onDone: (r) => r?.data?.url && window.location.assign(r.data.url) })}>Sign in again</SmallButton></div>
+          <SmallButton variant="navy" disabled={busy} onClick={() => act(() => api.campaigns.startOAuth(c.channel.toLowerCase(), { connectionId: c.id }), { success: false, onDone: (r) => r?.data?.url && window.location.assign(r.data.url) })}>Sign in again</SmallButton></div>
       )}
       <div className="mt-6 flex items-start gap-6">
         <div className="flex w-[756px] flex-col gap-5">

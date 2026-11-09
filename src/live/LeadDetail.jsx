@@ -1,7 +1,7 @@
 // 03 · Lead detail (Figma 8:809) with the LS1–LS6 actions as real dialogs:
 //   GET /leads/:id, GET /leads/:id/timeline, POST /leads/:id/status, POST /leads/:id/contacts, PATCH /leads/:id,
 //   POST /tasks/:id/done (follow-up task). Convert opens /leads/:id/convert, Edit opens /leads/:id/edit.
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import Icon from '../components/Icon'
 import { cx } from '../components/ui'
@@ -135,7 +135,7 @@ function useLeadWrite(lead, onClose) {
     onSuccess: (r) => { toast(r?.meta?.message || 'Lead saved.'); onClose() },
   })
 }
-const ErrorNote = ({ error }) => (error && !Object.keys(error.fieldErrors || {}).length ? (
+const ErrorNote = ({ error }) => (error ? (
   <div className="flex items-center gap-2.5 rounded-[14px] border border-[#f2c4c8] bg-[#fff7f7] px-3.5 py-3 text-[13px] font-semibold text-[#b4323c]"><Icon name="alert" size={16} />{error.message}</div>
 ) : null)
 
@@ -343,6 +343,131 @@ function RescheduleDialog({ lead, onClose }) {
           <FootButton variant="navy" icon="check" disabled={w.busy || !date} onClick={submit}>{w.busy ? 'Saving…' : 'Save'}</FootButton>
         </div>
       </Dialog>
+    </>
+  )
+}
+/* ───────── Quick update · from the board, without opening the lead page ─────────
+ * Loads the full lead, then offers the same actions as the lead page (only the allowed ones)
+ * and opens the same dialogs, so both places save and validate identically.
+ * preset: 'FOLLOW_UP' etc. opens Change status straight away (used when a card is dropped on that column).
+ */
+const QUICK_TONE = {
+  NEW: 'bg-[#e8f0fd] text-[#1f5fd6]', CONTACTED: 'bg-[#f0ecfb] text-[#5b3fb8]', QUALIFIED: 'bg-[#e7f4ee] text-[#127650]',
+  FOLLOW_UP: 'bg-[#fbf1e1] text-[#8a5a12]', CONVERTED: 'bg-[#e7f4ee] text-[#127650]', LOST: 'bg-[#eef1f5] text-[#44526a]',
+}
+function QuickAction({ icon, title, sub, onClick, tone = 'default', disabled }) {
+  return (
+    <button type="button" onClick={onClick} disabled={disabled}
+      className={cx('flex items-center gap-3 rounded-[18px] border p-3 text-left transition disabled:opacity-50',
+        tone === 'danger' ? 'border-[#f2c4c8] hover:bg-[#fdf6f7]' : tone === 'primary' ? 'border-blue bg-[#f3f7ff] hover:bg-[#e8f0fd]' : 'border-line hover:bg-tile')}>
+      <span className={cx('flex size-10 shrink-0 items-center justify-center rounded-full', tone === 'danger' ? 'bg-[#fbebec] text-[#b4323c]' : tone === 'primary' ? 'bg-blue text-white' : 'bg-panel text-ink')}>
+        <Icon name={icon} size={17} />
+      </span>
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className={cx('text-[14px] font-bold', tone === 'danger' ? 'text-[#b4323c]' : 'text-ink')}>{title}</span>
+        <span className="truncate text-[12px] font-medium text-muted">{sub}</span>
+      </span>
+    </button>
+  )
+}
+
+export function LeadQuickUpdate({ leadId, preset, onClose }) {
+  const navigate = useNavigate()
+  const { toast, toastError } = useToast()
+  const q = useQuery(['lead', leadId], () => api.leads.get(leadId))
+  const [kind, setKind] = useState(preset ? 'status' : null)
+  const [busy, setBusy] = useState(false)
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  const l = q.data
+  if (l && kind) {
+    const props = { lead: l, onClose }
+    return {
+      status: <ChangeStatusDialog {...props} preset={preset} onLost={() => setKind('lost')} />,
+      contact: <LogContactDrawer {...props} />,
+      lost: <MarkLostDialog {...props} />,
+      reopen: <ReopenDialog {...props} />,
+      reschedule: <RescheduleDialog {...props} />,
+    }[kind]
+  }
+
+  const followUpDone = async () => {
+    setBusy(true)
+    try {
+      const t = l.followUpTask
+      if (!t) { toast('The follow-up task is no longer open.', 'error'); return }
+      const r = await api.tasks.done(t.id, t.version)
+      toast(r.meta?.message || 'Follow-up marked done.')
+      invalidate('lead', 'leads', 'tasks', 'dashboard', 'pipelines')
+      onClose()
+    } catch (e) { toastError(e) } finally { setBusy(false) }
+  }
+
+  let body
+  if (q.error) {
+    body = (
+      <>
+        <DialogTitle>Couldn’t open this lead</DialogTitle>
+        <ErrorNote error={q.error} />
+        <div className="flex gap-2.5"><FootButton onClick={onClose}>Close</FootButton></div>
+      </>
+    )
+  } else if (!l) {
+    body = <p className="py-10 text-center text-[13px] font-medium text-muted">Loading lead…</p>
+  } else {
+    const open = l.status !== 'LOST' && l.status !== 'CONVERTED'
+    const moves = (l.allowedMoves || []).filter((m) => m !== 'LOST')
+    const d = l.nextFollowUpAt ? daysFromToday(l.nextFollowUpAt) : null
+    const follow = d === null ? null : d < 0 ? { cls: 'bg-[#fbebec] text-[#b4323c]', text: `Follow-up overdue ${-d} day${d === -1 ? '' : 's'}` }
+      : d === 0 ? { cls: 'bg-[#fbf1e1] text-[#8a5a12]', text: `Follow-up today, ${fmtTime(l.nextFollowUpAt)}` }
+        : { cls: 'bg-[#e8f0fd] text-[#1f5fd6]', text: `Follow-up ${fmtDate(l.nextFollowUpAt, { year: false })}, ${fmtTime(l.nextFollowUpAt)}` }
+    const tel = cleanMobile(l.mobile)
+    body = (
+      <>
+        <div className="flex items-center gap-3">
+          <span className="flex size-12 shrink-0 items-center justify-center rounded-full border-2 border-white bg-[#fde8c9] text-[14px] font-bold text-navy shadow-[0px_4px_10px_-4px_rgba(19,41,75,0.2)]">{initials(l.name)}</span>
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <p className="truncate text-[19px] font-bold tracking-[-0.2px] text-ink">{l.name}</p>
+            <p className="text-[12px] font-medium text-muted">{fmtMobile(l.mobile)} · {l.number}</p>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-panel text-ink hover:bg-line"><Icon name="x" size={16} /></button>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <span className={cx('inline-flex h-[26px] items-center gap-1.5 rounded-[13px] px-2.5 text-[12px] font-bold', QUICK_TONE[l.status])}>
+            <Icon name={STATUS_CHIP[l.status]?.icon ?? 'check'} size={13} />{LEAD_STATUS_LABEL[l.status]}
+          </span>
+          <span className={cx('inline-flex h-[26px] items-center rounded-[13px] px-2.5 text-[12px] font-semibold', l.priority === 'HIGH' ? 'bg-[#fde8ec] text-[#b4325a]' : 'bg-[#eef1f5] text-[#44526a]')}>{titleCase(l.priority)} priority</span>
+          {follow && <span className={cx('inline-flex h-[26px] items-center gap-1.5 rounded-[13px] px-2.5 text-[12px] font-semibold', follow.cls)}><Icon name="calendar" size={13} />{follow.text}</span>}
+        </div>
+
+        <p className="text-[12px] font-bold tracking-wide text-muted uppercase">Update</p>
+        <div className="grid grid-cols-2 gap-2.5">
+          {open && moves.length > 0 && <QuickAction tone="primary" icon="refresh" title="Change status" sub={`Now ${LEAD_STATUS_LABEL[l.status]}`} onClick={() => setKind('status')} />}
+          {open && <QuickAction icon="phone" title="Log contact" sub="Call, WhatsApp, meeting" onClick={() => setKind('contact')} />}
+          {open && l.nextFollowUpAt && <QuickAction icon="calendar" title="Reschedule" sub="Move the follow-up" onClick={() => setKind('reschedule')} />}
+          {l.followUpTask && <QuickAction icon="check" title="Follow-up done" sub={l.followUpTask.title ?? 'Close the task'} disabled={busy} onClick={followUpDone} />}
+          {l.canConvert && <QuickAction icon="user-plus" title="Convert" sub="Make them a customer" onClick={() => navigate(`/leads/${l.id}/convert`)} />}
+          {l.status === 'LOST' && <QuickAction icon="refresh" title="Reopen" sub="Bring the lead back" onClick={() => setKind('reopen')} />}
+          <QuickAction icon="edit" title="Edit details" sub="Name, mobile, source…" onClick={() => navigate(`/leads/${l.id}/edit`)} />
+          {(l.allowedMoves || []).includes('LOST') && <QuickAction tone="danger" icon="x" title="Mark lost" sub="Needs a reason" onClick={() => setKind('lost')} />}
+        </div>
+
+        <div className="flex gap-2.5 border-t border-line pt-4">
+          {tel && <a href={`tel:+91${tel}`} className="flex h-[42px] flex-1 items-center justify-center gap-2 rounded-[21px] border border-line text-[13px] font-semibold text-ink hover:bg-tile"><Icon name="phone" size={15} />Call</a>}
+          {tel && <a href={`https://wa.me/91${tel}`} target="_blank" rel="noopener noreferrer" className="flex h-[42px] flex-1 items-center justify-center gap-2 rounded-[21px] border border-line text-[13px] font-semibold text-ink hover:bg-tile"><Icon name="chat" size={15} />WhatsApp</a>}
+          <button type="button" onClick={() => navigate(`/leads/${l.id}`)} className="flex h-[42px] flex-1 items-center justify-center gap-2 rounded-[21px] bg-navy text-[13px] font-semibold text-white hover:bg-navy-700"><Icon name="eye" size={15} />Full details</button>
+        </div>
+      </>
+    )
+  }
+  return (
+    <>
+      <Scrim onClose={onClose} />
+      <Dialog top={70}>{body}</Dialog>
     </>
   )
 }
