@@ -13,6 +13,7 @@ import { LiveProducts, LiveProductDetail, LiveQuotations, LiveQuotationDetail, L
 import { LiveProfile, LiveKyc, LiveInsurers, LiveBilling, LiveWallet, LiveAssistants, LiveReferrers, LiveSupportAccess, LiveExport, LiveActivityLog, LiveSecurity } from './Settings'
 import { LiveCampaigns, LiveCampaignDetail } from './Campaigns'
 import LiveCampaignGuide from './CampaignGuide'
+import LiveIntegrations from './Integrations'
 import LiveBestFit from './BestFit'
 import LiveQuotationWizard from './QuotationWizard'
 import LiveProposalWizard from './ProposalWizard'
@@ -117,6 +118,7 @@ export const LIVE_ROUTES = [
   { path: '/settings/insurers', element: <LiveInsurers />, roles: ['ADV'] },
   { path: '/settings/billing', element: <LiveBilling />, roles: ['ADV'] },
   { path: '/settings/wallet', element: <LiveWallet />, roles: ['ADV'] },
+  { path: '/settings/integrations', element: <LiveIntegrations />, roles: ['ADV'] },
   { path: '/settings/assistants', element: <LiveAssistants />, roles: ['ADV'] },
   { path: '/settings/referrers', element: <LiveReferrers />, roles: ['ADV'] },
   { path: '/settings/support', element: <LiveSupportAccess />, roles: ['ADV'] },

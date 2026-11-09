@@ -12,6 +12,14 @@ export const greetings = {
   save: (body) => http.put('/greetings', body),
 }
 
+/** Settings → Integrations: the advisor's own MSG91 (WhatsApp) and Brevo (email). provider: 'msg91' | 'brevo' */
+export const integrations = {
+  list: () => http.get('/integrations'),
+  connect: (provider, body) => http.put(p`/integrations/${provider}`, body),
+  test: (provider) => http.post(p`/integrations/${provider}/test`, {}),
+  disconnect: (provider) => http.del(p`/integrations/${provider}`),
+}
+
 export const wallet = {
   get: () => http.get('/wallet'),
   recharge: (body, opts) => http.post('/wallet/recharge', body, opts),

@@ -13,6 +13,7 @@ export const SETTINGS_NAV = [
   { label: 'My insurers', icon: 'box', to: '/settings/insurers' },
   { label: 'My plan and billing', icon: 'card', to: '/settings/billing' },
   { label: 'WhatsApp wallet', icon: 'wallet', to: '/settings/wallet' },
+  { label: 'Integrations', icon: 'link', to: '/settings/integrations' },
   { label: 'Assistants', icon: 'users', to: '/settings/assistants' },
   { label: 'Referrers', icon: 'link', to: '/settings/referrers' },
   { label: 'Support access', icon: 'eye', to: '/settings/support' },

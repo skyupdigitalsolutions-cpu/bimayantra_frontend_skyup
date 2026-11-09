@@ -112,7 +112,16 @@ or a new tab). Pick the nearest parent: a quotation → `/quotations`; a product
   `Months`, `Years`) are typed as text and sent as numbers.
 - **Feature table**: with no products yet it still lists the category’s features.
 
-## 6. Lists, empty states and loading
+## 6. Integrations (Settings → Integrations)
+
+- An advisor can connect their **own** MSG91 (WhatsApp) and Brevo (email) accounts at `/settings/integrations`
+  (`live/Integrations.jsx`, API `/integrations`). Without a connection Bimayantra’s own providers send, as before.
+- Keys are checked with the provider before saving, stored encrypted, and never sent back; screens show the last 4
+  characters only. Never put a key in a URL, a toast or a log.
+- WhatsApp through the advisor’s MSG91 is billed by MSG91, not the Bimayantra wallet; each template must be approved by
+  Meta on their number first (shown on the page). Each connection has its own webhook address to paste in the provider.
+
+## 7. Lists, empty states and loading
 
 - Loading: “Loading…” in the list area; never a blank page. Errors: `ErrorPanel` (whole page) or `ErrorNote` (one
   block), with a way back or a Try again.
@@ -120,7 +129,7 @@ or a new tab). Pick the nearest parent: a quotation → `/quotations`; a product
 - Status chips use `StatusChip` tones: green = done / can act, amber = needs attention, rose = stopped, neutral =
   information.
 
-## 7. Before you hand a change over
+## 8. Before you hand a change over
 
 1. `npm run build` passes and `npx oxlint src` shows no new warnings in the files you touched.
 2. Open the page at 1440 wide and at a short window (about 760 px high): nothing hidden under fixed bars, Save
