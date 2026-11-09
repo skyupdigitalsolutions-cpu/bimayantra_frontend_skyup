@@ -8,15 +8,27 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Icon from '../components/Icon'
-import { Stepper, cx } from '../components/ui'
+import { cx } from '../components/ui'
 import { Header, HeadButton, Panel, PanelHead, SmallButton, StatusChip } from '../screens/catalogue/_parts'
 import { api, useQuery } from '../api'
 import { fmtDate, fmtMoney } from '../api/format'
 import { ActionDialog, Field, ErrorNote, useAct, label, dmy, isoDay, inputCls } from './kit'
 import { LoadingPanel, ErrorPanel } from './common'
+import { Stepper as FlowStepper, StepCard, StepFooter, PreviewCard, Btn, Chip, Note, TextInput, Field as FlowField } from '../screens/flow-add-product/_parts'
 import { useToast } from '../components/LiveToast'
 
-const STEPS = ['Category', 'Company', 'Brochure', 'Product', 'Variants', 'Features', 'Review']
+// Tile look for a category (Figma AP1): icon + pastel background, picked from the category's name.
+const catLook = (name = '') => {
+  const n = name.toLowerCase()
+  if (n.includes('health')) return { icon: 'heart', bg: 'bg-[#fde8ec]' }
+  if (n.includes('motor') || n.includes('car') || n.includes('wheeler') || n.includes('vehicle')) return { icon: 'car', bg: 'bg-[#d9eafd]' }
+  if (n.includes('term')) return { icon: 'umbrella', bg: 'bg-[#fde8c9]' }
+  if (n.includes('life')) return { icon: 'users', bg: 'bg-[#e9e3fc]' }
+  if (n.includes('travel')) return { icon: 'plane', bg: 'bg-[#d4f1e7]' }
+  if (n.includes('home') || n.includes('property') || n.includes('fire')) return { icon: 'shield', bg: 'bg-[#e3f3f7]' }
+  if (n.includes('accident')) return { icon: 'alert', bg: 'bg-[#fbebec]' }
+  return { icon: 'box', bg: 'bg-[#eef1f5]' }
+}
 const nums = (v) => String(v ?? '').split(',').map((x) => Number(x.trim().replace(/[₹,\s]/g, ''))).filter((n) => n > 0)
 
 /* ═════════════ AP1–AP7 · Add my product ═════════════ */
@@ -97,23 +109,97 @@ export function LiveAddProduct() {
   const canNext = [!!typeId, !!insurerId, true, !!code.trim() && !!d.name && !!d.uin, variants.some((v) => v.name.trim()), true, true][step]
   const feats = tpl.data?.features ?? []
   const groups = [...new Set(feats.map((f) => f.group || 'Features'))]
+  const addCategory = () => {
+    const name = newCat.trim()
+    if (!name || busy) return
+    act(() => api.myProducts.createType({ name }), { invalidates: ['my-products'], onDone: (r) => { setTypeId(r.data.id); setNewCat('') } })
+  }
+  const namedVariants = variants.map((v) => v.name.trim()).filter(Boolean)
+  const filledFeatures = Object.values(features).filter((f) => f && (f.notStated || (f.value !== '' && f.value != null))).length
+  const preview = [
+    typeName,
+    insName,
+    d.name,
+    step >= 4 && namedVariants.length ? `${namedVariants.length} · ${namedVariants.join(', ')}` : null,
+    step >= 5 && feats.length ? `${filledFeatures} of ${feats.length}` : null,
+  ]
 
   return (
     <AppLayout active="products">
-      <Header breadcrumb={'CATALOGUE  /  PRODUCTS  /  ADD MY PRODUCT'} title="Add my product" subtitle="Published in your account at once. Only you can see and quote it." />
-      <Stepper className="mt-5" steps={STEPS} current={step} />
-      <div className="mt-6 flex items-start gap-6">
-        <div className="flex w-[756px] flex-col gap-5">
+      <Header
+        breadcrumb={'PRODUCTS  /  ADD MY PRODUCT'}
+        title="Add my product"
+        titleExtra={<Chip tone="green" icon="check">Draft saved</Chip>}
+        subtitle="Add a product the catalogue does not have"
+        search={false}
+        actions={<Btn variant="outline" icon="download" onClick={() => navigate('/products')}>Save and exit</Btn>}
+      />
+      <FlowStepper current={step + 1} />
+      <div className="mt-[35px] mb-5 flex items-start gap-5">
+        <div className="flex w-[760px] shrink-0 flex-col gap-5">
           {step === 0 && (
-            <Panel className="flex flex-col gap-3">
-              <PanelHead title="Which category?" subtitle="SkyUp's categories, and any you added yourself." />
-              <div className="grid grid-cols-3 gap-3">
-                {T.map((t) => <button key={t.id} type="button" onClick={() => setTypeId(t.id)} className={cx('flex h-[64px] items-center gap-2 rounded-[18px] px-4 text-left text-[14px] font-semibold', typeId === t.id ? 'bg-navy text-white' : 'bg-panel text-ink')}>{t.name}{t.private && <span className="text-[11px] opacity-70">· mine</span>}</button>)}
-              </div>
+            <StepCard title="1 · Product category" subtitle="Decides which features SkyUp’s template asks for">
+              {types.loading && !types.data && <p className="text-[13px] font-medium text-muted">Loading categories…</p>}
+              {types.error && <ErrorNote error={types.error} />}
+              {T.length > 0 && (
+                <div className="grid grid-cols-5 items-start gap-3">
+                  {T.map((t) => {
+                    const on = typeId === t.id
+                    const look = catLook(t.name)
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setTypeId(t.id)}
+                        className={cx('flex min-w-0 flex-col items-center gap-2.5 rounded-[24px] border-[2.5px] px-3 py-5 transition', look.bg, on ? 'border-blue' : 'border-transparent hover:brightness-[0.98]')}
+                      >
+                        <span className="flex size-14 items-center justify-center rounded-full bg-white/90 text-ink">
+                          <Icon name={look.icon} size={26} />
+                        </span>
+                        <span className="w-full truncate text-center text-[15px] font-bold text-ink" title={t.name}>{t.name}</span>
+                        {on ? <Chip tone="blue" icon="check">Selected</Chip> : t.private && <span className="text-[11px] font-semibold text-muted">Your category</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
               {types.data && !T.length && <p className="text-[13px] font-medium text-muted">No categories yet. Add one below.</p>}
-              <div className="flex items-end gap-3"><Field label="Add a category" value={newCat} onChange={setNewCat} placeholder="e.g. Pet insurance" error={fe.name} />
-                <SmallButton variant="outline" icon="plus" className="mb-[7px]" disabled={!newCat.trim() || busy} onClick={() => act(() => api.myProducts.createType({ name: newCat.trim() }), { invalidates: ['my-products'], onDone: (r) => { setTypeId(r.data.id); setNewCat('') } })}>Add</SmallButton></div>
-            </Panel>
+
+              <div className="flex flex-col gap-3 rounded-[18px] border border-[#c9daf8] bg-[#f7f9ff] p-4">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex size-9 items-center justify-center rounded-full bg-white text-blue">
+                    <Icon name="plus" size={16} />
+                  </span>
+                  <div className="flex flex-col gap-0.5">
+                    <p className="text-[14px] font-bold text-ink">Category not listed?</p>
+                    <p className="text-[12px] font-medium text-muted">Create your own. It’s added only to your account, without a standard feature template.</p>
+                  </div>
+                </div>
+                <div className="flex items-end gap-3">
+                  <FlowField label="New category name *" className="flex-1">
+                    <TextInput tone="white" placeholder="e.g. Pet insurance" value={newCat} onChange={(e) => setNewCat(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addCategory()} />
+                  </FlowField>
+                  <Btn icon="plus" disabled={!newCat.trim() || busy} onClick={addCategory} className="disabled:cursor-not-allowed disabled:opacity-50">Add category</Btn>
+                </div>
+                {fe.name && <p className="text-[12px] font-semibold text-[#b4323c]">{fe.name}</p>}
+              </div>
+
+              {typeId && (
+                <Note icon="list">
+                  {tpl.loading && !tpl.data
+                    ? 'Loading the template…'
+                    : feats.length
+                      ? `${typeName} template: ${feats.length} feature${feats.length === 1 ? '' : 's'}${feats.length > 1 ? `, from ${feats[0].name.toLowerCase()} to ${feats[feats.length - 1].name.toLowerCase()}` : ''}.`
+                      : `${typeName}: your own category, without a standard feature template.`}
+                </Note>
+              )}
+
+              <StepFooter
+                back="/products"
+                backLabel="Cancel"
+                next={<Btn icon="arrow" disabled={!canNext} onClick={() => setStep(1)} className="disabled:cursor-not-allowed disabled:opacity-50">Next: Company</Btn>}
+              />
+            </StepCard>
           )}
           {step === 1 && (
             <Panel className="flex flex-col gap-3">
@@ -223,17 +309,13 @@ export function LiveAddProduct() {
               <ErrorNote error={error} />
             </Panel>
           )}
-          <div className="flex justify-between">
+          {step > 0 && <div className="flex justify-between">
             <SmallButton variant="outline" disabled={step === 0} onClick={() => setStep(step - 1)}>Back</SmallButton>
             {step < 6 ? <SmallButton variant="navy" icon="arrow" disabled={!canNext} onClick={() => setStep(step + 1)}>{step === 2 && !job ? 'Skip' : 'Next'}</SmallButton>
               : <SmallButton variant="navy" icon="check" disabled={busy} onClick={publish}>{busy ? 'Publishing…' : 'Publish product'}</SmallButton>}
-          </div>
+          </div>}
         </div>
-        <Panel className="flex w-[400px] flex-col gap-2">
-          <PanelHead title="Your product" />
-          <p className="text-[13px] font-medium text-muted">{[typeName, insName, d.name].filter(Boolean).join(' · ') || 'Nothing chosen yet.'}</p>
-          <p className="text-[12px] font-medium text-muted">Only you see your own products. Corrections to SkyUp products are suggested from the product page instead.</p>
-        </Panel>
+        <PreviewCard values={preview} />
       </div>
     </AppLayout>
   )
