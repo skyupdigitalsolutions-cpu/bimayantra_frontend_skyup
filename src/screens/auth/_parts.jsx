@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Icon from '../../components/Icon'
 import { cx } from '../../components/ui'
-import logo from '../../assets/logo.svg'
+import logo from '../../assets/logo-full.png'
 
 export function BrandPanel() {
   return (
@@ -11,11 +11,8 @@ export function BrandPanel() {
       <span className="pointer-events-none absolute top-[-120px] left-[300px] size-[520px] rounded-full bg-[#f29db0]/35 blur-[160px]" />
       <span className="pointer-events-none absolute top-[640px] left-[-120px] size-[420px] rounded-full bg-[#3478f6]/35 blur-[160px]" />
 
-      <div className="absolute top-14 left-14 flex items-center gap-3">
-        <span className="flex size-[52px] items-center justify-center rounded-[26px] bg-white/10">
-          <img src={logo} alt="" width={28} height={28} />
-        </span>
-        <p className="text-[20px] font-bold text-white">Bimayantra</p>
+      <div className="absolute top-14 left-14 flex items-center rounded-[20px] bg-white px-5 py-3 shadow-[0px_14px_30px_-8px_rgba(0,0,0,0.25)]">
+        <img src={logo} alt="BimaYantra" className="h-[40px] w-auto" />
       </div>
 
       <div className="absolute top-[190px] left-14 flex flex-col gap-4">

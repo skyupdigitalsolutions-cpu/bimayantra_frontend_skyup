@@ -18,6 +18,14 @@ export const integrations = {
   connect: (provider, body) => http.put(p`/integrations/${provider}`, body),
   test: (provider) => http.post(p`/integrations/${provider}/test`, {}),
   disconnect: (provider) => http.del(p`/integrations/${provider}`),
+  /** The WhatsApp templates in the advisor's own MSG91 account (live) */
+  msg91Templates: () => http.get('/integrations/msg91/templates'),
+}
+
+/** Settings → Message templates: which template goes out for each trigger. mode: OFF | DEFAULT | OWN */
+export const messageRules = {
+  list: () => http.get('/message-rules'),
+  save: (trigger, body) => http.put(p`/message-rules/${trigger}`, body),
 }
 
 export const wallet = {

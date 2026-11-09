@@ -1,7 +1,7 @@
 import { NavLink, Link } from 'react-router-dom'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Icon from './Icon'
-import logo from '../assets/logo.svg'
+import logo from '../assets/logo-mark.png'
 import { useAuth } from '../auth/AuthProvider'
 import { initials as initialsOf } from '../api/format'
 
@@ -29,8 +29,8 @@ export function TabletRail({ active, items = NAV, home = '/' }) {
   const { ref, more, scrollBy } = useScrollableNav(active)
   return (
     <nav className="relative flex h-[min(1180px,calc(100vh-32px))] min-h-[420px] w-[72px] shrink-0 flex-col items-center rounded-[36px] bg-rail pt-4 pb-6">
-      <Link to={home} aria-label="Bimayantra home" className="flex size-12 shrink-0 items-center justify-center rounded-full bg-white/10">
-        <img src={logo} alt="" width={24} height={24} />
+      <Link to={home} aria-label="Bimayantra home" className="flex size-12 shrink-0 items-center justify-center rounded-full bg-white">
+        <img src={logo} alt="BimaYantra" className="h-[28px] w-auto" />
       </Link>
       <div className="relative mt-[26px] flex min-h-0 flex-col">
       <NavArrow dir={-1} show={more.up} onClick={() => scrollBy(-1)} inset="-inset-x-3" />
@@ -67,8 +67,8 @@ export function MobileAppBar({ title, back, actions = true, search = true }) {
           <Icon name="arrow" size={15.1} className="[&_path]:[vector-effect:non-scaling-stroke] rotate-180 text-ink" />
         </Link>
       ) : (
-        <Link to="/" aria-label="Bimayantra home" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-navy">
-          <img src={logo} alt="" width={18} height={18} />
+        <Link to="/" aria-label="Bimayantra home" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-line">
+          <img src={logo} alt="BimaYantra" className="h-[21px] w-auto" />
         </Link>
       )}
       <p className="min-w-0 flex-1 text-[17px] font-bold text-ink">{title}</p>
@@ -185,10 +185,10 @@ export default function Sidebar({ active, items = NAV, initials, home = '/' }) {
     <aside className="flex w-[100px] shrink-0 flex-col items-center gap-4">
       <Link
         to={home}
-        className="flex size-[84px] items-center justify-center rounded-[42px] bg-navy shadow-[0px_14px_30px_-8px_rgba(19,41,75,0.3)]"
-        aria-label="Bimayantra home"
+        className="flex size-[84px] items-center justify-center rounded-[42px] bg-white shadow-[0px_14px_30px_-8px_rgba(19,41,75,0.3)]"
+        aria-label="BimaYantra home"
       >
-        <img src={logo} alt="" width={40} height={40} />
+        <img src={logo} alt="BimaYantra" className="h-[46px] w-auto" />
       </Link>
 
       {/* 868px per Figma; shrinks on short viewports — the list then scrolls, with arrows showing there's more */}

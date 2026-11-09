@@ -2,7 +2,7 @@
 import { Link, NavLink } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { cx } from '../../components/ui'
-import logo from '../../assets/logo.svg'
+import logo from '../../assets/logo-mark.png'
 export { SBtn, SChip } from '../settings/_parts'
 
 /** 1440-wide canvas with a blurred colour blob, like the Figma public frames. */
@@ -45,8 +45,8 @@ export function ReferrerShell({ children }) {
   return (
     <div className="flex min-h-screen min-w-[1280px] gap-11 bg-white py-6 pr-6 pl-7">
       <aside className="sticky top-7 flex h-fit w-[84px] shrink-0 flex-col gap-4 self-start">
-        <Link to="/referrer" className="flex size-[84px] items-center justify-center rounded-full bg-navy shadow-[0px_14px_30px_-8px_rgba(19,41,75,0.3)]">
-          <img src={logo} alt="" width={40} height={40} />
+        <Link to="/referrer" aria-label="BimaYantra home" className="flex size-[84px] items-center justify-center rounded-full bg-white shadow-[0px_14px_30px_-8px_rgba(19,41,75,0.3)]">
+          <img src={logo} alt="BimaYantra" className="h-[46px] w-auto" />
         </Link>
         <nav className="relative flex h-[868px] w-[84px] flex-col items-center rounded-[42px] bg-linear-to-b from-[#1a3460] to-[#0e1f3b] pt-[30px] pb-[28px] shadow-[0px_20px_40px_-10px_rgba(19,41,75,0.2)]">
           {items.map((it, i) =>

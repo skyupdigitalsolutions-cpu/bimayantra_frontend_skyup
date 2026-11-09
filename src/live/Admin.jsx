@@ -10,6 +10,7 @@ import { api, useQuery, useDebounced } from '../api'
 import { fmtDate, fmtDateTime, fmtMoney, cleanMobile, mobileError, isEmail } from '../api/format'
 import { useAuth } from '../auth/AuthProvider'
 import { ActionDialog, Field, ErrorNote, useAct, label, dmy, check } from './kit'
+import { WALLET_ENABLED } from '../config/features'
 
 const Line = ({ children, className = '' }) => <div className={cx('flex items-center gap-3 border-t border-line pt-3 text-[13px] first:border-0 first:pt-0', className)}>{children}</div>
 const Empty = ({ q, text = 'Nothing here.' }) => (q?.error ? <ErrorNote error={q.error} /> : q?.loading && !q?.data ? <p className="text-[13px] font-medium text-muted">Loading…</p> : <p className="text-[13px] font-medium text-muted">{text}</p>)
@@ -28,7 +29,7 @@ export function AdminHome() {
     ['Verified products', k.verifiedProducts.total, `${k.verifiedProducts.publishedThisWeek} published this week`, '/admin/catalogue'],
     ['Corrections waiting', k.correctionsWaiting, 'Suggested by advisors', '/admin/corrections'],
     ['Agent-code flags', k.openAgentCodeFlags, 'Same code on two accounts', '/admin/flags'],
-    ['Wallet balance (all)', fmtMoney(k.wallets.totalBalance), `${k.wallets.belowThreshold} below ${fmtMoney(k.wallets.threshold)}`, '/admin/accounts'],
+    ...(WALLET_ENABLED && k.wallets ? [['Wallet balance (all)', fmtMoney(k.wallets.totalBalance), `${k.wallets.belowThreshold} below ${fmtMoney(k.wallets.threshold)}`, '/admin/accounts']] : []),
   ] : []
   return (
     <AdminLayout active="home">
@@ -73,7 +74,7 @@ export function AdminAccounts() {
   const d = list.data
   return (
     <AdminLayout active="accounts">
-      <AdminHeader title="Advisor accounts" subtitle="Every advisor account, its plan, KYC and wallet." />
+      <AdminHeader title="Advisor accounts" subtitle={WALLET_ENABLED ? 'Every advisor account, its plan, KYC and wallet.' : 'Every advisor account, its plan and KYC.'} />
       <div className="mt-5 flex items-center gap-3">
         <SegTabs items={ACC_TABS.map((t) => ({ key: t, label: label(t), count: d?.tabs?.[t] ?? 0 }))} value={tab} onChange={setTab} />
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search advisor or mobile" className="h-[42px] w-[280px] rounded-[21px] bg-white px-4 text-[13px] font-semibold outline-none" />
@@ -86,7 +87,7 @@ export function AdminAccounts() {
               <Pill tone={SUB_TONE[r.subscription] ?? 'gray'}>{label(r.subscription)}{r.plan ? ` · ${label(r.plan)}` : ''}</Pill>
               <span className="w-[120px] text-muted">until {fmtDate(r.subscriptionEndsAt, { year: false })}</span>
               <Pill tone={KYC_TONE[r.kycStatus]}>KYC {label(r.kycStatus)}</Pill>
-              <span className="w-[110px] text-muted">{fmtMoney(r.walletBalance)}</span>
+              {WALLET_ENABLED && <span className="w-[110px] text-muted">{fmtMoney(r.walletBalance)}</span>}
               <span className="flex-1 text-muted">{r.counts.leads} leads · {r.counts.customers} customers · {r.counts.policies} policies</span>
               <span className="text-muted">{r.lastLogin ? fmtDate(r.lastLogin, { year: false }) : '—'}</span>
             </Line>
@@ -123,7 +124,7 @@ export function AdminAccountDetail() {
           <div className="flex flex-1 flex-col gap-5">
             <ACard><ACardHead title="Advisor" />
               <div className="mt-3 grid grid-cols-3 gap-4 text-[13px]">
-                {[['Business', a.business], ['Email', a.email], ['City', a.city], ['Licence', a.licence.number], ['Valid until', a.licence.validUntil], ['Type', a.licence.type], ['Assistants', `${a.assistants.used} of ${a.assistants.limit}`], ['Wallet', fmtMoney(a.walletBalance)], ['Last sign-in', fmtDateTime(a.lastLogin)]].map(([k, v]) => <div key={k}><p className="text-muted">{k}</p><p className="font-semibold text-ink">{v || '—'}</p></div>)}
+                {[['Business', a.business], ['Email', a.email], ['City', a.city], ['Licence', a.licence.number], ['Valid until', a.licence.validUntil], ['Type', a.licence.type], ['Assistants', `${a.assistants.used} of ${a.assistants.limit}`], ...(WALLET_ENABLED ? [['Wallet', fmtMoney(a.walletBalance)]] : []), ['Last sign-in', fmtDateTime(a.lastLogin)]].map(([k, v]) => <div key={k}><p className="text-muted">{k}</p><p className="font-semibold text-ink">{v || '—'}</p></div>)}
               </div>
               <p className="mt-3 text-[12px] font-medium text-muted">{a.counts.leads} leads · {a.counts.customers} customers · {a.counts.quotations} quotations · {a.counts.policies} policies</p>
               {a.account.reason && <p className="mt-2 text-[12px] font-semibold text-[#b4323c]">Reason: {a.account.reason}</p>}

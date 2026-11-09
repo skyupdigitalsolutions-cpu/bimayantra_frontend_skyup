@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { Link, NavLink } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { cx } from '../../components/ui'
-import logo from '../../assets/logo.svg'
+import logo from '../../assets/logo-mark.png'
 import { PANEL_SCRIM, PANEL_X, DIALOG_MAX, useFitTop, useLockScroll } from '../sales/_overlay'
 
 /* ───────────── Rail ───────────── */
@@ -95,9 +95,9 @@ export function AdminRail({ active }) {
       <Link
         to="/admin"
         aria-label="SkyUp Admin home"
-        className="flex size-[84px] items-center justify-center rounded-[42px] bg-navy shadow-[0px_14px_30px_-8px_rgba(19,41,75,0.3)]"
+        className="flex size-[84px] items-center justify-center rounded-[42px] bg-white shadow-[0px_14px_30px_-8px_rgba(19,41,75,0.3)]"
       >
-        <img src={logo} alt="" width={40} height={40} />
+        <img src={logo} alt="BimaYantra" className="h-[46px] w-auto" />
       </Link>
       <nav className="relative flex h-[min(868px,calc(100vh-156px))] min-h-[420px] w-[84px] flex-col rounded-[42px] bg-linear-to-b from-[#2a1f5c] to-[#14102f] pt-[30px] pb-7 shadow-[0px_20px_40px_-10px_rgba(42,31,92,0.2)]">
         <div className="relative flex min-h-0 flex-col">

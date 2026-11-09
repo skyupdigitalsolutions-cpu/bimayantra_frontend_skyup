@@ -16,6 +16,7 @@ import { LoadingPanel, ErrorPanel } from './common'
 import { EditNomineesDrawer } from './PolicyRecords'
 import { Drawer } from '../screens/flow-payment/_parts'
 import RenewalQuoteDialog from './RenewalQuote'
+import { WALLET_ENABLED } from '../config/features'
 
 const day = (v) => (v ? fmtDate(isoDay(v)) : '—')
 const FREQ_OPTS = ['Yearly', 'Half-yearly', 'Quarterly', 'Monthly', 'Single']
@@ -461,7 +462,8 @@ export function LiveCommunications() {
   const sent = useQuery(['communications', 'sent'], () => api.communications.list({ tab: 'sent' }))
   const failed = useQuery(['communications', 'failed'], () => api.communications.list({ tab: 'failed' }))
   const lists = { scheduled, sent, failed }
-  const wallet = useQuery('wallet', () => api.wallet.get())
+  // P-56 wallet: shown only when VITE_WHATSAPP_WALLET=true
+  const wallet = useQuery('wallet', () => (WALLET_ENABLED ? api.wallet.get() : Promise.resolve({ data: null })))
   const greet = useQuery('greetings', () => api.greetings.get())
   const { act, busy } = useAct()
   // "Occasion greetings" tab = greeting messages across every outbox list.
@@ -479,7 +481,7 @@ export function LiveCommunications() {
   return (
     <AppLayout active="communications">
       <Header breadcrumb="COMMUNICATIONS" title="Communications" subtitle="Every message sent or tried, with its status."
-        actions={<HeadButton variant="white" icon="list" to="/settings/wallet">Templates</HeadButton>} />
+        actions={<HeadButton variant="white" icon="list" to="/settings/message-templates">Message templates</HeadButton>} />
       <div className="mt-[13px] flex items-center gap-3">
         <SegTabs items={C_TABS.map(([key, l]) => ({ key, label: l, count: key === 'greetings' ? undefined : lists[key].data?.length ?? 0 }))} value={tab} onChange={setTab} />
         <SegTabs items={C_CHANNELS.map(([key, l]) => ({ key, label: l }))} value={channel} onChange={setChannel} />
@@ -519,13 +521,13 @@ export function LiveCommunications() {
               <p className="flex-1 text-[17px] font-bold text-white">Occasion greetings</p>
               <span className="rounded-[12px] bg-linear-to-r from-[#f9c6d0] to-[#f29db0] px-3 py-[5px] text-[11px] font-bold text-navy">Premium</span>
             </div>
-            <p className="text-[13px] leading-[20px] font-medium text-[#c9d6ea]">Birthdays and anniversaries go out automatically from your dedicated WhatsApp number, only to people with consent.</p>
-            <div className="flex items-center gap-3 rounded-[20px] bg-[rgba(255,255,255,0.08)] p-4">
+            <p className="text-[13px] leading-[20px] font-medium text-[#c9d6ea]">Birthdays and anniversaries go out automatically on WhatsApp, only to people with consent. Choose the template for each occasion in Message templates.</p>
+            {WALLET_ENABLED && <div className="flex items-center gap-3 rounded-[20px] bg-[rgba(255,255,255,0.08)] p-4">
               <span className="flex size-11 items-center justify-center rounded-[22px] bg-[rgba(255,255,255,0.12)]"><Icon name="wallet" size={20} className="text-white" /></span>
               <div className="flex flex-1 flex-col gap-0.5"><p className="text-[12px] font-medium text-[#c9d6ea]">Wallet balance</p><p className="text-[20px] font-bold text-white">{fmtMoney(W.balance ?? (W.balancePaise != null ? W.balancePaise / 100 : null), { decimals: 2 })}</p></div>
               {W.pricePerMessage != null && <p className="text-[12px] font-semibold text-[#f7b9c4]">{fmtMoney(W.pricePerMessage)} / message</p>}
-            </div>
-            <SmallButton variant="pink" icon="sparkle" className="self-start" to="/settings/wallet">Set up greetings</SmallButton>
+            </div>}
+            <SmallButton variant="pink" icon="sparkle" className="self-start" to="/settings/message-templates">Set up greetings</SmallButton>
           </div>
           <Panel className="flex flex-col gap-3">
             <PanelHead title="This week" subtitle="Eligible to receive a greeting" />
@@ -538,7 +540,7 @@ export function LiveCommunications() {
             ))}
             {!occasions.length && <p className="text-[13px] font-medium text-muted">No occasions this week.</p>}
           </Panel>
-          <ErrorNote error={wallet.error && wallet.error.status !== 403 ? wallet.error : null} />
+          <ErrorNote error={WALLET_ENABLED && wallet.error && wallet.error.status !== 403 ? wallet.error : null} />
         </div>
       </div>
       {openMsg && <MessageDrawer m={openMsg} onClose={() => setOpenMsg(null)} />}

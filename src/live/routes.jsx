@@ -14,6 +14,9 @@ import { LiveProfile, LiveKyc, LiveInsurers, LiveBilling, LiveWallet, LiveAssist
 import { LiveCampaigns, LiveCampaignDetail } from './Campaigns'
 import LiveCampaignGuide from './CampaignGuide'
 import LiveIntegrations from './Integrations'
+import LiveMessageRules from './MessageRules'
+import { WALLET_ENABLED } from '../config/features'
+import { Navigate } from 'react-router-dom'
 import LiveBestFit from './BestFit'
 import LiveQuotationWizard from './QuotationWizard'
 import LiveProposalWizard from './ProposalWizard'
@@ -117,8 +120,10 @@ export const LIVE_ROUTES = [
   { path: '/settings/kyc', element: <LiveKyc />, roles: ['ADV'] },
   { path: '/settings/insurers', element: <LiveInsurers />, roles: ['ADV'] },
   { path: '/settings/billing', element: <LiveBilling />, roles: ['ADV'] },
-  { path: '/settings/wallet', element: <LiveWallet />, roles: ['ADV'] },
+  // P-56 WhatsApp wallet hidden unless VITE_WHATSAPP_WALLET=true: old links go to Message templates
+  { path: '/settings/wallet', element: WALLET_ENABLED ? <LiveWallet /> : <Navigate to="/settings/message-templates" replace />, roles: ['ADV'] },
   { path: '/settings/integrations', element: <LiveIntegrations />, roles: ['ADV'] },
+  { path: '/settings/message-templates', element: <LiveMessageRules />, roles: ['ADV'] },
   { path: '/settings/assistants', element: <LiveAssistants />, roles: ['ADV'] },
   { path: '/settings/referrers', element: <LiveReferrers />, roles: ['ADV'] },
   { path: '/settings/support', element: <LiveSupportAccess />, roles: ['ADV'] },

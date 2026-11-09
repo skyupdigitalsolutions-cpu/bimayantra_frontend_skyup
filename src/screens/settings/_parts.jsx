@@ -5,6 +5,7 @@ import Icon from '../../components/Icon'
 import { PageHeader, cx } from '../../components/ui'
 import { SelectCompat } from '../../components/pickers'
 import { useHeaderSearch } from '../admin/_filter'
+import { WALLET_ENABLED } from '../../config/features'
 
 // Paths are the connected settings pages (src/live/Settings.jsx); the Figma frames open with ?proto=1.
 export const SETTINGS_NAV = [
@@ -12,8 +13,10 @@ export const SETTINGS_NAV = [
   { label: 'KYC', icon: 'shield', to: '/settings/kyc' },
   { label: 'My insurers', icon: 'box', to: '/settings/insurers' },
   { label: 'My plan and billing', icon: 'card', to: '/settings/billing' },
-  { label: 'WhatsApp wallet', icon: 'wallet', to: '/settings/wallet' },
+  // P-56 WhatsApp wallet: hidden unless VITE_WHATSAPP_WALLET=true
+  ...(WALLET_ENABLED ? [{ label: 'WhatsApp wallet', icon: 'wallet', to: '/settings/wallet' }] : []),
   { label: 'Integrations', icon: 'link', to: '/settings/integrations' },
+  { label: 'Message templates', icon: 'chat', to: '/settings/message-templates' },
   { label: 'Assistants', icon: 'users', to: '/settings/assistants' },
   { label: 'Referrers', icon: 'link', to: '/settings/referrers' },
   { label: 'Support access', icon: 'eye', to: '/settings/support' },

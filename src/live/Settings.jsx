@@ -14,6 +14,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { useToast } from '../components/LiveToast'
 import { ActionDialog, Field, ErrorNote, useAct, label, dmy, isoDay, check } from './kit'
 import { openCheckout } from './razorpay'
+import { WALLET_ENABLED } from '../config/features'
 
 /* ───────── shared bits ───────── */
 const Loading = ({ q }) => (q.error ? <ErrorNote error={q.error} /> : q.loading && !q.data ? <SCard><p className="text-[13px] font-medium text-muted">Loading…</p></SCard> : null)
@@ -374,7 +375,7 @@ const PLAN_FEATURES = {
   ],
   PREMIUM: [
     ['Everything in Normal', true], ['Up to 2 assistant users', true], ['Dedicated WhatsApp Business number', true],
-    ['Automated greetings and reminders', true], ['WhatsApp wallet (₹1 / message)', true], ['Priority support', true],
+    ['Automated greetings and reminders', true], ...(WALLET_ENABLED ? [['WhatsApp wallet (₹1 / message)', true]] : []), ['Priority support', true],
   ],
 }
 export function LiveBilling() {
@@ -394,7 +395,7 @@ export function LiveBilling() {
   }, { invalidates: ['billing', 'profile'], quiet: true })
   const trialDays = b?.status === 'TRIAL' ? daysUntil(b.endsAt) : null
   return (
-    <SettingsLayout breadcrumb="SETTINGS  /  MY PLAN" title="My plan and billing" subtitle="Plans and wallet recharges are bought on the website only."
+    <SettingsLayout breadcrumb="SETTINGS  /  MY PLAN" title="My plan and billing" subtitle={WALLET_ENABLED ? 'Plans and wallet recharges are bought on the website only.' : 'Plans are bought on the website only.'}
       titleExtra={trialDays != null && <SChip tone="blue" icon="clock">Trial · {trialDays} days left</SChip>}>
       <Loading q={q} />
       {b && (
@@ -545,7 +546,7 @@ export function LiveWallet() {
 
 /* ═════════════ S06 · Assistants ═════════════ */
 const ASSISTANT_CAN = ['Add and work leads', 'Add customers and documents', 'Prepare quotations and proposals', 'Log renewal contacts']
-const ASSISTANT_CANNOT = ['Record payments or submit proposals', 'Mark leads lost or reopen them', 'See commission or full PAN and Aadhaar', 'Change plan, wallet or team']
+const ASSISTANT_CANNOT = ['Record payments or submit proposals', 'Mark leads lost or reopen them', 'See commission or full PAN and Aadhaar', WALLET_ENABLED ? 'Change plan, wallet or team' : 'Change plan or team']
 export function LiveAssistants() {
   const q = useQuery('assistants', () => api.assistants.list())
   const [add, setAdd] = useState(false)
