@@ -55,7 +55,7 @@ function Wizard({ p }) {
 
   return (
     <AppLayout active="proposals">
-      <Header breadcrumb={`SALES  /  PROPOSALS  /  ${p.number}`} title={p.number} subtitle="Prepare the proposal, then submit it. Submitting creates the policy record." />
+      <Header back={`/proposals/${p.id}`} breadcrumb={`SALES  /  PROPOSALS  /  ${p.number}`} title={p.number} subtitle="Prepare the proposal, then submit it. Submitting creates the policy record." />
       <Stepper className="mt-4" steps={STEPS} current={step} />
       <div className={cx('mt-5 flex flex-col gap-5', CARD)}>
         {step === 0 && (

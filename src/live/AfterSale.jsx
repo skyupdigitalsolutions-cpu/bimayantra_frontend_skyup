@@ -156,7 +156,7 @@ export function LivePolicyDetail() {
       </>
   return (
     <AppLayout active="policies">
-      <Header breadcrumb={`POLICIES  /  ${(p.number || 'POLICY').toUpperCase()}`} title={p.policyNumber || 'Awaiting issuance'}
+      <Header back="/policies" breadcrumb={`POLICIES  /  ${(p.number || 'POLICY').toUpperCase()}`} title={p.policyNumber || 'Awaiting issuance'}
         titleExtra={P_CHIP[p.status]} subtitle={[p.number, p.customer?.name, productLine].filter(Boolean).join(' · ')}
         actions={headActions} />
 

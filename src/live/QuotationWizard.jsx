@@ -99,10 +99,10 @@ function Wizard({ initial, presetCustomer }) {
   const b = q?.calc?.breakdown
   const ren = q?.renewal // set when the draft was started from a renewal (batch 8)
   const header = ren
-    ? <Header breadcrumb={`RENEWALS  /  ${(customer.data?.name ?? '').toUpperCase()}  /  RENEWAL QUOTATION`} title={ren.mode === 'NEW_QUOTATION' ? 'New quotation for renewal' : 'Renewal quotation'}
+    ? <Header back="/renewals" breadcrumb={`RENEWALS  /  ${(customer.data?.name ?? '').toUpperCase()}  /  RENEWAL QUOTATION`} title={ren.mode === 'NEW_QUOTATION' ? 'New quotation for renewal' : 'Renewal quotation'}
         titleExtra={<span className="flex items-center gap-1 rounded-[14px] bg-[#e8f0fd] px-2.5 py-1 text-[12px] font-semibold text-[#1f5fd6]"><Icon name={ren.mode === 'NEW_QUOTATION' ? 'quote' : 'refresh'} size={13} />{ren.mode === 'NEW_QUOTATION' ? 'New quotation' : 'Same policy'}</span>}
         subtitle={customer.data ? `${customer.data.name} · ${customer.data.number}` : ''} />
-    : <Header breadcrumb="SALES  /  QUOTATIONS  /  NEW" title="New quotation" subtitle={customer.data ? `For ${customer.data.name} · ${customer.data.number}` : 'Choose who it is for'} />
+    : <Header back="/quotations" breadcrumb="SALES  /  QUOTATIONS  /  NEW" title="New quotation" subtitle={customer.data ? `For ${customer.data.name} · ${customer.data.number}` : 'Choose who it is for'} />
 
   const canNext = [
     !!customerId, !!inputs.typeId, !!inputs.insurerId, !!inputs.productId,

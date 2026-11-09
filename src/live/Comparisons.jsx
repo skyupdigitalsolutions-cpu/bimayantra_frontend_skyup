@@ -111,7 +111,7 @@ function Editor({ c }) {
   void siOptions
   return (
     <AppLayout active="quotations">
-      <Header breadcrumb={'SALES  /  COMPARISONS  /  NEW'} title={`Comparison${customer.data ? ` for ${customer.data.name}` : ''}`} subtitle="Same people and cover for every product. Up to 5 products." />
+      <Header back="/comparisons" breadcrumb={'SALES  /  COMPARISONS  /  NEW'} title={`Comparison${customer.data ? ` for ${customer.data.name}` : ''}`} subtitle="Same people and cover for every product. Up to 5 products." />
       <Stepper className="mt-5" steps={STEPS} current={step} />
       <div className="mt-6 flex items-start gap-6">
         <div className="flex w-[756px] flex-col gap-5">
@@ -175,7 +175,7 @@ function Generated({ c }) {
   const cols = s.columns || []
   return (
     <AppLayout active="quotations">
-      <Header breadcrumb={`SALES  /  COMPARISONS  /  ${c.number ?? ''}`} title={c.number ?? 'Comparison'} titleExtra={<StatusChip tone={TONE[c.status]}>{label(c.status)}</StatusChip>}
+      <Header back="/comparisons" breadcrumb={`SALES  /  COMPARISONS  /  ${c.number ?? ''}`} title={c.number ?? 'Comparison'} titleExtra={<StatusChip tone={TONE[c.status]}>{label(c.status)}</StatusChip>}
         subtitle={`Valid till ${c.validUntil ? fmtDate(isoDay(c.validUntil)) : '—'} · viewed ${c.viewed}×${c.sharedAt ? ` · shared ${fmtDateTime(c.sharedAt)}` : ''}`}
         actions={<>
           {c.pdfFileId && <HeadButton variant="white" icon="folder" onClick={() => window.open(api.files.url(c.pdfFileId), '_blank')}>PDF</HeadButton>}

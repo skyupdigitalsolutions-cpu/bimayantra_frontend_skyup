@@ -163,7 +163,7 @@ export function LiveCampaignDetail() {
   const LS = { NEW: 'sky', CONTACTED: 'violet', QUALIFIED: 'green', FOLLOW_UP: 'amber', CONVERTED: 'green', LOST: 'neutral' }
   return (
     <AppLayout active="campaigns">
-      <Header breadcrumb={`CAMPAIGNS  /  ${c.name.toUpperCase()}`} title={c.name} titleExtra={<StatusChip tone={STATUS_TONE[c.status] ?? 'neutral'}>{label(c.status)}</StatusChip>} subtitle={CH[c.channel]?.name ?? c.channel} />
+      <Header back="/campaigns" breadcrumb={`CAMPAIGNS  /  ${c.name.toUpperCase()}`} title={c.name} titleExtra={<StatusChip tone={STATUS_TONE[c.status] ?? 'neutral'}>{label(c.status)}</StatusChip>} subtitle={CH[c.channel]?.name ?? c.channel} />
       <div className="mt-[13px] flex gap-5">{stats.map((s) => <StatTile key={s.key} {...s} />)}</div>
       <div className="mt-6 flex items-start gap-6">
         <div className="flex w-[756px] flex-col gap-5">

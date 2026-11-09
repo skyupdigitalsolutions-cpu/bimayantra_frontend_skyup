@@ -128,6 +128,7 @@ export function LiveAddProduct() {
   return (
     <AppLayout active="products">
       <Header
+        back="/products"
         breadcrumb={'PRODUCTS  /  ADD MY PRODUCT'}
         title="Add my product"
         titleExtra={<Chip tone="green" icon="check">Draft saved</Chip>}
@@ -341,7 +342,7 @@ export function LivePriceVersions() {
   }
   return (
     <AppLayout active="products">
-      <Header breadcrumb={`CATALOGUE  /  PRODUCTS  /  ${(p.publishedVersion?.data?.name ?? p.code).toUpperCase()}  /  PRICES`} title="My price versions" subtitle="Your premiums for this product. A version applies from its date; older quotations keep the price they used."
+      <Header back={`/products/${id}`} breadcrumb={`CATALOGUE  /  PRODUCTS  /  ${(p.publishedVersion?.data?.name ?? p.code).toUpperCase()}  /  PRICES`} title="My price versions" subtitle="Your premiums for this product. A version applies from its date; older quotations keep the price they used."
         actions={<><HeadButton variant="white" icon="download" disabled={!tpl.data} onClick={download}>Rate table template</HeadButton><HeadButton icon="plus" onClick={() => setAdd(true)}>Add price version</HeadButton></>} />
       <div className="mt-6 flex items-start gap-6">
         <Panel className="flex w-[756px] flex-col gap-3">
@@ -410,7 +411,7 @@ export function LiveCompareVariants() {
   const differs = (key) => new Set(vs.map((v) => show(v, key))).size > 1
   return (
     <AppLayout active="products">
-      <Header breadcrumb={`CATALOGUE  /  PRODUCTS  /  ${(p.publishedVersion?.data?.name ?? p.code).toUpperCase()}`} title="Compare variants" subtitle="Rows that differ between variants are highlighted." actions={<HeadButton variant="white" icon="arrow" to={`/products/${id}`}>Back to product</HeadButton>} />
+      <Header back={`/products/${id}`} breadcrumb={`CATALOGUE  /  PRODUCTS  /  ${(p.publishedVersion?.data?.name ?? p.code).toUpperCase()}`} title="Compare variants" subtitle="Rows that differ between variants are highlighted." actions={<HeadButton variant="white" icon="arrow" to={`/products/${id}`}>Back to product</HeadButton>} />
       <Panel className="mt-6 overflow-x-auto">
         <table className="w-full text-[13px]">
           <thead><tr><th className="w-[260px] py-2 text-left font-semibold text-muted">Feature</th>{vs.map((v) => <th key={v.id ?? v.name} className="py-2 text-left font-bold text-ink">{v.name}<div className="text-[11px] font-medium text-muted">{v.sumInsuredMin ? `${fmtMoney(v.sumInsuredMin)}–${fmtMoney(v.sumInsuredMax)}` : ''}</div></th>)}</tr></thead>

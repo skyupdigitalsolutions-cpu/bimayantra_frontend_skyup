@@ -2,7 +2,7 @@
 // One page for every insurance type (tabs) and source (All · Verified by SkyUp · My products). Columns are product
 // variants; rows are the type's template features, grouped, plus each product's own features. Tick up to 3 variants
 // and "Compare selected" narrows the table to them. "Highlight differences" marks rows whose values are not all equal.
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Icon from '../components/Icon'
@@ -27,7 +27,7 @@ export default function LiveFeatureTable() {
   const types = useQuery('own-product-types', () => api.myProducts.types())
   const typeId = sp.get('type') ?? types.data?.[0]?.id ?? null
   const source = sp.get('source') ?? 'ALL'
-  const setParam = (k, v) => { const n = new URLSearchParams(sp); n.set(k, v); setSp(n, { replace: true }); setPicked([]); setOnlyPicked(false) }
+  const setParam = (k, v) => { const n = new URLSearchParams(sp); n.set(k, v); n.delete('pick'); setSp(n, { replace: true }); setPicked([]); setOnlyPicked(false) }
   const t = useQuery(['feature-table', typeId ?? '', source], () => api.products.featureTable({ typeId, source }), { enabled: !!typeId })
   const [find, setFind] = useState('')
   const [highlight, setHighlight] = useState(true)
@@ -35,6 +35,20 @@ export default function LiveFeatureTable() {
   const [onlyPicked, setOnlyPicked] = useState(false)
 
   const cols = useMemo(() => (t.data?.columns ?? []).map((c, i) => ({ ...c, i })), [t.data])
+  // ?pick=productId~Variant|… (sent by the Products compare tray): tick those variants and narrow the table, once.
+  const pickApplied = useRef(false)
+  useEffect(() => {
+    const raw = sp.get('pick')
+    if (pickApplied.current || !raw || !cols.length) return
+    pickApplied.current = true
+    const want = raw.split('|').map((x) => { const at = x.indexOf('~'); return at < 0 ? [x, null] : [x.slice(0, at), x.slice(at + 1)] })
+    const idx = []
+    for (const [pid, vn] of want) {
+      const c = cols.find((x) => String(x.productId) === pid && (vn == null || x.variantName === vn) && !idx.includes(x.i))
+      if (c && idx.length < MAX_PICK) idx.push(c.i)
+    }
+    if (idx.length) { setPicked(idx); setOnlyPicked(idx.length > 1) }
+  }, [sp, cols])
   const shownCols = onlyPicked && picked.length ? cols.filter((c) => picked.includes(c.i)) : cols
   // Consecutive columns of the same product share one header block.
   const productBlocks = []
@@ -52,7 +66,7 @@ export default function LiveFeatureTable() {
 
   return (
     <AppLayout active="products">
-      <Header breadcrumb="PRODUCTS  /  FEATURE TABLE" title="Feature table" subtitle="Every product and variant, feature by feature. Scroll sideways to see all variants." search={false}
+      <Header back="/products" breadcrumb="PRODUCTS  /  FEATURE TABLE" title="Feature table" subtitle="Every product and variant, feature by feature. Scroll sideways to see all variants." search={false}
         actions={<HeadButton variant="white" icon="download" onClick={() => window.print()}>Print / Save PDF</HeadButton>} />
       <div className="mt-[13px] flex flex-wrap items-center gap-3">
         <SegTabs items={(types.data ?? []).map((x) => ({ key: x.id, label: x.name }))} value={typeId} onChange={(v) => setParam('type', v)} />

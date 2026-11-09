@@ -34,7 +34,7 @@ export function LiveCampaignSetup() {
   const sel = picked ?? (sources.data || []).filter((s) => s.subscribed).map((s) => s.id)
   return (
     <AppLayout active="campaigns">
-      <Header breadcrumb={`CAMPAIGNS  /  ${CH[c.channel].toUpperCase()}`} title={`${CH[c.channel]} · ${c.name ?? 'Connection'}`} titleExtra={<StatusChip tone={c.status === 'CONNECTED' ? 'green' : 'amber'}>{label(c.status)}</StatusChip>}
+      <Header back="/campaigns" breadcrumb={`CAMPAIGNS  /  ${CH[c.channel].toUpperCase()}`} title={`${CH[c.channel]} · ${c.name ?? 'Connection'}`} titleExtra={<StatusChip tone={c.status === 'CONNECTED' ? 'green' : 'amber'}>{label(c.status)}</StatusChip>}
         subtitle="Choose what to listen to, map the form questions, and pick the pipeline new leads go into."
         actions={<>{c.channel !== 'WEBSITE' && <HeadButton variant="white" icon="refresh" disabled={busy} onClick={() => act(() => api.campaigns.syncNow(c.id), { invalidates: ['campaigns'] })}>Sync now</HeadButton>}<HeadButton variant="white" icon="arrow" to="/campaigns">Back to campaigns</HeadButton></>} />
       {c.status === 'RECONNECT_NEEDED' && (

@@ -166,7 +166,7 @@ function IssueForm({ p }) {
   ]
   return (
     <AppLayout active="policies">
-      <Header breadcrumb={`POLICIES  /  ${(p.number ?? fr.proposal ?? 'POLICY').toUpperCase()}  /  RECORD`} title="Record issued policy"
+      <Header back={`/policies/${p.id}`} breadcrumb={`POLICIES  /  ${(p.number ?? fr.proposal ?? 'POLICY').toUpperCase()}  /  RECORD`} title="Record issued policy"
         titleExtra={<span className="flex items-center gap-1 rounded-[14px] bg-[#f0ecfb] px-2.5 py-1 text-[12px] font-semibold text-[#5b3fb8]"><Icon name="clock" size={13} />Awaiting issuance</span>}
         subtitle={[p.number, p.customer?.name, [p.insurer, p.productName].filter(Boolean).join(' '), fr.product?.variantName].filter(Boolean).join(' · ')} />
       <div className="mt-6 flex items-start gap-6">
@@ -239,7 +239,7 @@ function ExistingForm({ c }) {
 
   return (
     <AppLayout active="customers">
-      <Header breadcrumb={`POLICY HOLDERS  /  ${c.name.toUpperCase()}  /  EXISTING POLICY`} title="Record existing policy" subtitle={`${c.name} · a policy bought before Bimayantra`} />
+      <Header back={`/customers/${c.id}/policies`} breadcrumb={`POLICY HOLDERS  /  ${c.name.toUpperCase()}  /  EXISTING POLICY`} title="Record existing policy" subtitle={`${c.name} · a policy bought before Bimayantra`} />
       <div className="mt-6 flex items-start gap-6">
         <div className="flex w-[756px] flex-col gap-5">
           <Panel className="flex flex-col gap-4">

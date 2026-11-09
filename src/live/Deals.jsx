@@ -5,7 +5,7 @@ import AppLayout from '../components/AppLayout'
 import Icon from '../components/Icon'
 import { cx } from '../components/ui'
 import { Header, HeadButton, SmallButton, SegTabs, DataTable, StatusChip, RowChevron, IdCell, Panel, PanelHead, RingAvatar } from '../screens/catalogue/_parts'
-import { matchesQuery, useHeaderSearch, NoMatches } from '../screens/tasks/_filter'
+import { matchesQuery, useHeaderSearch } from '../screens/tasks/_filter'
 import { api, useQuery } from '../api'
 import { useAuth } from '../auth/AuthProvider'
 import { avatarClass, fmtDate, fmtDateTime, fmtMoney, initials } from '../api/format'
@@ -16,63 +16,8 @@ import { PaymentActions, PaymentStateDialog } from './PaymentStates'
 import { Breakdown } from './QuotationWizard'
 
 /* ═════════════ 10 · Products library ═════════════ */
-const TYPE_STYLE = { health: ['heart', 'bg-[#fde8ec]'], motor: ['car', 'bg-[#d9eafd]'], life: ['users', 'bg-[#e9e3fc]'], term: ['umbrella', 'bg-[#fde8c9]'], travel: ['plane', 'bg-[#d4f1e7]'] }
-const styleOf = (type) => TYPE_STYLE[String(type || '').toLowerCase().split(' ')[0]] ?? ['box', 'bg-[#eef1f5]']
-const quoteChip = (p) => (p.canQuote ? <StatusChip tone="green" icon="check">Can quote</StatusChip>
-  : p.renewalOnly ? <StatusChip tone="rose" icon="x">Withdrawn</StatusChip>
-    : p.agentCode === 'EXPIRED' ? <StatusChip tone="amber" icon="alert">Agent code expired</StatusChip>
-      : p.agentCode !== 'ACTIVE' ? <StatusChip tone="amber" icon="alert">Add agent code</StatusChip>
-        : <StatusChip tone="neutral">{label(p.status)}</StatusChip>)
-
-export function LiveProducts() {
-  const [source, setSource] = useState('VERIFIED')
-  const [type, setType] = useState('all')
-  const [q, clearQ] = useHeaderSearch()
-  const list = useQuery('products', () => api.products.list())
-  const all = list.data || []
-  const types = [...new Set(all.map((p) => p.type).filter(Boolean))]
-  const rows = all.filter((p) => p.kind === source && (type === 'all' || p.type === type) && matchesQuery(q, p.name, p.insurer, p.type, p.code))
-  if (list.error && !list.data) return <ErrorPanel active="products" error={list.error} />
-  return (
-    <AppLayout active="products">
-      <Header breadcrumb={'CATALOGUE  /  PRODUCTS'} title="Products" subtitle="Verified products from SkyUp and the ones you added yourself."
-        actions={<><HeadButton variant="white" icon="compare" to="/products/feature-table">Feature table</HeadButton><HeadButton icon="plus" to="/products/new">Add my product</HeadButton></>} />
-      <div className="mt-[13px] flex items-center gap-3">
-        <SegTabs items={[{ key: 'VERIFIED', label: 'Verified by SkyUp', count: all.filter((p) => p.kind === 'VERIFIED').length }, { key: 'OWN', label: 'My products', count: all.filter((p) => p.kind === 'OWN').length }]} value={source} onChange={setSource} />
-        <SegTabs items={[{ key: 'all', label: 'All' }, ...types.map((t) => ({ key: t, label: t }))]} value={type} onChange={setType} />
-      </div>
-      <div className="mt-6 flex flex-wrap gap-5">
-        {rows.map((p) => {
-          const [icon, bg] = styleOf(p.type)
-          return (
-            <div key={p.id} className="flex w-[380px] flex-col rounded-[28px] bg-white shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]">
-              <div className={cx('flex h-[76px] items-center gap-3.5 rounded-t-[28px] px-5', bg)}>
-                <span className="flex size-11 items-center justify-center rounded-[22px] bg-white/80"><Icon name={icon} size={20} className="text-ink" /></span>
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5"><p className="text-[12px] font-semibold text-slate">{p.insurer}</p><p className="truncate text-[17px] font-bold text-ink">{p.name}</p></div>
-                <span className="rounded-[10px] bg-white/80 px-2.5 py-1 text-[11px] font-bold text-ink">{p.variantCount} variant{p.variantCount === 1 ? '' : 's'}</span>
-              </div>
-              <div className="flex flex-col gap-3 px-[18px] pt-3.5 pb-4">
-                <div className="flex h-11 flex-col justify-center rounded-[14px] bg-panel px-3.5">
-                  <span className="text-[10px] font-semibold text-muted">{p.type ?? 'Product'} · {p.code}</span>
-                  <span className="truncate text-[13px] font-bold text-ink">{p.defaultVariant ?? 'Single variant'}</span>
-                </div>
-                <div className="flex h-[25px] items-center gap-2"><span className="text-[12px] font-medium text-muted">{p.variants?.slice(0, 3).join(' · ')}</span><span className="flex-1" />{quoteChip(p)}</div>
-                <div className="flex gap-2">
-                  <SmallButton variant="outline" to={`/products/${p.id}`} className="flex-1 justify-center px-3.5">Details</SmallButton>
-                  <SmallButton variant={p.canQuote ? 'navy' : 'disabled'} icon="quote" to={p.canQuote ? `/quotations/new?productId=${p.id}` : undefined} className="flex-1 justify-center">New quotation</SmallButton>
-                </div>
-              </div>
-            </div>
-          )
-        })}
-        {rows.length === 0 && (
-          <NoMatches className="w-[1180px] rounded-[28px] bg-white" text={list.loading ? 'Loading…' : q.trim() ? 'No matches' : 'Nothing here'}
-            sub={q.trim() ? `No products match “${q.trim()}”.` : source === 'OWN' ? 'You have not added your own products yet.' : 'No verified products in this category.'} onClear={q.trim() ? clearQ : undefined} />
-        )}
-      </div>
-    </AppLayout>
-  )
-}
+// Lives in ./ProductsLibrary (design 38:3490: variant picker, key-feature tiles, compare tray); re-exported for routes.
+export { LiveProducts } from './ProductsLibrary'
 
 /* ═════════════ 10c · Product detail ═════════════ */
 export function LiveProductDetail() {
@@ -99,7 +44,7 @@ export function LiveProductDetail() {
   ].filter(([, x]) => x)
   return (
     <AppLayout active="products">
-      <Header breadcrumb={`CATALOGUE  /  PRODUCTS  /  ${p.publishedVersion?.data?.name?.toUpperCase() ?? ''}`} title={d.name ?? p.code} titleExtra={<StatusChip tone={p.status === 'ACTIVE' ? 'green' : 'amber'}>{label(p.status)}</StatusChip>}
+      <Header back="/products" breadcrumb={`CATALOGUE  /  PRODUCTS  /  ${p.publishedVersion?.data?.name?.toUpperCase() ?? ''}`} title={d.name ?? p.code} titleExtra={<StatusChip tone={p.status === 'ACTIVE' ? 'green' : 'amber'}>{label(p.status)}</StatusChip>}
         subtitle={`${p.insurer ?? ''} · ${p.type ?? ''} · ${p.kind === 'OWN' ? 'My product' : 'Verified by SkyUp'}`}
         actions={<>
           {p.kind === 'VERIFIED' && <HeadButton variant="white" icon="edit" onClick={() => setDlg('correction')}>Suggest a correction</HeadButton>}
@@ -247,7 +192,7 @@ export function LiveQuotationDetail() {
   const canLink = ['READY', 'SHARED', 'ACCEPTED'].includes(x.status) && !paid
   return (
     <AppLayout active="quotations">
-      <Header breadcrumb={`SALES  /  QUOTATIONS  /  ${x.number ?? 'DRAFT'}`} title={`${x.number ?? 'Draft quotation'}${rev ? ` R${rev.revision}` : ''}`}
+      <Header back="/quotations" breadcrumb={`SALES  /  QUOTATIONS  /  ${x.number ?? 'DRAFT'}`} title={`${x.number ?? 'Draft quotation'}${rev ? ` R${rev.revision}` : ''}`}
         titleExtra={<StatusChip tone={Q_TONE[x.status]}>{label(x.status)}</StatusChip>} subtitle={[s.customer?.name, s.insurer?.name, s.product?.name].filter(Boolean).join(' · ') || 'Not generated yet'}
         actions={<>
           {x.status === 'DRAFT' && <HeadButton icon="arrow" to={`/quotations/${x.id}/edit`}>Continue</HeadButton>}
@@ -434,7 +379,7 @@ export function LiveProposalDetail() {
   const p = q.data
   return (
     <AppLayout active="proposals">
-      <Header breadcrumb={`SALES  /  PROPOSALS  /  ${p.number ?? 'DRAFT'}`} title={p.number ?? 'Draft proposal'} titleExtra={<StatusChip tone={PR_TONE[p.status]}>{label(p.status)}</StatusChip>}
+      <Header back="/proposals" breadcrumb={`SALES  /  PROPOSALS  /  ${p.number ?? 'DRAFT'}`} title={p.number ?? 'Draft proposal'} titleExtra={<StatusChip tone={PR_TONE[p.status]}>{label(p.status)}</StatusChip>}
         subtitle={`From quotation R${p.revision}`}
         actions={<>
           {p.status === 'DRAFT' && <HeadButton variant="white" icon="edit" to={`/proposals/${p.id}/edit`}>Members and declarations</HeadButton>}

@@ -1,5 +1,5 @@
 // Local building blocks shared by the catalogue / after-sale frames.
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { cx } from '../../components/ui'
 import { FixedScrim, FixedDialog, useScrollLock } from './_overlay'
@@ -212,10 +212,33 @@ export function Bell() {
   )
 }
 
-/** Heading block + right actions. `before` sits between search and bell; `search={false}` drops the pill. */
-export function Header({ breadcrumb, title, titleExtra, subtitle, actions, before, search = true }) {
+/**
+ * Round back button (same 44px white circle as the bell). Goes to the previous page when the app has history,
+ * otherwise to `to` (e.g. the page was opened from a shared link or a new tab).
+ */
+export function BackButton({ to = '/', label = 'Back', className = '' }) {
+  const navigate = useNavigate()
+  const go = () => {
+    const idx = typeof window !== 'undefined' ? window.history.state?.idx : 0
+    if (idx > 0) navigate(-1)
+    else navigate(to)
+  }
   return (
-    <header className="relative flex min-h-[83px] items-start">
+    <button type="button" onClick={go} aria-label={label} title={label}
+      className={cx('flex size-11 shrink-0 items-center justify-center rounded-full bg-white text-ink shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)] transition hover:bg-tile focus-visible:outline-2 focus-visible:outline-blue', className)}>
+      <Icon name="arrow" size={18} className="rotate-180" />
+    </button>
+  )
+}
+
+/**
+ * Heading block + right actions. `before` sits between search and bell; `search={false}` drops the pill.
+ * `back` (optional): a fallback path — shows a back button left of the heading. Pages that don't pass it are unchanged.
+ */
+export function Header({ breadcrumb, title, titleExtra, subtitle, actions, before, search = true, back }) {
+  return (
+    <header className="relative flex min-h-[83px] items-start gap-4">
+      {back && <BackButton to={back} className="mt-[22px]" />}
       <div className="flex flex-col gap-1.5">
         <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre text-muted uppercase">{breadcrumb}</p>
         <div className="flex items-center gap-3">
