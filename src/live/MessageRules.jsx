@@ -10,6 +10,7 @@ import Icon from '../components/Icon'
 import { cx } from '../components/ui'
 import { api, useQuery } from '../api'
 import { ErrorNote, Field, useAct, inputCls } from './kit'
+import { ServerNotUpdated, serverMissing } from './Integrations'
 
 const CH = {
   whatsapp: { label: 'WhatsApp', icon: 'chat', via: 'MSG91', provider: 'MSG91' },
@@ -34,7 +35,7 @@ export default function LiveMessageRules() {
   const usable = (tq.data ?? []).filter((t) => t.status === 'APPROVED' && t.supported)
   return (
     <SettingsLayout breadcrumb="SETTINGS  /  MESSAGE TEMPLATES" title="Message templates" subtitle="Choose what goes out for each moment, and on which channel.">
-      {q.error && <ErrorNote error={q.error} />}
+      {q.error && (serverMissing(q.error) ? <ServerNotUpdated /> : <ErrorNote error={q.error} />)}
       {q.loading && !d && <p className="text-[13px] font-medium text-muted">Loading…</p>}
       {d && (
         <>

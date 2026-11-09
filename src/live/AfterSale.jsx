@@ -17,6 +17,7 @@ import { EditNomineesDrawer } from './PolicyRecords'
 import { Drawer } from '../screens/flow-payment/_parts'
 import RenewalQuoteDialog from './RenewalQuote'
 import { WALLET_ENABLED } from '../config/features'
+import { useAuth } from '../auth/AuthProvider'
 
 const day = (v) => (v ? fmtDate(isoDay(v)) : '—')
 const FREQ_OPTS = ['Yearly', 'Half-yearly', 'Quarterly', 'Monthly', 'Single']
@@ -465,6 +466,9 @@ export function LiveCommunications() {
   // P-56 wallet: shown only when VITE_WHATSAPP_WALLET=true
   const wallet = useQuery('wallet', () => (WALLET_ENABLED ? api.wallet.get() : Promise.resolve({ data: null })))
   const greet = useQuery('greetings', () => api.greetings.get())
+  // The advisor's own MSG91 / Brevo (Settings → Integrations); assistants cannot manage them.
+  const isAdvisor = useAuth().user?.role === 'ADV'
+  const ints = useQuery(['integrations', isAdvisor ? 'adv' : 'no'], () => (isAdvisor ? api.integrations.list() : Promise.resolve({ data: null })))
   const { act, busy } = useAct()
   // "Occasion greetings" tab = greeting messages across every outbox list.
   const greetingMsgs = useMemo(() => [...(scheduled.data || []), ...(sent.data || []), ...(failed.data || [])].filter(isGreeting), [scheduled.data, sent.data, failed.data])
@@ -481,7 +485,12 @@ export function LiveCommunications() {
   return (
     <AppLayout active="communications">
       <Header breadcrumb="COMMUNICATIONS" title="Communications" subtitle="Every message sent or tried, with its status."
-        actions={<HeadButton variant="white" icon="list" to="/settings/message-templates">Message templates</HeadButton>} />
+        actions={isAdvisor && (
+          <div className="flex gap-2.5">
+            <HeadButton variant="white" icon="link" to="/settings/integrations">Integrations</HeadButton>
+            <HeadButton variant="white" icon="list" to="/settings/message-templates">Message templates</HeadButton>
+          </div>
+        )} />
       <div className="mt-[13px] flex items-center gap-3">
         <SegTabs items={C_TABS.map(([key, l]) => ({ key, label: l, count: key === 'greetings' ? undefined : lists[key].data?.length ?? 0 }))} value={tab} onChange={setTab} />
         <SegTabs items={C_CHANNELS.map(([key, l]) => ({ key, label: l }))} value={channel} onChange={setChannel} />
@@ -516,6 +525,7 @@ export function LiveCommunications() {
           )}
         </div>
         <div className="flex w-[400px] flex-col gap-5">
+          {isAdvisor && ints.data && <ConnectionsCard data={ints.data} />}
           <div className={cx('flex flex-col gap-3.5 rounded-[28px] bg-linear-to-b from-[#1a3460] to-[#0e1f3b] p-6', SH8)}>
             <div className="flex items-center gap-2.5">
               <p className="flex-1 text-[17px] font-bold text-white">Occasion greetings</p>
@@ -547,6 +557,33 @@ export function LiveCommunications() {
     </AppLayout>
   )
 }
+/** Your own MSG91 (WhatsApp) and Brevo (email): connected or not, with a way to connect (Settings → Integrations). */
+function ConnectionsCard({ data }) {
+  const rows = [
+    { key: 'msg91', name: 'WhatsApp', via: 'MSG91', icon: 'chat', c: data.MSG91, what: (c) => `Number ${c.config?.waNumber ?? ''}` },
+    { key: 'brevo', name: 'Email', via: 'Brevo', icon: 'mail', c: data.BREVO, what: (c) => c.config?.fromEmail ?? '' },
+  ]
+  const all = rows.every((r) => r.c?.status === 'ACTIVE')
+  return (
+    <Panel className="flex flex-col gap-3">
+      <PanelHead title="Your messaging accounts" subtitle={all ? 'Messages go through your own accounts.' : 'Connect your MSG91 and Brevo to send from your own number and email.'} />
+      {rows.map((r) => {
+        const on = r.c?.status === 'ACTIVE'
+        return (
+          <div key={r.key} className="flex items-center gap-3">
+            <span className={cx('flex size-10 shrink-0 items-center justify-center rounded-full', on ? 'bg-[#d4f1e7] text-[#127650]' : 'bg-panel text-muted')}><Icon name={r.icon} size={18} /></span>
+            <div className="flex min-w-0 flex-1 flex-col">
+              <p className="text-[13px] font-bold text-ink">{r.name} · {r.via}</p>
+              <p className="truncate text-[12px] font-medium text-muted">{on ? r.what(r.c) : r.c ? 'Needs attention: check the details' : 'Not connected'}</p>
+            </div>
+            <SmallButton variant={on ? 'outline' : 'navy'} icon={on ? 'settings' : 'link'} to={`/settings/integrations?tab=${r.key}`}>{on ? 'Manage' : 'Connect'}</SmallButton>
+          </div>
+        )
+      })}
+    </Panel>
+  )
+}
+
 /* CM3 · Message detail: what happened to one message, step by step (outbox history). */
 const STEPS = [['QUEUED', 'Queued'], ['SENT', 'Sent'], ['DELIVERED', 'Delivered'], ['READ', 'Read']]
 const STOPS = { FAILED: 'Failed', STATUS_UNKNOWN: 'Status unknown', SKIPPED: 'Not sent', CANCELLED: 'Cancelled' }

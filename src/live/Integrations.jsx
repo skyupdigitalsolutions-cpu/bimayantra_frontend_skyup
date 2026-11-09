@@ -71,9 +71,9 @@ export default function LiveIntegrations() {
           })}
         </div>
         <div className="flex flex-col gap-4 p-6">
-          {q.error && <ErrorNote error={q.error} />}
+          {q.error && (serverMissing(q.error) ? <ServerNotUpdated /> : <ErrorNote error={q.error} />)}
           {q.loading && !q.data && <p className="text-[13px] font-medium text-muted">Loading…</p>}
-          {q.data && <ProviderPanel key={tab.provider} tab={tab} conn={data[tab.provider]} />}
+          {(q.data || serverMissing(q.error)) && <ProviderPanel key={tab.provider} tab={tab} conn={data[tab.provider]} />}
         </div>
       </SCard>
     </SettingsLayout>
@@ -171,12 +171,22 @@ function ProviderPanel({ tab, conn }) {
             </Input>
           </>
         )}
-        {error && !Object.keys(fe).length && <ErrorNote error={error} />}
+        {error && !Object.keys(fe).length && (serverMissing(error) ? <ServerNotUpdated /> : <ErrorNote error={error} />)}
         <div className="flex items-center gap-3">
           <SBtn size="lg" icon="check" disabled={!ready || busy} onClick={save} className="disabled:cursor-not-allowed disabled:opacity-50">{busy ? `Checking with ${tab.via}…` : conn ? 'Save changes' : 'Connect'}</SBtn>
           {!conn && <p className="text-[12px] font-medium text-muted">Until you connect, Bimayantra sends {isWa ? 'WhatsApp messages' : 'emails'} for you.</p>}
         </div>
       </div>
+
+      {!conn && (
+        <div className="flex flex-col gap-2 border-t border-line pt-4">
+          <SHead title="Webhook address" subtitle={isWa ? 'For MSG91 → WhatsApp → Webhook: delivery reports and STOP replies.' : 'For Brevo → Transactional → Settings → Webhook: delivery, bounces and unsubscribes.'} />
+          <div className="flex items-center gap-2 rounded-[16px] border border-dashed border-line px-4 py-3">
+            <Icon name="link" size={16} className="text-muted" />
+            <span className="text-[13px] font-medium text-muted">Your private webhook address is created when you press Connect, and shown here to copy.</span>
+          </div>
+        </div>
+      )}
 
       {conn && (
         <div className="flex flex-col gap-2 border-t border-line pt-4">
@@ -202,6 +212,17 @@ function ProviderPanel({ tab, conn }) {
 }
 
 /** The WhatsApp templates in the advisor's own MSG91 account (live), so they can see what Message templates can use. */
+/** 404 NOT_FOUND on /integrations = the API server is older than this page (the route does not exist there yet). */
+export const serverMissing = (e) => e?.status === 404 && e?.code === 'NOT_FOUND'
+export function ServerNotUpdated() {
+  return (
+    <div className="flex items-start gap-2.5 rounded-[14px] border border-[#f1d6a6] bg-[#fdf6ea] px-3.5 py-3 text-[13px] font-semibold text-[#8a5a12]">
+      <Icon name="alert" size={16} className="mt-px shrink-0" />
+      <span>The Bimayantra server has not been updated for this page yet, so details cannot be saved. Deploy the latest API, run <code>npm run build</code> and restart it, then reload this page.</span>
+    </div>
+  )
+}
+
 function OwnTemplates() {
   const q = useQuery('msg91-templates', () => api.integrations.msg91Templates())
   const list = q.data ?? []

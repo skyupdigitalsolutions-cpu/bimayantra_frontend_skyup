@@ -4,7 +4,8 @@
 //  • Sessions: HttpOnly cookies set by the API → every request uses credentials: 'include'.
 //    The Vite dev server proxies /v1 to the API, so the browser sees one origin and the
 //    backend's Origin check (CORS_ORIGINS) passes.
-//  • Expired access token (401 TOKEN_EXPIRED) → one silent POST /auth/refresh, then the request is repeated.
+//  • Expired access token (401 TOKEN_EXPIRED) → one silent POST /auth/refresh (shared by all requests and tabs),
+//    then the request is repeated. A refresh that only failed to reach the API does not sign the user out.
 //    Any other 401 → the session is over: listeners registered with onSessionEnded() are told.
 //  • Idempotency-Key: sent on every POST/PUT/PATCH/DELETE. Pass `idempotencyKey` to reuse the key
 //    made when a form opened (useMutation does this), otherwise a fresh one is made per call.
@@ -79,17 +80,38 @@ function filenameOf(res) {
   return m ? decodeURIComponent(m[1]) : null
 }
 
+/**
+ * Silent token refresh after 401 TOKEN_EXPIRED. Result: 'ok' (new cookies set: repeat the request),
+ * 'retry' (another request or tab rotated the refresh token a moment ago: the browser already holds the new
+ * cookies, so just repeat), 'network' (could not reach the API: not a sign-out), 'fail' (the session is over).
+ *  - One refresh per tab at a time (shared promise), and one across tabs (Web Lock): tabs share the cookies,
+ *    so a tab that waited for the lock and sees another tab refreshed meanwhile skips its own refresh.
+ *  - The server's rotation grace answer (TOKEN_INVALID + retryWithLatest) used to sign the user out when two
+ *    tabs refreshed together; it now means 'retry'.
+ */
+const REFRESHED_KEY = 'bm_refreshed_at'
+const readStamp = () => { try { return Number(localStorage.getItem(REFRESHED_KEY) || 0) } catch { return 0 } }
+const writeStamp = () => { try { localStorage.setItem(REFRESHED_KEY, String(Date.now())) } catch { /* private mode: per-tab only */ } }
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+async function runRefresh(askedAt) {
+  if (readStamp() >= askedAt) return 'ok' // another tab refreshed after this request failed
+  let r
+  try {
+    r = await fetch(buildUrl('/auth/refresh'), { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+  } catch {
+    return 'network'
+  }
+  if (r.ok) { writeStamp(); return 'ok' }
+  if (r.status >= 500 || r.status === 429) return 'network'
+  const j = await r.json().catch(() => ({}))
+  return j?.error?.details?.retryWithLatest ? 'retry' : 'fail'
+}
+
 let refreshing = null
-async function refreshSession() {
-  // One refresh for all requests that hit TOKEN_EXPIRED at the same time.
-  refreshing ??= fetch(buildUrl('/auth/refresh'), {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: '{}',
-  })
-    .then((r) => r.ok)
-    .catch(() => false)
+function refreshSession(askedAt) {
+  refreshing ??= (navigator.locks?.request ? navigator.locks.request('bm-session-refresh', () => runRefresh(askedAt)) : runRefresh(askedAt))
+    .catch(() => 'network')
     .finally(() => setTimeout(() => { refreshing = null }, 0))
   return refreshing
 }
@@ -121,6 +143,7 @@ export async function request(method, path, opts = {}) {
   if (stepUpToken) h['X-Step-Up-Token'] = stepUpToken
 
   let res
+  const sentAt = Date.now()
   try {
     res = await fetch(buildUrl(path, query), { method, credentials: 'include', headers: h, body: payload, signal })
   } catch (e) {
@@ -141,9 +164,12 @@ export async function request(method, path, opts = {}) {
 
   // Expired access token → refresh once and repeat (same idempotency key, so a write is never doubled).
   if (res.status === 401 && err.code === 'TOKEN_EXPIRED' && !_retried && !path.startsWith('/auth/refresh')) {
-    if (await refreshSession()) {
+    const outcome = await refreshSession(sentAt)
+    if (outcome === 'ok' || outcome === 'retry') {
+      if (outcome === 'retry') await sleep(300) // let the other refresh's cookies land
       return request(method, path, { ...opts, idempotencyKey: h['Idempotency-Key'], _retried: true })
     }
+    if (outcome === 'network') throw new ApiError({}) // GEN-07: connection problem, still signed in
   }
   if (res.status === 401 && !path.startsWith('/auth/login') && !path.startsWith('/auth/register') && !path.startsWith('/auth/logout')) {
     emitSessionEnded(err)
