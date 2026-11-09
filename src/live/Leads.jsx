@@ -166,6 +166,17 @@ const TIMES = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '1
 const t12 = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}` }
 const err = (m) => (m ? <span className="text-[12px] font-medium text-[#b4323c]">{m}</span> : null)
 const errBox = (m) => (m ? 'border-2 border-[#b4323c]' : '')
+/** Mobile input: digits only, max 10, shown as "98765 43210". */
+const typeMobile = (v) => {
+  let d = String(v).replace(/\D/g, '')
+  if (d.length > 10 && d.startsWith('91')) d = d.slice(2) // pasted "+91 98765 43210"
+  else if (d.length === 11 && d.startsWith('0')) d = d.slice(1) // pasted "098765 43210"
+  d = d.slice(0, 10)
+  return d.length > 5 ? `${d.slice(0, 5)} ${d.slice(5)}` : d
+}
+const digits = (v) => String(v || '').replace(/\D/g, '')
+const MOBILE_RE = /^[6-9]\d{9}$/
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 export function LiveLeadForm({ mode = 'new' }) {
   const { id } = useParams()
@@ -192,10 +203,16 @@ function LeadFormInner({ lead, presetPipeline }) {
     priority: lead ? titleCase(lead.priority) : 'Medium', interests: lead?.interests ?? [], date: lead?.nextFollowUpAt ? istDay(lead.nextFollowUpAt) : '',
     time: '11:00', notes: lead?.notes ?? '',
   }))
-  const set = (k) => (v) => setF((s) => ({ ...s, [k]: v }))
+  const set = (k) => (v) => {
+    setF((s) => ({ ...s, [k]: v }))
+    setErrs((e) => (e[k] ? { ...e, [k]: undefined } : e))
+    setEdited((x) => (x.has(k) ? x : new Set(x).add(k)))
+  }
   const [open, setOpen] = useState(false)
   const [dup, setDup] = useState(null)
   const [warnings, setWarnings] = useState(null) // 409 CONFIRMATION_REQUIRED
+  const [errs, setErrs] = useState({}) // client-side checks
+  const [edited, setEdited] = useState(() => new Set()) // fields changed since the last server error
   const [clientQ, setClientQ] = useState('')
   const dq = useDebounced(clientQ, 300)
   const [clientHits, setClientHits] = useState([])
@@ -210,8 +227,8 @@ function LeadFormInner({ lead, presetPipeline }) {
 
   // Duplicate check when the mobile is complete (P-12: "when the mobile field loses focus")
   const checkDup = async () => {
-    const m = cleanMobile(f.mobile)
-    if (m.length !== 10) return setDup(null)
+    const m = digits(f.mobile)
+    if (!MOBILE_RE.test(m)) return setDup(null)
     try {
       const { data } = await api.leads.duplicateCheck({ mobile: m, name: f.name || undefined, excludeId: lead?.id })
       setDup(data.exact || data.sameMobile.length || data.customers.length ? data : null)
@@ -220,7 +237,7 @@ function LeadFormInner({ lead, presetPipeline }) {
 
   const save = useMutation(async ({ again, confirm = [] }, o) => {
     const body = {
-      pipelineId: f.pipelineId, name: f.name.trim(), mobile: cleanMobile(f.mobile), altMobile: cleanMobile(f.altMobile) || null,
+      pipelineId: f.pipelineId, name: f.name.trim(), mobile: digits(f.mobile), altMobile: digits(f.altMobile) || null,
       email: f.email.trim() || null, source: code, referrerId: needs.needs === 'REFERRER' ? f.referrerId || null : null,
       referredByCustomerId: needs.needs === 'CLIENT' ? f.referredBy?.id ?? null : null, campaign: needs.campaignName ? f.campaign.trim() || null : null,
       interests: f.interests, priority: f.priority.toUpperCase(), nextFollowUpAt: f.date ? `${f.date}T${f.time}:00+05:30` : null,
@@ -233,14 +250,46 @@ function LeadFormInner({ lead, presetPipeline }) {
     onSuccess: (r) => {
       toast(r.meta?.message || 'Lead saved.')
       setWarnings(null)
-      if (r.again) { setF((s) => ({ ...s, name: '', mobile: '', altMobile: '', email: '', notes: '', date: '' })); setDup(null) }
+      if (r.again) { setF((s) => ({ ...s, name: '', mobile: '', altMobile: '', email: '', notes: '', date: '' })); setDup(null); setErrs({}) }
       else navigate(`/leads/${r.data.id}`)
     },
     onError: (e) => { if (e instanceof ApiError && e.code === 'CONFIRMATION_REQUIRED') setWarnings(e.details?.warnings ?? [{ message: e.message, messageId: e.messageId }]) },
   })
-  const submit = (again = false) => save.run({ again })
+  const validate = () => {
+    const e = {}
+    const name = f.name.trim()
+    if (!name) e.name = 'Enter the lead’s name.'
+    else if (name.length < 2) e.name = 'Name must be at least 2 characters.'
+    else if (!/^[\p{L}][\p{L} .'-]*$/u.test(name)) e.name = 'Use letters only (spaces, . \' - allowed).'
+    if (!f.pipelineId) e.pipelineId = 'Choose a pipeline.'
+    const m = digits(f.mobile)
+    if (!m) e.mobile = 'Enter the mobile number.'
+    else if (m.length !== 10) e.mobile = 'Mobile must be exactly 10 digits.'
+    else if (!MOBILE_RE.test(m)) e.mobile = 'Mobile must start with 6, 7, 8 or 9.'
+    const a = digits(f.altMobile)
+    if (a) {
+      if (a.length !== 10) e.altMobile = 'Alternate mobile must be exactly 10 digits.'
+      else if (!MOBILE_RE.test(a)) e.altMobile = 'Alternate mobile must start with 6, 7, 8 or 9.'
+      else if (a === m) e.altMobile = 'Alternate mobile can’t be the same as the primary.'
+    }
+    if (f.email.trim() && !EMAIL_RE.test(f.email.trim())) e.email = 'Enter a valid email, e.g. name@example.com.'
+    if (needs.needs === 'REFERRER' && !f.referrerId) e.referrerId = 'Choose a referrer.'
+    if (needs.needs === 'CLIENT' && !f.referredBy) e.referredByCustomerId = 'Choose the client who referred this lead.'
+    if (needs.campaignName === 'REQUIRED' && !f.campaign.trim()) e.campaign = 'Enter the campaign name.'
+    if (f.date && f.date < istDay()) e.nextFollowUpAt = 'Follow-up date can’t be in the past.'
+    return e
+  }
+  const submit = (again = false) => {
+    const e = validate()
+    setErrs(e)
+    if (Object.values(e).some(Boolean)) return
+    setEdited(new Set())
+    save.run({ again })
+  }
   const saveAnyway = () => save.run({ confirm: warnings.map((w) => w.messageId) })
-  const fe = save.fieldErrors
+  // Client errors first; a server error stays until that field is edited.
+  const serverFe = save.fieldErrors
+  const fe = new Proxy({}, { get: (_, k) => errs[k] || (!edited.has(k) ? serverFe[k] : undefined) })
   const generalError = save.error && !save.error.fields?.length && save.error.code !== 'CONFIRMATION_REQUIRED' ? save.error.message : null
   const pipeName = pipes.data?.find((p) => p.id === f.pipelineId)?.name ?? '—'
   const sourceLabel = (reference?.allLeadSources ?? []).find((s) => s.code === code)?.label ?? code
@@ -267,13 +316,13 @@ function LeadFormInner({ lead, presetPipeline }) {
               <Chip className="bg-blue-50 text-blue">{pipeName} pipeline</Chip>
             </div>
             <div className="flex gap-3.5">
-              <F label="Lead name *"><div className={cx(box, errBox(fe.name))}><input value={f.name} onChange={(e) => set('name')(e.target.value)} onBlur={checkDup} className={inp} autoFocus /></div>{err(fe.name)}</F>
+              <F label="Lead name *"><div className={cx(box, errBox(fe.name))}><input value={f.name} onChange={(e) => set('name')(e.target.value)} onBlur={checkDup} maxLength={100} className={inp} autoFocus /></div>{err(fe.name)}</F>
               <F label="Pipeline *"><SelectBox value={f.pipelineId} onChange={set('pipelineId')} options={(pipes.data || []).map((p) => ({ value: p.id, label: p.name }))} />{err(fe.pipelineId)}</F>
             </div>
             <div className="flex gap-3.5">
-              <F label="Primary mobile *"><div className={cx(box, errBox(fe.mobile))}><span className="text-muted">+91</span><input value={f.mobile} onChange={(e) => set('mobile')(e.target.value)} onBlur={checkDup} inputMode="tel" className={inp} /></div>{err(fe.mobile)}</F>
-              <F label="Alternate mobile"><div className={cx(box, errBox(fe.altMobile))}><span className="text-muted">+91</span><input value={f.altMobile} onChange={(e) => set('altMobile')(e.target.value)} placeholder="Optional" inputMode="tel" className={inp} /></div>{err(fe.altMobile)}</F>
-              <F label="Email"><div className={cx(box, errBox(fe.email))}><Icon name="mail" size={18} className="text-muted" /><input value={f.email} onChange={(e) => set('email')(e.target.value)} className={inp} /></div>{err(fe.email)}</F>
+              <F label="Primary mobile *"><div className={cx(box, errBox(fe.mobile))}><span className="text-muted">+91</span><input value={f.mobile} onChange={(e) => set('mobile')(typeMobile(e.target.value))} onBlur={checkDup} inputMode="numeric" autoComplete="tel-national" maxLength={11} placeholder="98765 43210" className={inp} /></div>{err(fe.mobile)}</F>
+              <F label="Alternate mobile"><div className={cx(box, errBox(fe.altMobile))}><span className="text-muted">+91</span><input value={f.altMobile} onChange={(e) => set('altMobile')(typeMobile(e.target.value))} placeholder="Optional" inputMode="numeric" maxLength={11} className={inp} /></div>{err(fe.altMobile)}</F>
+              <F label="Email"><div className={cx(box, errBox(fe.email))}><Icon name="mail" size={18} className="text-muted" /><input type="email" value={f.email} onChange={(e) => set('email')(e.target.value.trimStart())} placeholder="name@example.com" className={inp} /></div>{err(fe.email)}</F>
             </div>
             {dup && (
               <div className={cx('flex items-center gap-2.5 rounded-[16px] px-3.5 py-3', dup.exact ? 'bg-[#fbebec] text-[#b4323c]' : 'bg-[#fbf1e1] text-[#8a5a12]')}>
@@ -317,7 +366,7 @@ function LeadFormInner({ lead, presetPipeline }) {
                   {err(fe.referredByCustomerId)}
                   {!f.referredBy && clientHits.length > 0 && (
                     <div className="absolute top-[82px] right-0 left-0 z-20 flex flex-col rounded-[14px] bg-white p-1.5 shadow-[0px_24px_48px_-10px_rgba(19,41,75,0.2)]">
-                      {clientHits.map((c) => <button key={c.id} type="button" onClick={() => { set('referredBy')({ id: c.id, name: c.name }); setClientQ('') }} className="rounded-[10px] px-2.5 py-2 text-left text-[13px] font-semibold text-ink hover:bg-[#f3f7ff]">{c.name} <span className="text-muted">· {c.number}</span></button>)}
+                      {clientHits.map((c) => <button key={c.id} type="button" onClick={() => { set('referredBy')({ id: c.id, name: c.name }); setClientQ(''); setClientHits([]) }} className="rounded-[10px] px-2.5 py-2 text-left text-[13px] font-semibold text-ink hover:bg-[#f3f7ff]">{c.name} <span className="text-muted">· {c.number}</span></button>)}
                     </div>
                   )}
                 </div>
