@@ -151,13 +151,14 @@ export function LiveAddProduct() {
                         key={t.id}
                         type="button"
                         onClick={() => setTypeId(t.id)}
-                        className={cx('flex min-w-0 flex-col items-center gap-2.5 rounded-[24px] border-[2.5px] px-3 py-5 transition', look.bg, on ? 'border-blue' : 'border-transparent hover:brightness-[0.98]')}
+                        className={cx('relative flex min-w-0 flex-col items-center gap-2.5 rounded-[24px] border-[2.5px] px-3 py-5 transition', look.bg, on ? 'border-blue' : 'border-transparent hover:brightness-[0.98]')}
                       >
+                        {t.private && <span className="absolute top-2.5 right-2.5 rounded-[10px] bg-white/80 px-2 py-0.5 text-[10px] font-semibold text-muted">Mine</span>}
                         <span className="flex size-14 items-center justify-center rounded-full bg-white/90 text-ink">
                           <Icon name={look.icon} size={26} />
                         </span>
                         <span className="w-full truncate text-center text-[15px] font-bold text-ink" title={t.name}>{t.name}</span>
-                        {on ? <Chip tone="blue" icon="check">Selected</Chip> : t.private && <span className="text-[11px] font-semibold text-muted">Your category</span>}
+                        {on && <Chip tone="blue" icon="check">Selected</Chip>}
                       </button>
                     )
                   })}
