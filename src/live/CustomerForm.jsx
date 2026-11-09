@@ -1,7 +1,7 @@
 // F3 · New customer and PE1 · Edit details on the live API: POST /customers (Idempotency-Key, duplicate warnings
 // with "Save anyway"), PATCH /customers/:id (version). Lists (genders, states, contact preferences) come from
 // GET /reference.
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Icon from '../components/Icon'
 import { cx } from '../components/ui'
@@ -34,7 +34,14 @@ function DateBox({ value, onChange, error }) {
     <DatePicker value={value} onChange={onChange} invalid={!!error} max="today" placeholder="Choose date of birth" />
   )
 }
-const Err = ({ children }) => (children ? <span className="text-[12px] font-semibold text-[#b4323c]">{children}</span> : null)
+const Err = ({ children }) => (children ? <span data-field-error className="text-[12px] font-semibold text-[#b4323c]">{children}</span> : null)
+/** After a failed save, bring the first problem (banner or field message) into view — Save is at the bottom of the page. */
+const scrollToProblem = () => requestAnimationFrame(() => {
+  const el = document.querySelector('[data-form-banner], [data-field-error]')
+  if (!el) return
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  el.closest('[data-field]')?.querySelector('input, button')?.focus({ preventScroll: true })
+})
 
 function Form({ c }) {
   const navigate = useNavigate()
@@ -70,7 +77,7 @@ function Form({ c }) {
   const submit = (opts = {}) => {
     const e = validate()
     setClientErr(e)
-    if (Object.keys(e).length) { toast('Please correct the highlighted fields.', 'error'); return }
+    if (Object.keys(e).length) { toast('Please correct the highlighted fields.', 'error'); scrollToProblem(); return }
     save.run(opts)
   }
 
@@ -88,6 +95,8 @@ function Form({ c }) {
     onError: (e) => { if (e instanceof ApiError && e.code === 'CONFIRMATION_REQUIRED') setWarnings(e.details?.warnings ?? [{ message: e.message, messageId: e.messageId }]) },
   })
   const fe = { ...save.fieldErrors, ...clientErr }
+  // Server-side field errors, a general error or duplicate warnings: show them instead of leaving the user at the bottom.
+  useEffect(() => { if (save.error || warnings) scrollToProblem() }, [save.error, warnings])
   const general = save.error && save.error.code !== 'CONFIRMATION_REQUIRED' ? save.error.message : null // with field errors this is the API's summary
   const opt = (list, labelOf) => [NONE, ...list.map(labelOf)]
   const pick = (list, labelOf, k) => (v) => set(k)(v === NONE ? '' : list.find((x) => labelOf(x) === v) ?? '')
@@ -119,7 +128,7 @@ function Form({ c }) {
       }
     >
       {(general || warnings) && (
-        <div className={cx('mb-[18px] flex items-center gap-2.5 rounded-[16px] px-3.5 py-3', warnings ? 'bg-[#fbf1e1] text-[#8a5a12]' : 'border border-[#f2c4c8] bg-[#fff7f7] text-[#b4323c]')}>
+        <div data-form-banner className={cx('mb-[18px] flex scroll-mt-28 items-center gap-2.5 rounded-[16px] px-3.5 py-3', warnings ? 'bg-[#fbf1e1] text-[#8a5a12]' : 'border border-[#f2c4c8] bg-[#fff7f7] text-[#b4323c]')}>
           <Icon name="alert" size={18} />
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">{(warnings ?? [{ message: general }]).map((w, i) => <p key={i} className="text-[13px] font-bold">{w.message}</p>)}</div>
           {warnings && <button type="button" onClick={() => save.run({ confirm: warnings.map((w) => w.messageId) })} className="flex h-9 shrink-0 items-center rounded-[18px] border border-line bg-white px-3.5 text-[13px] font-semibold text-ink hover:bg-tile">Save anyway</button>}

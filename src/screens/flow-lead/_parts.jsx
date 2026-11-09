@@ -31,7 +31,7 @@ export function Row({ className = '', children }) {
 /** Label + control + optional hint (gap 8) */
 export function FField({ label, hint, className = '', onClick, children }) {
   return (
-    <div className={cx('flex min-w-px flex-1 flex-col gap-2', className)} onClick={onClick}>
+    <div data-field className={cx('flex min-w-px flex-1 flex-col gap-2', className)} onClick={onClick}>
       <span className="text-[13px] font-semibold text-ink">{label}</span>
       {children}
       {hint && <span className="text-[12px] font-medium text-muted">{hint}</span>}
@@ -48,7 +48,7 @@ export function TInput({ value, onChange, placeholder, prefix, leading, trailing
     <span className={cx(shell, focused ? 'border-2 border-blue' : 'focus-within:ring-2 focus-within:ring-blue/30', className)}>
       {leading && <Icon name={leading} size={18} className="text-muted" />}
       {prefix && <span className="text-[14px] font-semibold text-muted">{prefix}</span>}
-      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={inputCls} />
+      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={cx(inputCls, 'scroll-mt-28 scroll-mb-28')} />
       {trailing && <Icon name={trailing} size={18} className="text-muted" />}
     </span>
   )
@@ -114,17 +114,25 @@ export function AfterSave({ tone, steps, className = '' }) {
   )
 }
 
-/** Page: header (search + bell) · [form column | side column] · action bar pinned at y=900 */
+/**
+ * Page: header (search + bell) · [form column | side column] · action bar.
+ * The bar sits at the bottom of the panel (y=900) like the frame when everything fits, and sticks to the bottom of
+ * the window while the form is taller than the screen — so Save is always reachable and the form never slides
+ * under it (it used to be absolutely positioned, which overlapped the last card once errors or warnings appeared).
+ * min-h = AppLayout panel min-height (976) − its top/bottom padding (36 + 40).
+ */
 export default function LeadShell({ active, breadcrumb, title, titleExtra, subtitle, side, cancel = true, actions, children }) {
   const navigate = useNavigate()
   return (
     <AppLayout active={active}>
+      <div className="flex min-h-[900px] flex-col">
       <PageHeader breadcrumb={breadcrumb} title={title} titleExtra={titleExtra} subtitle={subtitle} />
       <div className="mt-[21px] flex items-start gap-5">
         <div className="flex w-[760px] shrink-0 flex-col">{children}</div>
         <div className="relative w-[400px] shrink-0">{side}</div>
       </div>
-      <div className="absolute right-10 bottom-1.5 left-10 flex h-[70px] items-center gap-3 rounded-[30px] bg-white py-3 pr-3 pl-6 shadow-[0px_18px_40px_-14px_rgba(19,41,75,0.1)]">
+      <div className="min-h-6 flex-1" aria-hidden="true" />
+      <div className="sticky bottom-1.5 z-20 -mb-[34px] flex h-[70px] shrink-0 items-center gap-3 rounded-[30px] bg-white py-3 pr-3 pl-6 shadow-[0px_18px_40px_-14px_rgba(19,41,75,0.1),0px_-8px_24px_-12px_rgba(19,41,75,0.12)]">
         {cancel && (
           <button type="button" onClick={() => navigate(-1)} className="inline-flex h-[46px] items-center rounded-[24px] border border-line bg-white px-5 text-[14px] font-semibold text-ink hover:bg-tile">
             Cancel
@@ -132,6 +140,7 @@ export default function LeadShell({ active, breadcrumb, title, titleExtra, subti
         )}
         <span className="flex-1" />
         {actions}
+      </div>
       </div>
     </AppLayout>
   )
