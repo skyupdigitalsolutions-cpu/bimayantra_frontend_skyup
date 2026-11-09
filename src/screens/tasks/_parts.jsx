@@ -17,7 +17,7 @@ import {
   tasks as baseTasks, createdTask, rescheduleOptions, activities as ACTIVITIES, activitiesCompact as ACTIVITIES_COMPACT, leadSources as LEAD_SOURCES, leadSourcesTablet as LEAD_SOURCES_T,
   leadSourcesMobile as LEAD_SOURCES_M, renewals as RENEWALS, catalogueTypes as CATALOGUE_TYPES, taskTypes, upcomingTasks, overdueTasks, completedTasks, leadRows, leadPipelines,
 } from '../../data/tasks'
-import { matchesQuery, useHeaderSearch, useDismiss, useCtrlK, NoMatches } from './_filter'
+import { useDismiss, useCtrlK, NoMatches } from './_filter'
 
 /**
  * Live data for the dashboard (src/live/Dashboard.jsx). When it is absent every section shows the Figma mock
@@ -120,8 +120,6 @@ function DashHeader() {
             <span className="hidden xl:inline">{greeting.sub}</span>
           </p>
         </div>
-        <RoundIcon icon="search" className="hidden md:flex xl:hidden" aria-label="Search" />
-        <SearchBox className="hidden w-[260px] xl:flex" />
         <RoundIcon icon="bell" className="hidden md:flex" to="/notifications" aria-label="Notifications" />
         <Link
           onClick={(e) => { if (live?.tasks) { e.preventDefault(); live.tasks.onAdd() } }}
@@ -396,10 +394,9 @@ function PrototypeTasksSection({ state, reschedule }) {
   const [tab, setTab] = useState('today')
   const [done, setDone] = useState(() => ({ ...Object.fromEntries(completedTasks.map((t) => [t.id, true])), ...(state === 'completed' ? { t1: true } : {}) }))
   const [pop, setPop] = useState(reschedule)
-  const [q, clearQ] = useHeaderSearch()
   const toggle = (id) => setDone((d) => ({ ...d, [id]: !d[id] }))
   const tabs = taskTabs.map((t) => ({ ...t, count: lists[t.key].length }))
-  const list = lists[tab].filter((t) => matchesQuery(q, t.title, t.who, t.whoKind, t.when, t.priority))
+  const list = lists[tab]
   const pick = (k) => { setTab(k); setPop(null) }
 
   return (
@@ -460,9 +457,8 @@ function PrototypeTasksSection({ state, reschedule }) {
       {list.length === 0 && (
         <NoMatches
           className="rounded-[18px] border border-line px-4 py-4"
-          text={q.trim() ? 'No matches' : 'Nothing here'}
-          sub={q.trim() ? `No ${taskTabs.find((t) => t.key === tab).label.toLowerCase()} tasks match “${q.trim()}”.` : 'No tasks in this tab.'}
-          onClear={q.trim() ? clearQ : undefined}
+          text="Nothing here"
+          sub="No tasks in this tab."
         />
       )}
 
@@ -478,8 +474,8 @@ function LiveTasksSection({ live }) {
   const { tasks: T } = live
   const [tab, setTab] = useState('today')
   const [pop, setPop] = useState(null)
-  const [q, clearQ] = useHeaderSearch()
-  const list = (T.lists[tab] || []).filter((t) => matchesQuery(q, t.title, t.who, t.whoKind, t.when, t.priority))
+  // The dashboard has no search bar (search lives on the list pages: Tasks, Leads, Policy holders…)
+  const list = T.lists[tab] || []
   const tabs = taskTabs.map((t) => ({ ...t, count: T.counts[t.key] ?? 0 }))
   const pick = (k) => { setTab(k); setPop(null); T.onTab?.(k) }
   const open = (T.counts.today ?? 0) + (T.counts.upcoming ?? 0) + (T.counts.overdue ?? 0)
@@ -525,9 +521,7 @@ function LiveTasksSection({ live }) {
         {list.map((t) => <TaskCardMobile key={t.id} t={t} done={t.done} onToggle={() => T.onToggle(t)} onView={T.onView} />)}
       </div>
       {!T.loading && list.length === 0 && (
-        <NoMatches className="rounded-[18px] border border-line px-4 py-4" text={q.trim() ? 'No matches' : 'Nothing here'}
-          sub={q.trim() ? `No ${taskTabs.find((t) => t.key === tab).label.toLowerCase()} tasks match “${q.trim()}”.` : 'No tasks in this tab.'}
-          onClear={q.trim() ? clearQ : undefined} />
+        <NoMatches className="rounded-[18px] border border-line px-4 py-4" text="Nothing here" sub="No tasks in this tab." />
       )}
       <Link to="/tasks" className="flex w-fit items-center gap-1 text-[12px] font-bold text-blue hover:underline md:gap-1.5 md:text-[13px]">
         View all tasks <Icon name="arrow" size={13} className="md:size-3.5" />
@@ -998,7 +992,7 @@ export function TaskDrawer({ mode = 'empty', closeTo = '/', saveTo }) {
 export function DashboardScreen({ drawer, tasks, reschedule, toast, closeTo, live, liveDrawer }) {
   return (
     <DashLive.Provider value={live ?? null}>
-    <AppLayout active="dashboard" responsive mobileTitle="Home" lockScroll={!!drawer}>
+    <AppLayout active="dashboard" responsive mobileTitle="Home" mobileSearch={false} lockScroll={!!drawer}>
       <div className="grid grid-cols-1 gap-y-3.5 md:grid-cols-2 md:gap-x-3.5 md:gap-y-[18px] xl:grid-cols-[minmax(0,1fr)_400px] xl:gap-5">
         <DashHeader />
         <QuickActions />

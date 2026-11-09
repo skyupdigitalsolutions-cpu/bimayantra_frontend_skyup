@@ -6,7 +6,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import Icon from '../components/Icon'
 import { cx } from '../components/ui'
 import { AdminLayout, AdminHeader, ACard, ACardHead, Pill, SButton, SegTabs } from '../screens/admin/_parts'
-import { api, useQuery } from '../api'
+import { api, useQuery, useDebounced } from '../api'
 import { fmtDate, fmtDateTime, fmtMoney, cleanMobile, mobileError, isEmail } from '../api/format'
 import { useAuth } from '../auth/AuthProvider'
 import { ActionDialog, Field, ErrorNote, useAct, label, dmy, check } from './kit'
@@ -68,7 +68,8 @@ const ACC_TABS = ['ALL', 'TRIAL', 'ACTIVE', 'GRACE', 'READ_ONLY', 'SUSPENDED', '
 export function AdminAccounts() {
   const [tab, setTab] = useState('ALL')
   const [q, setQ] = useState('')
-  const list = useQuery(['admin:accounts', tab, q], () => api.admin.accounts({ view: 'tabs', tab: tab === 'ALL' ? undefined : tab, q: q || undefined }))
+  const dq = useDebounced(q.trim(), 300) // one request per pause in typing
+  const list = useQuery(['admin:accounts', tab, dq], () => api.admin.accounts({ view: 'tabs', tab: tab === 'ALL' ? undefined : tab, q: dq || undefined }))
   const d = list.data
   return (
     <AdminLayout active="accounts">
@@ -401,12 +402,14 @@ function ConfigDialog({ c, onClose }) {
 export function AdminAudit() {
   const [page, setPage] = useState(1)
   const [action, setAction] = useState('')
-  const q = useQuery(['admin:audit', page, action], () => api.audit.list({ page, limit: 30, action: action || undefined }))
+  const da = useDebounced(action.trim(), 300)
+  // starts-with: "LOGIN" finds LOGIN_SUCCEEDED and LOGIN_FAILED (an exact match only worked with the full name)
+  const q = useQuery(['admin:audit', page, da], () => api.audit.list({ page, limit: 30, actionStartsWith: da || undefined }))
   const m = q.meta || {}
   return (
     <AdminLayout active="audit">
       <AdminHeader title="Audit log" subtitle="Every sign-in, change and access, across all accounts." />
-      <input value={action} onChange={(e) => { setAction(e.target.value.toUpperCase()); setPage(1) }} placeholder="Filter by action, e.g. LOGIN_SUCCEEDED" className="mt-5 h-[42px] w-[340px] rounded-[21px] bg-white px-4 text-[13px] font-semibold outline-none" />
+      <input value={action} onChange={(e) => { setAction(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '')); setPage(1) }} placeholder="Filter by action, e.g. LOGIN_SUCCEEDED" className="mt-5 h-[42px] w-[340px] rounded-[21px] bg-white px-4 text-[13px] font-semibold outline-none" />
       <ACard className="mt-4"><div className="flex flex-col gap-2">
         {(q.data || []).map((e) => <Line key={e.id}><span className="w-[150px] text-muted">{fmtDateTime(e.at)}</span><span className="w-[170px] truncate font-semibold text-ink">{e.actorName ?? label(e.actorRole)}</span><span className="flex-1 truncate font-semibold text-ink">{label(e.action)}{e.entityRef ? ` · ${e.entityRef}` : ''}</span><span className="w-[110px] text-muted">{e.ip}</span><Pill tone={e.result === 'SUCCESS' ? 'green' : 'red'}>{label(e.result)}</Pill></Line>)}
         {!q.data && <Empty q={q} />}

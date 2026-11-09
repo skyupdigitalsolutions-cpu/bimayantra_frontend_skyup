@@ -3,10 +3,9 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Icon from '../components/Icon'
-import { cx } from '../components/ui'
 import { Header, HeadButton, SmallButton, SegTabs, DataTable, StatusChip, RowChevron, IdCell, Panel, PanelHead, RingAvatar } from '../screens/catalogue/_parts'
 import { matchesQuery, useHeaderSearch } from '../screens/tasks/_filter'
-import { api, useQuery } from '../api'
+import { api, useQuery, useDebounced } from '../api'
 import { useAuth } from '../auth/AuthProvider'
 import { avatarClass, fmtDate, fmtDateTime, fmtMoney, initials } from '../api/format'
 import { ActionDialog, Field, useAct, label, dmy, ErrorNote } from './kit'
@@ -129,8 +128,11 @@ const Q_TONE = { DRAFT: 'neutral', READY: 'sky', SHARED: 'violet', ACCEPTED: 'gr
 export function LiveQuotations() {
   const [tab, setTab] = useState('all')
   const [hq, clearQ] = useHeaderSearch()
+  const search = useDebounced(hq.trim(), 300) // one request per pause in typing, not per key
   const [page, setPage] = useState(1)
-  const list = useQuery(['quotations', tab, hq.trim(), page], () => api.quotations.list({ status: tab === 'all' ? undefined : tab, search: hq.trim() || undefined, page, limit: 25 }))
+  const [lastSearch, setLastSearch] = useState(search)
+  if (lastSearch !== search) { setLastSearch(search); setPage(1) } // a new search starts at page 1
+  const list = useQuery(['quotations', tab, search, page], () => api.quotations.list({ status: tab === 'all' ? undefined : tab, search: search || undefined, page, limit: 25 }))
   const meta = list.meta || {}
   const counts = meta.counts || {}
   const rows = (list.data || []).map((x) => ({ ...x, cname: x.customer?.name ?? '—' }))

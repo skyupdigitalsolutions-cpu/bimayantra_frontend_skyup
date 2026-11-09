@@ -6,17 +6,18 @@
 import { useEffect, useRef } from 'react'
 import Icon from '../../components/Icon'
 import { cx } from '../../components/ui'
-
-const SEL = 'input[placeholder^="Search anything"]'
+import { isPill, visiblePills, registerConsumer, clearPills } from '../../components/headerSearchBus'
 
 export function useHeaderSearch(onQuery) {
   const cb = useRef(onQuery)
   cb.current = onQuery
+  const consumes = typeof onQuery === 'function'
   useEffect(() => {
-    const isPill = (t) => t && t.matches && t.matches(SEL)
+    // Without onQuery the page has no list: the pill stays the global search (components/GlobalSearch).
+    const off = consumes ? registerConsumer() : () => {}
     const onKey = (e) => {
       if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key?.toLowerCase() === 'k') {
-        const el = document.querySelector(SEL)
+        const el = visiblePills()[0]
         if (el) {
           e.preventDefault()
           el.focus()
@@ -39,16 +40,16 @@ export function useHeaderSearch(onQuery) {
     document.addEventListener('keydown', onKey)
     document.addEventListener('input', onInput)
     return () => {
+      off()
       document.removeEventListener('keydown', onKey)
       document.removeEventListener('input', onInput)
     }
-  }, [])
+  }, [consumes])
 }
 
 /** Clears the header pill's text (used by "Clear filters"). */
 export function clearHeaderSearch() {
-  const el = typeof document !== 'undefined' && document.querySelector(SEL)
-  if (el) el.value = ''
+  clearPills()
 }
 
 export function matches(q, ...fields) {

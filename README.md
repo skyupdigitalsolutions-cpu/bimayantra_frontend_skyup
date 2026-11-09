@@ -17,5 +17,6 @@ npm run dev        # http://localhost:5173
 - `src/components/` — Icon set (exported from Figma), Sidebar (sticky), AppLayout, shared UI primitives, cards
 - `src/screens/<section>/` — one file per Figma frame + `_parts.jsx` shared layouts, registered in each `index.js`
 - `src/data/` — mock data transcribed from the designs (swap for bimayantra-api calls)
-- `docs/SCREEN_GUIDE.md` — conventions used to build the screens
+- `docs/UI-GUIDELINES.md` — **how to build and change connected pages**: header and back button, where search bars go and how they work, forms, products, hand-over checklist
+- `docs/SCREEN_GUIDE.md` — conventions used to build the prototype screens (historical)
 - `docs/INTEGRATIONS.md` — Meta Ads / Google Ads / website lead integration: credentials needed, .env template, webhook specs and Express route skeletons for bimayantra-api (in-app version at `/campaigns/guide`)

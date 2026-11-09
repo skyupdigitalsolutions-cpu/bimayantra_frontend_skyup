@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import RawIcon from '../../components/Icon'
 import { cx } from '../../components/ui'
+import { isPill, visiblePills, registerConsumer, syncPills, clearPills } from '../../components/headerSearchBus'
 
 /** Case-insensitive "does any field contain the query" (empty query matches everything). */
 export function matchesQuery(q, ...fields) {
@@ -11,15 +12,13 @@ export function matchesQuery(q, ...fields) {
   return fields.flat().some((f) => f != null && String(f).toLowerCase().includes(s))
 }
 
-const HEADER_SEL = 'input[placeholder^="Search anything"]'
-const visible = (el) => !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length)
 
 /** Ctrl/Cmd+K focuses the (visible) global "Search anything" pill. */
 export function useCtrlK() {
   useEffect(() => {
     const onKey = (e) => {
-      if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === 'k') {
-        const el = [...document.querySelectorAll(HEADER_SEL)].find(visible)
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key?.toLowerCase() === 'k') {
+        const el = visiblePills()[0]
         if (!el) return
         e.preventDefault()
         el.focus()
@@ -32,24 +31,29 @@ export function useCtrlK() {
 }
 
 /**
- * Wires the global "Search anything · Ctrl K" header pill (an uncontrolled input rendered by the header) to the
- * current page's list. Typing filters live; Enter commits; Escape clears. Returns [query, clear].
+ * Wires the global "Search anything · Ctrl K" header pill to the current page's list. Typing filters live; Enter
+ * commits; Escape clears. Returns [query, clear]. Listens on `document`, so it keeps working when the header mounts
+ * after the page (loading → loaded) or re-renders; a re-mounted pill is refilled with the current query.
  */
-export function useHeaderSearch() {
+export function useHeaderSearch({ global = false } = {}) {
   const [q, setQ] = useState('')
   useCtrlK()
   useEffect(() => {
-    const inputs = [...document.querySelectorAll(HEADER_SEL)]
-    const onInput = (e) => setQ(e.target.value)
+    // global: the page filters a widget with the query but the pill stays the app-wide search too (dashboard)
+    const off = global ? () => {} : registerConsumer()
+    const onInput = (e) => { if (isPill(e.target)) setQ(e.target.value) }
     const onKey = (e) => {
+      if (!isPill(e.target)) return
       if (e.key === 'Enter') { e.preventDefault(); setQ(e.target.value) }
       if (e.key === 'Escape') { e.target.value = ''; setQ('') }
     }
-    inputs.forEach((i) => { i.addEventListener('input', onInput); i.addEventListener('keydown', onKey) })
-    return () => inputs.forEach((i) => { i.removeEventListener('input', onInput); i.removeEventListener('keydown', onKey) })
-  }, [])
+    document.addEventListener('input', onInput)
+    document.addEventListener('keydown', onKey)
+    return () => { off(); document.removeEventListener('input', onInput); document.removeEventListener('keydown', onKey) }
+  }, [global])
+  useEffect(() => { syncPills(q) })
   const clear = useCallback(() => {
-    document.querySelectorAll(HEADER_SEL).forEach((i) => { i.value = '' })
+    clearPills()
     setQ('')
   }, [])
   return [q, clear]

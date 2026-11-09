@@ -30,6 +30,14 @@ const catLook = (name = '') => {
   if (n.includes('accident')) return { icon: 'alert', bg: 'bg-[#fbebec]' }
   return { icon: 'box', bg: 'bg-[#eef1f5]' }
 }
+// Template data types (backend types.model DATA_TYPES) that hold a number: typed as text, sent as a number when it is one.
+const NUMERIC_TYPES = new Set(['Number', 'Amount in ₹', 'Percentage', 'Days', 'Months', 'Years'])
+const UNIT_HINT = { 'Amount in ₹': '₹', Percentage: '%', Days: 'days', Months: 'months', Years: 'years' }
+function toFeatureValue(f, dataType) {
+  if (f.notStated || !NUMERIC_TYPES.has(dataType) || typeof f.value !== 'string') return f
+  const n = Number(f.value.replace(/[₹,%\s]/g, ''))
+  return Number.isFinite(n) && f.value.trim() !== '' ? { ...f, value: n } : f
+}
 const nums = (v) => String(v ?? '').split(',').map((x) => Number(x.trim().replace(/[₹,\s]/g, ''))).filter((n) => n > 0)
 
 /* ═════════════ AP1–AP7 · Add my product ═════════════ */
@@ -40,7 +48,8 @@ export function LiveAddProduct() {
   const types = useQuery('my-products:types', () => api.myProducts.types())
   const [typeId, setTypeId] = useState('')
   const tpl = useQuery(['my-products:template', typeId], () => api.myProducts.typeTemplate(typeId), { enabled: !!typeId })
-  const insurers = useQuery('my-products:insurers', () => api.myProducts.insurers())
+  // Step 2 lists only companies that sell the category chosen in step 1 (life insurers for Term Life, general for Home…)
+  const insurers = useQuery(['my-products:insurers', typeId], () => api.myProducts.insurers(typeId ? { typeId } : undefined), { enabled: !!typeId })
   const [insurerId, setInsurerId] = useState('')
   const [code, setCode] = useState('')
   const [d, setD] = useState({ name: '', uin: '', launchDate: '', adultMin: 18, adultMax: 65, coversChildren: false, childMin: '', childMax: '', siOptions: '', siMin: '', siMax: '', policyTerms: '1', pricingMode: 'MANUAL_ENTRY', taxPercent: 18, gracePeriodDays: 30, nomineeRequired: true, brochureFileId: null, sourceLink: '' })
@@ -97,7 +106,7 @@ export function LiveAddProduct() {
       sumInsured: { ...(nums(d.siOptions).length ? { options: nums(d.siOptions) } : {}), ...(d.siMin ? { min: Number(d.siMin) } : {}), ...(d.siMax ? { max: Number(d.siMax) } : {}) },
       policyTerms: nums(d.policyTerms), pricingMode: d.pricingMode, taxPercent: Number(d.taxPercent), gracePeriodDays: Number(d.gracePeriodDays), nomineeRequired: !!d.nomineeRequired,
       ...(d.brochureFileId ? { brochureFileId: d.brochureFileId } : {}), ...(d.sourceLink ? { sourceLink: d.sourceLink } : {}),
-      features: Object.fromEntries(Object.entries(features).filter(([, f]) => f && (f.notStated || (f.value !== '' && f.value != null)))),
+      features: Object.fromEntries(Object.entries(features).filter(([, f]) => f && (f.notStated || (f.value !== '' && f.value != null))).map(([k, f]) => [k, toFeatureValue(f, feats.find((x) => x.key === k)?.dataType)])),
     },
     variants: variants.filter((v) => v.name.trim()).map((v) => ({ name: v.name.trim(), coverType: v.coverType || undefined, ...(v.sumInsuredMin ? { sumInsuredMin: Number(v.sumInsuredMin) } : {}), ...(v.sumInsuredMax ? { sumInsuredMax: Number(v.sumInsuredMax) } : {}), ...(v.features ? { features: v.features } : {}) })),
   })
@@ -105,6 +114,8 @@ export function LiveAddProduct() {
 
   const T = (types.data || [])
   const I = (insurers.data || [])
+  // A new category means a new company list: the earlier pick may not sell it.
+  const pickType = (id) => { if (id !== typeId) setInsurerId(''); setTypeId(id) }
   const typeName = T.find((t) => t.id === typeId)?.name
   const insName = I.find((t) => t.id === insurerId)?.name
   const canNext = [!!typeId, !!insurerId, true, !!code.trim() && !!d.name && !!d.uin, variants.some((v) => v.name.trim()), true, true][step]
@@ -113,7 +124,7 @@ export function LiveAddProduct() {
   const addCategory = () => {
     const name = newCat.trim()
     if (!name || busy) return
-    act(() => api.myProducts.createType({ name }), { invalidates: ['my-products'], onDone: (r) => { setTypeId(r.data.id); setNewCat('') } })
+    act(() => api.myProducts.createType({ name }), { invalidates: ['my-products'], onDone: (r) => { pickType(r.data.id); setNewCat('') } })
   }
   const namedVariants = variants.map((v) => v.name.trim()).filter(Boolean)
   const filledFeatures = Object.values(features).filter((f) => f && (f.notStated || (f.value !== '' && f.value != null))).length
@@ -152,7 +163,7 @@ export function LiveAddProduct() {
                       <button
                         key={t.id}
                         type="button"
-                        onClick={() => setTypeId(t.id)}
+                        onClick={() => pickType(t.id)}
                         className={cx('relative flex min-w-0 flex-col items-center gap-2.5 rounded-[24px] border-[2.5px] px-3 py-5 transition', look.bg, on ? 'border-blue' : 'border-transparent hover:brightness-[0.98]')}
                       >
                         {t.private && <span className="absolute top-2.5 right-2.5 rounded-[10px] bg-white/80 px-2 py-0.5 text-[10px] font-semibold text-muted">Mine</span>}
@@ -206,8 +217,10 @@ export function LiveAddProduct() {
           )}
           {step === 1 && (
             <Panel className="flex flex-col gap-3">
-              <PanelHead title="Which company?" subtitle="Verified insurers, and companies you added yourself." />
-              <Dropdown value={insurerId} onChange={setInsurerId} placeholder="Choose a company" options={I.map((i) => ({ value: i.id, label: `${i.name}${i.private ? ' (mine)' : ''}` }))} />
+              <PanelHead title="Which company?" subtitle={`Insurers that sell ${typeName ?? 'this category'}, and companies you added yourself.`} />
+              <Dropdown value={insurerId} onChange={setInsurerId} placeholder={insurers.loading && !insurers.data ? 'Loading companies…' : 'Choose a company'} options={I.map((i) => ({ value: i.id, label: `${i.name}${i.private ? ' (mine)' : ''}` }))} />
+              {insurers.error && <ErrorNote error={insurers.error} />}
+              {insurers.data && !I.length && <p className="text-[13px] font-medium text-muted">No companies sell {typeName} yet. Add one below.</p>}
               <div className="flex items-end gap-3"><Field label="Add a company" value={newCo} onChange={setNewCo} />
                 <SmallButton variant="outline" icon="plus" className="mb-[7px]" disabled={!newCo.trim() || busy} onClick={() => act(() => api.myProducts.createInsurer({ name: newCo.trim() }), { invalidates: ['my-products'], onDone: (r) => { setInsurerId(r.data.id); setNewCo('') } })}>Add</SmallButton></div>
             </Panel>
@@ -281,7 +294,8 @@ export function LiveAddProduct() {
           )}
           {step === 5 && (
             <Panel className="flex flex-col gap-4">
-              <PanelHead title="Features" subtitle={tpl.data ? `${typeName} template v${tpl.data.template.number}. Leave blank if you don't know; tick "Not stated" when the brochure says nothing.` : 'Loading the template…'} />
+              <PanelHead title="Features" subtitle={tpl.data ? `${typeName} template v${tpl.data.template.number}. Leave blank if you don't know; tick "Not stated" when the brochure says nothing.` : tpl.error ? `${typeName}: the feature list could not be loaded.` : 'Loading the template…'} />
+              {tpl.error && <div className="flex items-center gap-3"><ErrorNote error={tpl.error} /><SmallButton variant="outline" icon="refresh" onClick={tpl.refetch}>Try again</SmallButton></div>}
               {groups.map((g) => (
                 <div key={g} className="flex flex-col gap-2">
                   <p className="text-[12px] font-bold tracking-wide text-muted uppercase">{g}</p>
@@ -293,7 +307,7 @@ export function LiveAddProduct() {
                         <span className="w-[260px] text-[13px] font-semibold text-ink">{f.name}{f.requiredToPublish ? ' *' : ''}</span>
                         {f.dataType === 'Yes/No'
                           ? <Dropdown className="flex-1" buttonClassName="h-[42px]" value={cur.value === true ? 'yes' : cur.value === false ? 'no' : ''} disabled={cur.notStated} onChange={(v) => setF({ value: v === '' ? null : v === 'yes' })} options={[['', '—'], ['yes', 'Yes'], ['no', 'No']]} />
-                          : <input value={cur.value ?? ''} disabled={cur.notStated} onChange={(e) => setF({ value: f.dataType === 'Number' || f.dataType === 'Percent' || f.dataType === 'Amount' ? (e.target.value === '' ? null : Number(e.target.value)) : e.target.value })} className={cx(inputCls, 'h-[42px] flex-1')} placeholder={f.help ?? ''} />}
+                          : <input value={cur.value ?? ''} disabled={cur.notStated} inputMode={NUMERIC_TYPES.has(f.dataType) ? 'decimal' : undefined} onChange={(e) => setF({ value: e.target.value })} className={cx(inputCls, 'h-[42px] flex-1')} placeholder={f.help ?? UNIT_HINT[f.dataType] ?? ''} />}
                         <label className="flex items-center gap-1.5 text-[12px] font-semibold text-muted"><input type="checkbox" checked={!!cur.notStated} onChange={(e) => setF({ notStated: e.target.checked, value: e.target.checked ? null : cur.value })} />Not stated</label>
                       </div>
                     )

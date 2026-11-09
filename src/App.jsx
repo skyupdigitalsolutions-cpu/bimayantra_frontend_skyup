@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import NavBehavior from './components/NavBehavior'
+import GlobalSearch from './components/GlobalSearch'
 import { ToastProvider } from './components/LiveToast'
 import { AuthProvider, RequireAuth, FullPageSpinner } from './auth/AuthProvider'
 import { LIVE_ROUTES, PUBLIC_ROUTES, REDIRECTS } from './live/routes'
@@ -25,6 +26,7 @@ export default function App() {
       <ToastProvider>
         <AuthProvider>
           <NavBehavior />
+          <GlobalSearch />
           <Routes>
             {PUBLIC_ROUTES.map((r) => <Route key={r.path} path={r.path} element={r.element} />)}
             {LIVE_ROUTES.map((r) => <Route key={r.path} path={r.path} element={<RequireAuth roles={r.roles}>{r.element}</RequireAuth>} />)}

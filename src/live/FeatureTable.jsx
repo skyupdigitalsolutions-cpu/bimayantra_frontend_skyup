@@ -89,7 +89,13 @@ export default function LiveFeatureTable() {
         </button>
       </div>
       <ErrorNote error={types.error ?? t.error} />
-      {t.data && !cols.length && <p className="mt-6 rounded-[24px] bg-white p-6 text-[14px] font-medium text-muted">No {source === 'OWN' ? 'products of yours' : 'published products'} for {t.data.typeName} yet.</p>}
+      {t.data && !cols.length && (
+        <div className="mt-6 flex flex-col gap-3">
+          <p className="rounded-[24px] bg-white p-6 text-[14px] font-medium text-muted">No {source === 'OWN' ? 'products of yours' : 'published products'} for {t.data.typeName} yet.{featureCount ? ` These are the ${featureCount} features every ${t.data.typeName} product is compared on.` : ''}</p>
+          {featureCount > 0 && <FeatureList groups={groups} />}
+          {!featureCount && <p className="px-2 text-[13px] font-medium text-muted">{t.data.typeName} has no feature list yet.</p>}
+        </div>
+      )}
       {(t.loading || types.loading) && !t.data && <p className="mt-6 text-[14px] font-medium text-muted">Loading…</p>}
       {cols.length > 0 && (
         <div className="mt-5 overflow-x-auto rounded-[28px] bg-white shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]">
@@ -151,5 +157,24 @@ function FeatureGroup({ g, cols, highlight }) {
         )
       })}
     </>
+  )
+}
+
+/** No products yet: the category's features alone (grouped, with what kind of value each holds), so the list is visible. */
+function FeatureList({ groups }) {
+  return (
+    <div className="overflow-hidden rounded-[28px] bg-white shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]">
+      {groups.map((g) => (
+        <div key={g.group}>
+          <p className="bg-panel px-5 py-3 text-[14px] font-bold text-ink">{g.group} <span className="ml-1 text-[12px] font-medium text-muted">{g.rows.length}</span></p>
+          {g.rows.map((r, n) => (
+            <div key={r.key} className={cx('flex items-center gap-4 px-5 py-3 text-[13px]', n % 2 ? 'bg-[#fafbfd]' : 'bg-white')}>
+              <span className="flex-1 font-semibold text-ink">{r.name}</span>
+              <span className="text-[12px] font-medium text-muted">{r.dataType}</span>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
   )
 }

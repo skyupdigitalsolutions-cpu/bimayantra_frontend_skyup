@@ -1,5 +1,9 @@
 # Bimayantra UI — screen implementation guide (v2, full Figma export)
 
+> **Historical:** this is the brief used to build the Figma prototype frames (`src/screens/`). For the connected app
+> (`src/live/`) — headers, back buttons, search bars, forms, products — follow **[UI-GUIDELINES.md](UI-GUIDELINES.md)**.
+> The scratch paths below no longer exist.
+
 Stack: React 19 + Vite 8 + Tailwind CSS v4 (`src/index.css` `@theme`) + react-router-dom 7. Frames are 1440 wide (a few are taller; responsive frames are 834 / 390 wide).
 
 ## Source of truth — local Figma export (NO Figma tool calls)

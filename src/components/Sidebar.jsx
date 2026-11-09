@@ -58,7 +58,7 @@ export function TabletRail({ active, items = NAV, home = '/' }) {
 }
 
 /** R2/R4/R5 · white app bar (logo or back button, title, search + bell). */
-export function MobileAppBar({ title, back, actions = true }) {
+export function MobileAppBar({ title, back, actions = true, search = true }) {
   const btn = 'flex size-9 shrink-0 items-center justify-center rounded-full bg-white shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)]'
   return (
     <header className="sticky top-0 z-30 flex h-[100px] shrink-0 items-center gap-2.5 bg-white px-4 pt-[52px] pb-3">
@@ -74,8 +74,8 @@ export function MobileAppBar({ title, back, actions = true }) {
       <p className="min-w-0 flex-1 text-[17px] font-bold text-ink">{title}</p>
       {actions && (
         <>
-          <button type="button" aria-label="Search" className={btn}><Icon name="search" size={15.1} className="[&_path]:[vector-effect:non-scaling-stroke] text-ink" /></button>
-          <button type="button" aria-label="Notifications" className={btn}><Icon name="bell" size={15.1} className="[&_path]:[vector-effect:non-scaling-stroke] text-ink" /></button>
+          {search && <button type="button" aria-label="Search" className={btn}><Icon name="search" size={15.1} className="[&_path]:[vector-effect:non-scaling-stroke] text-ink" /></button>}
+          <Link to="/notifications" aria-label="Notifications" className={btn}><Icon name="bell" size={15.1} className="[&_path]:[vector-effect:non-scaling-stroke] text-ink" /></Link>
         </>
       )}
     </header>

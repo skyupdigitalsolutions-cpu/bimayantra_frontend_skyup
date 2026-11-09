@@ -2,52 +2,50 @@
 import { useEffect, useRef } from 'react'
 import Icon from '../../components/Icon'
 import { cx } from '../../components/ui'
-
-const PILL_SELECTOR = 'input[placeholder="Search anything"]'
-const findPill = () => document.querySelector(`main ${PILL_SELECTOR}`) ?? document.querySelector(PILL_SELECTOR)
+import { isPill, visiblePills, registerConsumer, clearPills } from '../../components/headerSearchBus'
 
 /**
  * Wires the header "Search anything · Ctrl K" pill (rendered by shared header components we
  * don't own) to the current page: typing / Enter calls `onSearch(text)`, Escape clears it,
- * and Ctrl/Cmd+K focuses the pill. Without `onSearch` it only adds the Ctrl/Cmd+K focus.
+ * and Ctrl/Cmd+K focuses the pill. Without `onSearch` it only adds the Ctrl/Cmd+K focus (and the
+ * pill works as the global search). Listens on `document`, so a header that mounts later still works.
  */
 export function useHeaderSearch(onSearch) {
   const cb = useRef(onSearch)
   cb.current = onSearch
+  const consumes = typeof onSearch === 'function'
   useEffect(() => {
-    const el = findPill()
-    const onInput = (e) => cb.current?.(e.target.value)
+    const off = consumes ? registerConsumer() : () => {}
+    const onInput = (e) => { if (isPill(e.target)) cb.current?.(e.target.value) }
     const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key?.toLowerCase() === 'k') {
+        const pill = visiblePills()[0]
+        if (!pill) return
+        e.preventDefault()
+        pill.focus()
+        pill.select()
+        return
+      }
+      if (!isPill(e.target)) return
       if (e.key === 'Enter') cb.current?.(e.target.value)
       if (e.key === 'Escape') {
         e.target.value = ''
         cb.current?.('')
       }
     }
-    const onDoc = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        const pill = findPill()
-        if (!pill) return
-        e.preventDefault()
-        pill.focus()
-        pill.select()
-      }
-    }
-    el?.addEventListener('input', onInput)
-    el?.addEventListener('keydown', onKey)
-    document.addEventListener('keydown', onDoc)
+    document.addEventListener('input', onInput)
+    document.addEventListener('keydown', onKey)
     return () => {
-      el?.removeEventListener('input', onInput)
-      el?.removeEventListener('keydown', onKey)
-      document.removeEventListener('keydown', onDoc)
+      off()
+      document.removeEventListener('input', onInput)
+      document.removeEventListener('keydown', onKey)
     }
-  }, [])
+  }, [consumes])
 }
 
 /** Empties the header search pill (used by "Clear filters"). */
 export function clearHeaderSearch() {
-  const el = findPill()
-  if (el) el.value = ''
+  clearPills()
 }
 
 /** Case-insensitive "does any of these fields contain q" */

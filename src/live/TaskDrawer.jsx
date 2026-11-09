@@ -47,12 +47,17 @@ export default function TaskDrawer({ task = null, related: presetRelated = null,
   const [hits, setHits] = useState([])
   const [local, setLocal] = useState({})
 
+  const [hitsFor, setHitsFor] = useState('') // the text the hits answer (to say "no matches" only after a search)
   useEffect(() => {
-    if (dq.trim().length < 2) return setHits([])
+    // The API searches from 3 characters (CFG-24); shorter text was refused, so nothing ever showed.
+    if (dq.trim().length < 3) { setHits([]); setHitsFor(''); return }
+    let live = true
     api.search.all(dq.trim()).then(({ data }) => {
+      if (!live) return
       const items = (data?.groups || []).filter((g) => g.group === 'LEADS' || g.group === 'CUSTOMERS').flatMap((g) => g.items)
-      setHits(items.slice(0, 6))
-    }).catch(() => setHits([]))
+      setHits(items.slice(0, 6)); setHitsFor(dq.trim())
+    }).catch(() => { if (live) { setHits([]); setHitsFor(dq.trim()) } })
+    return () => { live = false }
   }, [dq])
 
   const save = useMutation((_, o) => {
@@ -151,6 +156,8 @@ export default function TaskDrawer({ task = null, related: presetRelated = null,
               </>
             )}
           </Box>
+          {!related && q.trim().length > 0 && q.trim().length < 3 && <p className="text-[12px] font-medium text-muted">Type at least 3 characters.</p>}
+          {!related && hits.length === 0 && hitsFor && hitsFor === q.trim() && <p className="text-[12px] font-medium text-muted">No lead or policy holder matches “{hitsFor}”.</p>}
           {!related && hits.length > 0 && (
             <div className="absolute top-[82px] right-0 left-0 z-10 flex flex-col gap-0.5 rounded-[16px] bg-white p-2 shadow-[0px_24px_48px_-10px_rgba(19,41,75,0.2)]">
               {hits.map((h) => (

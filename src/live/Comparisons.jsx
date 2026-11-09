@@ -15,6 +15,7 @@ import { fmtDate, fmtDateTime, fmtMoney, istDay } from '../api/format'
 import { ActionDialog, Field, ErrorNote, useAct, label, dmy, isoDay, inputCls } from './kit'
 import { LoadingPanel, ErrorPanel } from './common'
 import { useToast } from '../components/LiveToast'
+import { matchesQuery, useHeaderSearch } from '../screens/tasks/_filter'
 
 const TONE = { DRAFT: 'neutral', READY: 'sky', SHARED: 'violet', PRODUCT_CHOSEN: 'green', EXPIRED: 'amber' }
 const STEPS = ['Customer', 'Type', 'Cover', 'Products', 'Premiums', 'Recommend', 'Review', 'Generated']
@@ -24,7 +25,8 @@ const lakh = (n) => (n >= 10_000_000 ? `₹${n / 10_000_000} crore` : n >= 100_0
 export function LiveComparisons() {
   const q = useQuery('comparisons', () => api.comparisons.list())
   const [pick, setPick] = useState(false)
-  const rows = (q.data || [])
+  const [hq, clearQ] = useHeaderSearch()
+  const rows = (q.data || []).filter((r) => matchesQuery(hq, r.number, label(r.status), r.customer?.name, r.customerName, (r.options || []).map((o) => [o.productName, o.insurer, o.name])))
   const columns = [
     { key: 'n', label: 'Comparison', width: 260, render: (r) => <IdCell initials="CQ" bg="bg-[#e9e3fc]" title={r.number ?? 'Draft'} sub={`${(r.options || []).length} products`} /> },
     { key: 'v', label: 'Valid till', width: 140, render: (r) => (r.validUntil ? fmtDate(isoDay(r.validUntil), { year: false }) : '—') },
@@ -36,7 +38,8 @@ export function LiveComparisons() {
   return (
     <AppLayout active="quotations">
       <Header breadcrumb={'SALES  /  COMPARISONS'} title="Comparisons" subtitle="Several products side by side in one PDF. The customer picks one; you turn it into a quotation." actions={<HeadButton icon="plus" onClick={() => setPick(true)}>New comparison</HeadButton>} />
-      <DataTable className="mt-7 w-[1180px]" columns={columns} rows={rows} rowTo={(r) => `/comparisons/${r.id}`} empty={q.loading ? 'Loading…' : 'No comparisons yet.'} />
+      <DataTable className="mt-7 w-[1180px]" columns={columns} rows={rows} rowTo={(r) => `/comparisons/${r.id}`} empty={q.loading ? 'Loading…' : hq.trim() ? `No comparisons match “${hq.trim()}”.` : 'No comparisons yet.'} />
+      {hq.trim() && !rows.length && !q.loading && <button type="button" onClick={clearQ} className="mt-3 text-[13px] font-bold text-blue hover:underline">Clear search</button>}
       {pick && <PickCustomer onClose={() => setPick(false)} />}
     </AppLayout>
   )

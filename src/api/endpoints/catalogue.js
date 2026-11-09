@@ -87,7 +87,8 @@ export const myProducts = {
   types: () => http.get('/my-products/types'),
   typeTemplate: (typeId) => http.get(p`/my-products/types/${typeId}/template`),
   createType: (body, opts) => http.post('/my-products/types', body, opts),
-  insurers: () => http.get('/my-products/insurers'),
+  /** query: { typeId } narrows to companies licensed for that category; { q } searches by name */
+  insurers: (query) => http.get('/my-products/insurers', query),
   createInsurer: (body, opts) => http.post('/my-products/insurers', body, opts),
   // brochure reading (OCR)
   startReading: (body, opts) => http.post('/my-products/brochure-reading', body, opts),

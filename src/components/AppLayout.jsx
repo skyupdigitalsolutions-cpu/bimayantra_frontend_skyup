@@ -18,8 +18,9 @@ import SubscriptionBanner from './SubscriptionBanner'
  *   768–1279     72px sticky icon rail (R1), panel r32 / padding 24
  *   <768         white app bar + fixed bottom tab bar (R2/R4), no rail
  *   mobileTitle / mobileBack / mobileTab (bottom-bar key, null hides it) / lockScroll (overlay open)
+ *   mobileSearch — false hides the app bar's search button (the dashboard has no search)
  */
-export default function AppLayout({ active, aside, children, panelClass = '', sidebar, responsive, mobileTitle, mobileBack, mobileTab, lockScroll }) {
+export default function AppLayout({ active, aside, children, panelClass = '', sidebar, responsive, mobileTitle, mobileBack, mobileTab, lockScroll, mobileSearch = true }) {
   if (!responsive) {
     return (
       <div className="flex min-h-screen min-w-[1280px] gap-7 bg-white py-6 pr-6 pl-7">
@@ -42,7 +43,7 @@ export default function AppLayout({ active, aside, children, panelClass = '', si
       className={`flex min-h-screen flex-col bg-panel md:flex-row md:gap-4 md:bg-white md:p-4 xl:min-w-[1280px] xl:gap-7 xl:py-6 xl:pr-6 xl:pl-7 ${lockScroll ? 'h-screen overflow-clip' : ''}`}
     >
       <div className="md:hidden">
-        <MobileAppBar title={mobileTitle} back={mobileBack} actions={!mobileBack} />
+        <MobileAppBar title={mobileTitle} back={mobileBack} actions={!mobileBack} search={mobileSearch} />
       </div>
       {/* Rail stays pinned while the workspace scrolls (tablet + desktop) */}
       <div className="sticky top-4 hidden h-fit shrink-0 self-start md:block xl:top-7">
