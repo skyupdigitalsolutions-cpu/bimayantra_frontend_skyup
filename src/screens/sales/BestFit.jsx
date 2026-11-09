@@ -1,5 +1,6 @@
 // Figma 9:1127 · 06 · Best fit
 import { useState } from 'react'
+import { SelectCompat } from '../../components/pickers'
 import AppLayout from '../../components/AppLayout'
 import Icon from '../../components/Icon'
 import { PageHeader, Field, Select, Input, cx } from '../../components/ui'
@@ -97,20 +98,18 @@ export default function BestFit() {
           <Field label="Customer">
             <div className="relative flex h-[50px] items-center gap-2.5 rounded-[16px] bg-panel pr-4 pl-4">
               <Dot initials="KH" bg="#fbd5dd" size={30} font={10} border={0} />
-              <select className="min-w-0 flex-1 appearance-none bg-transparent text-[14px] font-semibold text-ink outline-none">
+              <SelectCompat className="min-w-0 flex-1" buttonClassName="h-auto min-h-0 w-full gap-1.5 rounded-none bg-transparent p-0 ring-0 focus-visible:ring-0">
                 <option>Kavya Hegde (CU-000318)</option>
                 <option>Faizal Khan Sr (CU-000319)</option>
-              </select>
-              <Icon name="chev-down" size={18} className="pointer-events-none text-muted" />
+              </SelectCompat>
             </div>
           </Field>
           <Field label="Insurance type">
             <div className="flex h-[50px] items-center gap-2.5 rounded-[16px] bg-panel px-4">
               <Icon name="heart" size={18} className="text-muted" />
-              <select className="min-w-0 flex-1 appearance-none bg-transparent text-[14px] font-semibold text-ink outline-none">
+              <SelectCompat className="min-w-0 flex-1" buttonClassName="h-auto min-h-0 w-full gap-1.5 rounded-none bg-transparent p-0 ring-0 focus-visible:ring-0">
                 <option>Health</option><option>Motor</option><option>Life and Term</option>
-              </select>
-              <Icon name="chev-down" size={18} className="pointer-events-none text-muted" />
+              </SelectCompat>
             </div>
           </Field>
           <div className="flex flex-col gap-2">

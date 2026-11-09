@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { cx } from '../../components/ui'
+import { Dropdown } from '../../components/pickers'
 import { AdminLayout, AdminHeader, ACard, ACardHead, HButton, Pill, PanelScrim } from '../admin/_parts'
 import { accountCards, usage } from '../../data/states-admin'
 import { PANEL_X, DIALOG_MAX, DRAWER_BOX, DRAWER_FOOT, useFitTop } from '../sales/_overlay'
@@ -98,12 +99,7 @@ export function AInput({ value: initial = '', placeholder, leading, prefix, trai
 export function ASelect({ options, value, className = '' }) {
   const [v, setV] = useState(value ?? options[0])
   return (
-    <label className={cx('relative flex h-[50px] items-center rounded-[16px] bg-panel px-4', className)}>
-      <select value={v} onChange={(e) => setV(e.target.value)} className="min-w-0 flex-1 appearance-none bg-transparent pr-7 text-[14px] font-semibold text-ink outline-none">
-        {options.map((o) => <option key={o}>{o}</option>)}
-      </select>
-      <Icon name="chev-down" size={18} className="pointer-events-none absolute right-4 text-muted" />
-    </label>
+    <Dropdown value={v} onChange={setV} options={options} className={className} />
   )
 }
 

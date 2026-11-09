@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import AppLayout from '../../components/AppLayout'
 import { cx } from '../../components/ui'
+import { Dropdown } from '../../components/pickers'
 import { Icon, SearchBox, RoundIcon, Chip, Check, PriorityTabs, SH_CARD, SH_SOFT, SH_NAVY, PINK_BTN } from './_parts'
 import { leadTabs, leadRows as LEAD_ROWS, SOURCE_STYLE, STATUS_CHIP, PRIORITY, sourceGroups, afterSave, leadDetail, LEAD_STATUS, leadPipelines as LEAD_PIPELINES } from '../../data/tasks'
 import { matchesQuery, useHeaderSearch, DropFilter, NoMatches } from './_filter'
@@ -333,12 +334,7 @@ export function F({ label, hint, className = '', children }) {
 
 export function SelectBox({ value, onChange, options, className = '', focus }) {
   return (
-    <div className={cx(box, 'relative', focus && 'border-2 border-blue', className)}>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="min-w-0 flex-1 appearance-none bg-transparent font-semibold outline-none">
-        {options.map((o) => (typeof o === 'object' ? <option key={o.value} value={o.value}>{o.label}</option> : <option key={o}>{o}</option>))}
-      </select>
-      <Icon name="chev-down" size={18} className="pointer-events-none text-muted" />
-    </div>
+    <Dropdown value={value} onChange={onChange} options={options} className={className} buttonClassName={cx(focus && 'ring-2 ring-blue')} />
   )
 }
 

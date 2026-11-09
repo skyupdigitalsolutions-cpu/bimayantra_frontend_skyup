@@ -1,5 +1,6 @@
 // Figma 24:1999 · 20 · Public referral form
 import { useState } from 'react'
+import { SelectCompat } from '../../components/pickers'
 import Icon from '../../components/Icon'
 import { cx } from '../../components/ui'
 import { PublicPage, RingAvatar, SBtn, SChip } from './_parts'
@@ -47,10 +48,9 @@ export default function ReferralForm() {
           <F label="Email"><span className={inputCls}><input className={fieldInput} placeholder="Optional" /></span></F>
           <F label="How you know Manjunath *">
             <span className={cx(inputCls, 'relative')}>
-              <select className="min-w-0 flex-1 appearance-none bg-transparent font-semibold outline-none" defaultValue="Friend">
+              <SelectCompat className="min-w-0 flex-1" buttonClassName="h-auto min-h-0 w-full gap-1.5 rounded-none bg-transparent p-0 ring-0 focus-visible:ring-0" defaultValue="Friend">
                 {['Friend', 'Family', 'Colleague', 'Neighbour', 'Other'].map((o) => <option key={o}>{o}</option>)}
-              </select>
-              <Icon name="chev-down" size={18} className="pointer-events-none text-muted" />
+              </SelectCompat>
             </span>
           </F>
         </div>

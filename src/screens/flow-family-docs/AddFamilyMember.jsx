@@ -1,5 +1,6 @@
 // Figma 238:17768 · FD1 · Add family member
 import { useState } from 'react'
+import { SelectCompat } from '../../components/pickers'
 import Icon from '../../components/Icon'
 import { cx } from '../../components/ui'
 import { ProfileShell, FamilyBody, Scrim, Drawer, OverlayHead, PillButton, Note, FieldBox, INPUT } from './_parts'
@@ -8,10 +9,9 @@ import { useNavigate } from 'react-router-dom'
 function SelectBox({ label, value, onChange, options }) {
   return (
     <FieldBox label={label} className="flex-1">
-      <select value={value} onChange={(e) => onChange(e.target.value)} className={cx(INPUT, 'cursor-pointer appearance-none')}>
+      <SelectCompat className="min-w-0 flex-1" buttonClassName="h-auto min-h-0 w-full gap-1.5 rounded-none bg-transparent p-0 ring-0 focus-visible:ring-0" value={value} onChange={(e) => onChange(e.target.value)}>
         {options.map((o) => <option key={o}>{o}</option>)}
-      </select>
-      <Icon name="chev-down" size={18} className="pointer-events-none text-muted" />
+      </SelectCompat>
     </FieldBox>
   )
 }

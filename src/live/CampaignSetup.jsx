@@ -7,11 +7,11 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Icon from '../components/Icon'
-import { cx } from '../components/ui'
+import { Dropdown } from '../components/pickers'
 import { Header, HeadButton, Panel, PanelHead, SmallButton, StatusChip } from '../screens/catalogue/_parts'
 import { api, useQuery } from '../api'
 import { fmtDateTime } from '../api/format'
-import { ActionDialog, Field, ErrorNote, useAct, label, inputCls } from './kit'
+import { ActionDialog, Field, ErrorNote, useAct, label } from './kit'
 import { LoadingPanel, ErrorPanel } from './common'
 
 const TARGETS = [['name', 'Full name'], ['first_name', 'First name'], ['last_name', 'Last name'], ['mobile', 'Mobile'], ['email', 'Email'], ['city', 'City'], ['consent', 'Consent tick'], ['ignore', 'Keep as answer only']]
@@ -109,7 +109,7 @@ function FormCard({ f, pipes }) {
         <div key={q} className="flex items-center gap-3 text-[13px]">
           <span className="w-[260px] truncate font-semibold text-ink">{f.fields?.find((x) => x.key === q)?.label ?? q}</span>
           <Icon name="arrow" size={14} className="text-muted" />
-          <select value={map[q] ?? 'ignore'} onChange={(e) => setMap({ ...map, [q]: e.target.value })} className={cx(inputCls, 'h-[40px] flex-1')}>{TARGETS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
+          <Dropdown value={map[q] ?? 'ignore'} onChange={(v) => setMap({ ...map, [q]: v })} options={TARGETS} className="flex-1" buttonClassName="h-[40px]" />
         </div>
       ))}
       {publicUrl && <p className="text-[12px] font-medium text-muted">Form link: <span className="font-semibold text-ink">{publicUrl}</span></p>}

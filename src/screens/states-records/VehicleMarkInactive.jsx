@@ -1,5 +1,6 @@
 // Figma 286:34407 · VH1 · Vehicle — Mark inactive
 import { useState } from 'react'
+import { SelectCompat } from '../../components/pickers'
 import Icon from '../../components/Icon'
 import { cx } from '../../components/ui'
 import { StatusChip, SmallButton, Panel, PanelHead, Scrim, Dialog, DialogButton, Toast } from '../catalogue/_parts'
@@ -25,10 +26,9 @@ export default function VehicleMarkInactive() {
             <label className="flex flex-col gap-2">
               <span className="text-[13px] font-semibold text-ink">Reason</span>
               <span className="flex h-[50px] items-center rounded-[16px] bg-panel px-4">
-                <select value={reason} onChange={(e) => setReason(e.target.value)} className="min-w-0 flex-1 appearance-none bg-transparent text-[14px] font-semibold text-ink outline-none">
+                <SelectCompat className="min-w-0 flex-1" buttonClassName="h-auto min-h-0 w-full gap-1.5 rounded-none bg-transparent p-0 ring-0 focus-visible:ring-0" value={reason} onChange={(e) => setReason(e.target.value)}>
                   {REASONS.map((r) => <option key={r}>{r}</option>)}
-                </select>
-                <Icon name="chev-down" size={18} className="pointer-events-none text-muted" />
+                </SelectCompat>
               </span>
             </label>
             <div className="flex gap-2.5">

@@ -3,6 +3,7 @@ import { Link, NavLink } from 'react-router-dom'
 import AppLayout from '../../components/AppLayout'
 import Icon from '../../components/Icon'
 import { PageHeader, cx } from '../../components/ui'
+import { SelectCompat } from '../../components/pickers'
 import { useHeaderSearch } from '../admin/_filter'
 
 // Paths are the connected settings pages (src/live/Settings.jsx); the Figma frames open with ?proto=1.
@@ -75,12 +76,7 @@ export function SCard({ className = '', children }) {
 /** Select on #f4f6fb with the muted chevron used throughout Settings. */
 export function MutedSelect({ options = [], className = '', ...rest }) {
   return (
-    <div className={cx('relative flex h-[50px] w-full items-center gap-2.5 rounded-[16px] bg-panel px-4 text-[14px] font-semibold text-ink', className)}>
-      <select className="min-w-0 flex-1 appearance-none bg-transparent font-semibold outline-none" {...rest}>
-        {options.map((o) => <option key={o.value ?? o} value={o.value ?? o}>{o.label ?? o}</option>)}
-      </select>
-      <Icon name="chev-down" size={18} className="pointer-events-none text-muted" />
-    </div>
+    <SelectCompat options={options.map((o) => ({ value: o.value ?? o, label: o.label ?? String(o) }))} className={className} {...rest} />
   )
 }
 

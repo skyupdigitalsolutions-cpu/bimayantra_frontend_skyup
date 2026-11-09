@@ -15,6 +15,7 @@ import { fmtDate, fmtMoney } from '../api/format'
 import { ActionDialog, Field, ErrorNote, useAct, label, dmy, isoDay, inputCls } from './kit'
 import { LoadingPanel, ErrorPanel } from './common'
 import { Stepper as FlowStepper, StepCard, StepFooter, PreviewCard, Btn, Chip, Note, TextInput, Field as FlowField } from '../screens/flow-add-product/_parts'
+import { Dropdown } from '../components/pickers'
 import { useToast } from '../components/LiveToast'
 
 // Tile look for a category (Figma AP1): icon + pastel background, picked from the category's name.
@@ -205,7 +206,7 @@ export function LiveAddProduct() {
           {step === 1 && (
             <Panel className="flex flex-col gap-3">
               <PanelHead title="Which company?" subtitle="Verified insurers, and companies you added yourself." />
-              <select value={insurerId} onChange={(e) => setInsurerId(e.target.value)} className={inputCls}><option value="">Choose</option>{I.map((i) => <option key={i.id} value={i.id}>{i.name}{i.private ? ' (mine)' : ''}</option>)}</select>
+              <Dropdown value={insurerId} onChange={setInsurerId} placeholder="Choose a company" options={I.map((i) => ({ value: i.id, label: `${i.name}${i.private ? ' (mine)' : ''}` }))} />
               <div className="flex items-end gap-3"><Field label="Add a company" value={newCo} onChange={setNewCo} />
                 <SmallButton variant="outline" icon="plus" className="mb-[7px]" disabled={!newCo.trim() || busy} onClick={() => act(() => api.myProducts.createInsurer({ name: newCo.trim() }), { invalidates: ['my-products'], onDone: (r) => { setInsurerId(r.data.id); setNewCo('') } })}>Add</SmallButton></div>
             </Panel>
@@ -290,7 +291,7 @@ export function LiveAddProduct() {
                       <div key={f.key} className="flex items-center gap-3">
                         <span className="w-[260px] text-[13px] font-semibold text-ink">{f.name}{f.requiredToPublish ? ' *' : ''}</span>
                         {f.dataType === 'Yes/No'
-                          ? <select value={cur.value === true ? 'yes' : cur.value === false ? 'no' : ''} disabled={cur.notStated} onChange={(e) => setF({ value: e.target.value === '' ? null : e.target.value === 'yes' })} className={cx(inputCls, 'h-[42px] flex-1')}><option value="">—</option><option value="yes">Yes</option><option value="no">No</option></select>
+                          ? <Dropdown className="flex-1" buttonClassName="h-[42px]" value={cur.value === true ? 'yes' : cur.value === false ? 'no' : ''} disabled={cur.notStated} onChange={(v) => setF({ value: v === '' ? null : v === 'yes' })} options={[['', '—'], ['yes', 'Yes'], ['no', 'No']]} />
                           : <input value={cur.value ?? ''} disabled={cur.notStated} onChange={(e) => setF({ value: f.dataType === 'Number' || f.dataType === 'Percent' || f.dataType === 'Amount' ? (e.target.value === '' ? null : Number(e.target.value)) : e.target.value })} className={cx(inputCls, 'h-[42px] flex-1')} placeholder={f.help ?? ''} />}
                         <label className="flex items-center gap-1.5 text-[12px] font-semibold text-muted"><input type="checkbox" checked={!!cur.notStated} onChange={(e) => setF({ notStated: e.target.checked, value: e.target.checked ? null : cur.value })} />Not stated</label>
                       </div>

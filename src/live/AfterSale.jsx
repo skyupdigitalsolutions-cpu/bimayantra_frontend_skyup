@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Icon from '../components/Icon'
+import { Dropdown } from '../components/pickers'
 import { cx } from '../components/ui'
 import { RenewalCard } from '../components/cards'
 import { Header, HeadButton, SmallButton, StatTile, SegTabs, DataTable, StatusChip, RowChevron, IdCell, Panel, PanelHead, RingAvatar } from '../screens/catalogue/_parts'
@@ -340,7 +341,7 @@ export function LiveRenewals() {
   return (
     <AppLayout active="renewals">
       <Header breadcrumb={'AFTER-SALE  /  RENEWALS'} title="Renewals" subtitle="The system moves each renewal by date. You close each one."
-        actions={<select value={range} onChange={(e) => setRange(e.target.value)} className="h-[46px] rounded-[24px] border border-line bg-white px-4 text-[14px] font-semibold text-ink">{RANGES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>} />
+        actions={<Dropdown value={range} onChange={setRange} options={RANGES} minWidth={200} className="w-[210px]" buttonClassName="h-[46px] rounded-[24px] border border-line bg-white" />} />
       <SegTabs items={R_TABS.map(([key, l]) => ({ key, label: l, count: all.filter((r) => r.status === key).length }))} value={tab} onChange={setTab} className="mt-[13px]" />
       <div className="mt-7 flex items-start gap-6">
         <div className={cx('w-[756px]', lapsedTab ? 'flex flex-col gap-4' : 'flex flex-wrap gap-5')}>

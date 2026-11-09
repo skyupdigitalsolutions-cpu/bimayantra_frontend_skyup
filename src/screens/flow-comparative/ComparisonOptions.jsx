@@ -1,5 +1,6 @@
 // Figma 218:17359 · CQ4 · Comparison — Options
 import { useState } from 'react'
+import { SelectCompat } from '../../components/pickers'
 import Icon from '../../components/Icon'
 import { cx } from '../../components/ui'
 import CqPage, { StepCard, LiveSummary, Note } from './_parts'
@@ -45,14 +46,13 @@ export default function ComparisonOptions() {
             <label className="relative flex h-[38px] shrink-0 items-center gap-2 rounded-[14px] border border-line bg-white px-3 text-[12px] font-bold text-ink">
               <span>Variant: {o.variant}</span>
               <Icon name="chev-down" size={15} className="text-muted" />
-              <select
+              <SelectCompat className="absolute inset-0" buttonClassName="h-full opacity-0"
                 value={o.variant}
                 onChange={(e) => update(o.key, e.target.value)}
-                className="absolute inset-0 cursor-pointer opacity-0"
                 aria-label="Variant"
               >
                 {o.variants.map((v) => <option key={v}>{v}</option>)}
-              </select>
+              </SelectCompat>
             </label>
             <button
               type="button"

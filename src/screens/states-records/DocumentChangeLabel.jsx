@@ -1,5 +1,6 @@
 // Figma 286:34110 · DL1 · Document — Change label
 import { useState } from 'react'
+import { SelectCompat } from '../../components/pickers'
 import { Link } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { cx } from '../../components/ui'
@@ -67,10 +68,9 @@ export default function DocumentChangeLabel() {
             <label className="flex flex-col gap-2">
               <span className="text-[13px] font-semibold text-ink">New label *</span>
               <span className="relative flex h-[50px] items-center rounded-[16px] border-2 border-blue bg-panel px-4">
-                <select value={label} onChange={(e) => setLabel(e.target.value)} className="min-w-0 flex-1 appearance-none bg-transparent text-[14px] font-semibold text-ink outline-none">
+                <SelectCompat className="min-w-0 flex-1" buttonClassName="h-auto min-h-0 w-full gap-1.5 rounded-none bg-transparent p-0 ring-0 focus-visible:ring-0" value={label} onChange={(e) => setLabel(e.target.value)}>
                   {LABELS.map((l) => <option key={l}>{l}</option>)}
-                </select>
-                <Icon name="chev-down" size={18} className="pointer-events-none text-muted" />
+                </SelectCompat>
               </span>
             </label>
             <div className="flex items-center gap-2.5 rounded-[16px] bg-[#e8f0fd] px-4 py-3">

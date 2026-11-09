@@ -1,5 +1,6 @@
 // Figma 218:17642 · CQ5 · Comparison — Details
 import { useState } from 'react'
+import { SelectCompat } from '../../components/pickers'
 import Icon from '../../components/Icon'
 import { cx } from '../../components/ui'
 import CqPage, { StepCard, LiveSummary } from './_parts'
@@ -12,9 +13,9 @@ function SelectField({ label, value, options, onChange }) {
       <span className="relative flex h-[50px] items-center gap-2.5 rounded-[16px] bg-panel px-4">
         <span className="flex-1 text-[14px] font-semibold text-ink">{value}</span>
         <Icon name="chev-down" size={18} className="text-muted" />
-        <select value={value} onChange={(e) => onChange(e.target.value)} className="absolute inset-0 cursor-pointer opacity-0">
+        <SelectCompat className="absolute inset-0" buttonClassName="h-full opacity-0" value={value} onChange={(e) => onChange(e.target.value)}>
           {options.map((o) => <option key={o}>{o}</option>)}
-        </select>
+        </SelectCompat>
       </span>
     </label>
   )

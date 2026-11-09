@@ -1,6 +1,7 @@
 // Dashboard building blocks shared by 01 · Dashboard (5:27), TK1–TK6 task states and R1–R3 responsive frames.
 // Breakpoints: base = mobile (R2, 390), md = tablet (R1, 834), xl = desktop (1440 frames, pixel-identical).
 import { createContext, useContext, useState } from 'react'
+import { SelectCompat } from '../../components/pickers'
 import { Link, useNavigate } from 'react-router-dom'
 import AppLayout from '../../components/AppLayout'
 import RawIcon from '../../components/Icon'
@@ -941,11 +942,10 @@ export function TaskDrawer({ mode = 'empty', closeTo = '/', saveTo }) {
           <label className="flex min-w-0 flex-1 flex-col gap-2">
             <FieldLabel><span className="md:hidden">Time *</span><span className="hidden md:inline">Due time *</span></FieldLabel>
             <Box className="relative">
-              <select value={time} onChange={(e) => setTime(e.target.value)} className={cx('min-w-0 flex-1 appearance-none bg-transparent outline-none', time ? 'font-semibold text-ink' : 'font-medium text-faint')}>
+              <SelectCompat className="min-w-0 flex-1" buttonClassName="h-auto min-h-0 w-full gap-1.5 rounded-none bg-transparent p-0 ring-0 focus-visible:ring-0" value={time} onChange={(e) => setTime(e.target.value)}>
                 <option value="">--:--</option>
                 {TIMES.map((t) => <option key={t}>{t}</option>)}
-              </select>
-              <Icon name="chev-down" size={18} className="pointer-events-none text-muted" />
+              </SelectCompat>
             </Box>
           </label>
         </div>

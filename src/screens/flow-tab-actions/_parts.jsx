@@ -3,6 +3,7 @@
 import { Link } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { cx } from '../../components/ui'
+import { Dropdown } from '../../components/pickers'
 import { ProfileShell, PageHeading, SmallBtn, Btn } from '../flow-consent/_parts'
 import { holder } from '../../data/flow-consent'
 import { overviewStats, overviewCounts, details, address, household, openItems, familyMembers, documentGroups } from '../../data/flow-tab-actions'
@@ -168,12 +169,7 @@ export function TabPage({ tab, crumb, counts, overlay, children, bodyClass }) {
 
 export function SelectBox({ value, onChange, options, className = '' }) {
   return (
-    <div className={cx('relative flex h-[50px] w-full items-center rounded-[16px] bg-panel', className)}>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="h-full w-full appearance-none bg-transparent pr-10 pl-4 text-[14px] font-semibold text-ink outline-none">
-        {options.map((o) => <option key={o}>{o}</option>)}
-      </select>
-      <Icon name="chev-down" size={18} className="pointer-events-none absolute right-4 text-muted" />
-    </div>
+    <Dropdown value={value} onChange={onChange} options={options} className={cx('w-full', className)} />
   )
 }
 

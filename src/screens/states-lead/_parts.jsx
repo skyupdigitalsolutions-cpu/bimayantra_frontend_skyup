@@ -3,6 +3,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { cx } from '../../components/ui'
+import { DatePicker, Dropdown } from '../../components/pickers'
 import { PANEL_SCRIM, DRAWER_BOX, DIALOG_MAX, useFitTop, useLockScroll } from '../sales/_overlay'
 
 export { default as LeadDetailBase, Toast } from '../sales/_lead'
@@ -86,7 +87,16 @@ export function FieldLabel({ children }) {
 }
 
 /** Label + 50px input on #f4f6fb */
-export function TextField({ label, value, onChange, trailing, className = '', type = 'text', error, min }) {
+export function TextField({ label, value, onChange, trailing, className = '', type = 'text', error, min, max }) {
+  if (type === 'date') {
+    return (
+      <div className={cx('flex flex-col gap-2', className)}>
+        <FieldLabel>{label}</FieldLabel>
+        <DatePicker value={value} onChange={onChange} min={min} max={max} invalid={!!error} />
+        {error && <span className="text-[12px] font-medium text-[#b4323c]">{error}</span>}
+      </div>
+    )
+  }
   return (
     <label className={cx('flex flex-col gap-2', className)}>
       <FieldLabel>{label}</FieldLabel>
@@ -105,24 +115,15 @@ export function TextField({ label, value, onChange, trailing, className = '', ty
   )
 }
 
-/** Label + 50px native select styled like the inputs */
+/** Label + 50px app dropdown styled like the inputs */
 export function SelectField({ label, value, onChange, options, hint, className = '', error }) {
   return (
-    <label className={cx('flex flex-col gap-2', className)}>
+    <div className={cx('flex flex-col gap-2', className)}>
       <FieldLabel>{label}</FieldLabel>
-      <span className="relative flex h-[50px] items-center rounded-[16px] bg-panel px-4 focus-within:ring-2 focus-within:ring-blue/30">
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="min-w-0 flex-1 appearance-none bg-transparent text-[14px] font-semibold text-ink outline-none"
-        >
-          {options.map((o) => (typeof o === 'object' ? <option key={o.value} value={o.value}>{o.label}</option> : <option key={o}>{o}</option>))}
-        </select>
-        <Icon name="chev-down" size={18} className="pointer-events-none text-muted" />
-      </span>
+      <Dropdown value={value} onChange={onChange} options={options} invalid={!!error} />
       {hint && <span className="text-[12px] font-medium text-muted">{hint}</span>}
       {error && <span className="text-[12px] font-medium text-[#b4323c]">{error}</span>}
-    </label>
+    </div>
   )
 }
 

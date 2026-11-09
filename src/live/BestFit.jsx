@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Icon from '../components/Icon'
+import { Dropdown } from '../components/pickers'
 import { Modal, cx } from '../components/ui'
 import { Header, HeadButton, Panel, Tick } from '../screens/catalogue/_parts'
 import { api, useQuery, useDebounced } from '../api'
@@ -96,12 +97,10 @@ export default function LiveBestFit() {
 
           {customer && (
             <>
-              <label className="flex flex-col gap-2"><span className="text-[14px] font-semibold text-ink">Insurance type</span>
-                <select value={tid ?? ''} onChange={(e) => setTypeId(e.target.value)} className={inputCls}>
-                  {typeList.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
+              <div className="flex flex-col gap-2"><span className="text-[14px] font-semibold text-ink">Insurance type</span>
+                <Dropdown value={tid ?? ''} onChange={setTypeId} options={typeList.map((t) => ({ value: t.id, label: t.name }))} placeholder="Choose a type" />
                 {!typeList.length && <span className="text-[12px] font-medium text-[#b4323c]">No insurance types yet. SkyUp adds them in the catalogue.</span>}
-              </label>
+              </div>
 
               <div className="flex flex-col gap-2"><span className="text-[14px] font-semibold text-ink">People to cover *</span>
                 <div className="flex flex-wrap gap-2">
@@ -117,12 +116,10 @@ export default function LiveBestFit() {
                 </div>
               </div>
 
-              <label className="flex flex-col gap-2"><span className="text-[14px] font-semibold text-ink">Sum insured</span>
-                <select value={si} onChange={(e) => setSi(e.target.value)} className={inputCls}>
-                  {(opts.data?.sumInsuredOptions || []).map((n) => <option key={n} value={n}>{lakh(n)}</option>)}
-                </select>
+              <div className="flex flex-col gap-2"><span className="text-[14px] font-semibold text-ink">Sum insured</span>
+                <Dropdown value={si} onChange={(v) => setSi(String(v))} options={(opts.data?.sumInsuredOptions || []).map((n) => ({ value: n, label: lakh(n) }))} placeholder="Choose a sum insured" />
                 {opts.data && !opts.data.sumInsuredOptions.length && <span className="text-[12px] font-medium text-[#b4323c]">No products of this type have a sum insured on offer yet.</span>}
-              </label>
+              </div>
 
               <label className="flex flex-col gap-2"><span className="text-[14px] font-semibold text-ink">Yearly budget</span>
                 <span className="flex h-[50px] items-center gap-2 rounded-[16px] bg-panel px-4"><span className="text-muted">₹</span><input type="number" value={budget} onChange={(e) => setBudget(e.target.value)} className="min-w-0 flex-1 bg-transparent text-[15px] font-semibold text-ink outline-none" /></span>

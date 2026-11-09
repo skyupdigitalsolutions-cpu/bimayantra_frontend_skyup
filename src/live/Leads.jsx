@@ -6,6 +6,7 @@ import Icon from '../components/Icon'
 import { PageHeader, cx } from '../components/ui'
 import { LeadCard, PillButton } from '../screens/sales/_parts'
 import { LeadQuickUpdate } from './LeadDetail'
+import { DatePicker } from '../components/pickers'
 import { matchesQuery, useHeaderSearch, NoMatches } from '../screens/tasks/_filter'
 import { LeadsListScreen, SOURCE_KEY, SourceMenu, PageHeading, F, SelectBox, CARD, box, inp } from '../screens/tasks/_leads'
 import { Chip, PriorityTabs, SH_CARD, SH_NAVY } from '../screens/tasks/_parts'
@@ -395,7 +396,7 @@ function LeadFormInner({ lead, presetPipeline }) {
               </div>
             </div>
             <div className="flex items-start gap-3.5">
-              <F label="Next follow-up" hint="Creates a follow-up task."><div className={cx(box, errBox(fe.nextFollowUpAt))}><input type="date" min={istDay()} value={f.date} onChange={(e) => set('date')(e.target.value)} className={inp} /></div>{err(fe.nextFollowUpAt)}</F>
+              <F label="Next follow-up" hint="Creates a follow-up task."><DatePicker value={f.date} onChange={set('date')} min={istDay()} invalid={!!fe.nextFollowUpAt} placeholder="No follow-up" />{err(fe.nextFollowUpAt)}</F>
               <F label="Time"><SelectBox value={f.time} onChange={set('time')} options={TIMES.map((t) => ({ value: t, label: t12(t) }))} /></F>
             </div>
             <F label="Notes"><textarea value={f.notes} onChange={(e) => set('notes')(e.target.value)} className="h-20 resize-none rounded-[16px] bg-panel px-4 pt-3 text-[14px] font-semibold text-ink outline-none" />{err(fe.notes)}</F>

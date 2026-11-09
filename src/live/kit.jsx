@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Icon from '../components/Icon'
 import { Modal, cx } from '../components/ui'
+import { DatePicker, Dropdown, TimePicker } from '../components/pickers'
 import { invalidate, useQuery } from '../api'
 import { useToast } from '../components/LiveToast'
 import { titleCase, typeMobile } from '../api/format'
@@ -14,11 +15,11 @@ export function Field({ label, type = 'text', value, onChange, options = [], err
   const id = rest.id || label
   let control
   if (type === 'select') {
-    control = (
-      <select id={id} value={value ?? ''} onChange={(e) => onChange(e.target.value)} className={cx(inputCls, 'appearance-none')} {...rest}>
-        {options.map((o) => (typeof o === 'object' ? <option key={o.value} value={o.value}>{o.label}</option> : <option key={o} value={o}>{o}</option>))}
-      </select>
-    )
+    control = <Dropdown id={id} value={value ?? ''} onChange={onChange} options={options} placeholder={placeholder} disabled={rest.disabled} invalid={!!error} />
+  } else if (type === 'date') {
+    control = <DatePicker id={id} value={value ?? ''} onChange={onChange} min={rest.min} max={rest.max ?? (/birth|anniversary/i.test(String(label ?? '')) ? 'today' : undefined)} placeholder={placeholder} disabled={rest.disabled || rest.readOnly} invalid={!!error} clearable={!rest.required} />
+  } else if (type === 'time') {
+    control = <TimePicker id={id} value={value ?? ''} onChange={onChange} from="00:00" to="23:45" step={15} placeholder={placeholder} disabled={rest.disabled} invalid={!!error} />
   } else if (type === 'textarea') {
     control = <textarea id={id} value={value ?? ''} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} className={cx(inputCls, 'h-24 resize-none pt-3')} {...rest} />
   } else if (type === 'checkbox') {
@@ -39,13 +40,14 @@ export function Field({ label, type = 'text', value, onChange, options = [], err
   } else {
     control = <input id={id} type={type} value={value ?? ''} placeholder={placeholder} onChange={(e) => onChange(type === 'number' ? (e.target.value === '' ? '' : Number(e.target.value)) : e.target.value)} className={cx(inputCls, error && 'ring-2 ring-[#b4323c]')} {...rest} />
   }
+  const Wrap = type === 'select' || type === 'date' || type === 'time' ? 'div' : 'label'
   return (
-    <label className={cx('flex min-w-0 flex-1 flex-col gap-2', className)}>
+    <Wrap className={cx('flex min-w-0 flex-1 flex-col gap-2', className)}>
       {label && <span className={cx('text-[13px] font-semibold', error ? 'text-[#b4323c]' : 'text-ink')}>{label}</span>}
       {control}
       {hint && !error && <span className="text-[12px] font-medium text-muted">{hint}</span>}
       {error && <span className="text-[12px] font-medium text-[#b4323c]">{error}</span>}
-    </label>
+    </Wrap>
   )
 }
 

@@ -1,6 +1,6 @@
 // Figma 283:30164 · QS3 · Quotation — Mark rejected
 import { useState } from 'react'
-import Icon from '../../components/Icon'
+import { SelectCompat } from '../../components/pickers'
 import { QuoteDetailBase, CHIPS, Btn, Scrim, Dialog, DialogIcon, DialogTitle, DialogText, DialogActions, DangerButton, FieldLabel, fieldShell } from './_parts'
 import { sharedActivity, rejectReasons } from '../../data/states-quotation'
 
@@ -19,10 +19,9 @@ export default function QuotationMarkRejected() {
         <label className="flex flex-col gap-2">
           <FieldLabel>Reason *</FieldLabel>
           <span className={`${fieldShell} relative`}>
-            <select value={reason} onChange={(e) => setReason(e.target.value)} className="min-w-0 flex-1 cursor-pointer appearance-none bg-transparent outline-none">
+            <SelectCompat className="min-w-0 flex-1" buttonClassName="h-auto min-h-0 w-full gap-1.5 rounded-none bg-transparent p-0 ring-0 focus-visible:ring-0" value={reason} onChange={(e) => setReason(e.target.value)}>
               {rejectReasons.map((r) => <option key={r}>{r}</option>)}
-            </select>
-            <Icon name="chev-down" size={18} className="pointer-events-none text-muted" />
+            </SelectCompat>
           </span>
           <span className="text-[12px] font-medium text-muted">{rejectReasons.join(' · ')}</span>
         </label>

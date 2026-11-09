@@ -1,6 +1,6 @@
 // Figma 255:21703 · RNB1 · Renewal — New quotation · Product
 import { useState } from 'react'
-import Icon from '../../components/Icon'
+import { SelectCompat } from '../../components/pickers'
 import { cx } from '../../components/ui'
 import { Btn, Radio, Check } from '../flow-policy/_kit'
 import { P } from '../../data/flow-policy'
@@ -52,14 +52,12 @@ export default function NewQuotationProduct() {
               <p className="text-[12px] leading-[15px] font-medium text-muted">{p.insurer}</p>
             </div>
             <label onClick={(e) => e.stopPropagation()} className="relative flex h-[38px] items-center gap-2 rounded-[14px] border border-line bg-white px-3">
-              <select
+              <SelectCompat className="min-w-0 flex-1" buttonClassName="h-auto min-h-0 w-full gap-1.5 rounded-none bg-transparent p-0 ring-0 focus-visible:ring-0 text-[12px] font-bold"
                 value={variant[p.key]}
                 onChange={(e) => setVariant({ ...variant, [p.key]: e.target.value })}
-                className="cursor-pointer appearance-none bg-transparent text-[12px] font-bold text-ink outline-none"
               >
                 {p.variants.map((v) => <option key={v}>{v}</option>)}
-              </select>
-              <Icon name="chev-down" size={15} className="pointer-events-none text-muted" />
+              </SelectCompat>
             </label>
           </div>
         )

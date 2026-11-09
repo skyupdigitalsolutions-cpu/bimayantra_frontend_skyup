@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import AppLayout from '../../components/AppLayout'
 import Icon from '../../components/Icon'
 import { PageHeader, cx } from '../../components/ui'
+import { Dropdown } from '../../components/pickers'
 
 export const cardShadow = 'shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]'
 
@@ -56,13 +57,7 @@ export function TInput({ value, onChange, placeholder, prefix, leading, trailing
 /** Native select styled as the design's dropdown field (muted chevron). lead: node before the value */
 export function SInput({ value, onChange, options, lead, className = '' }) {
   return (
-    <span className={cx(shell, 'relative', className)}>
-      {lead}
-      <select value={value} onChange={(e) => onChange(e.target.value)} className={cx(inputCls, 'cursor-pointer appearance-none pr-7')}>
-        {options.map((o) => <option key={o}>{o}</option>)}
-      </select>
-      <Icon name="chev-down" size={18} className="pointer-events-none absolute right-4 text-muted" />
-    </span>
+    <Dropdown value={value} onChange={onChange} options={options} leading={lead} className={className} />
   )
 }
 

@@ -2,6 +2,7 @@
 // Every screen should compose these instead of re-declaring styles.
 import { Link } from 'react-router-dom'
 import Icon from './Icon'
+import { SelectCompat } from './pickers'
 
 import { extendTailwindMerge } from 'tailwind-merge'
 // cx merges Tailwind classes so a className passed to a primitive overrides its defaults.
@@ -286,14 +287,7 @@ export function Input({ leading, trailing, prefix, className = '', ...rest }) {
 }
 
 export function Select({ options = [], className = '', ...rest }) {
-  return (
-    <div className={cx(inputShell, 'relative', className)}>
-      <select className="min-w-0 flex-1 appearance-none bg-transparent font-semibold outline-none" {...rest}>
-        {options.map((o) => <option key={o.value ?? o} value={o.value ?? o}>{o.label ?? o}</option>)}
-      </select>
-      <Icon name="chev-down" size={18} className="pointer-events-none text-ink" />
-    </div>
-  )
+  return <SelectCompat options={options.map((o) => ({ value: o.value ?? o, label: o.label ?? String(o) }))} className={className} {...rest} />
 }
 
 export function Textarea({ className = '', ...rest }) {

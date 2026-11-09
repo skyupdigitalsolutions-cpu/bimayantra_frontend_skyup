@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import AppLayout from '../../components/AppLayout'
 import BaseIcon from '../../components/Icon'
 import { cx } from '../../components/ui'
+import { Dropdown } from '../../components/pickers'
 import {
   connections, overviewKpis, channelTabs, statusTabs, campaignRows, statusMatch, sourcePages,
 } from '../../data/campaigns'
@@ -409,25 +410,14 @@ export function Steps({ steps, current }) {
 /** Labelled select on #f4f6fb (h50, r16). */
 export function SelectField({ label, value, options, onChange, locked = false, className = '' }) {
   return (
-    <label className={cx('flex min-w-0 flex-1 flex-col gap-2', className)}>
+    <div className={cx('flex min-w-0 flex-1 flex-col gap-2', className)}>
       <span className="text-[13px] font-semibold text-ink">{label}</span>
-      <div className="relative flex h-[50px] items-center gap-2.5 rounded-[16px] bg-panel px-4">
-        {locked ? (
-          <span className="flex-1 truncate text-[14px] font-semibold text-ink">{value}</span>
-        ) : (
-          <>
-            <select
-              value={value}
-              onChange={(e) => onChange?.(e.target.value)}
-              className="min-w-0 flex-1 cursor-pointer appearance-none truncate bg-transparent text-[14px] font-semibold text-ink outline-none"
-            >
-              {(options ?? [value]).map((o) => <option key={o} value={o}>{o}</option>)}
-            </select>
-            <Icon name="chev-down" size={18} className="pointer-events-none text-muted" />
-          </>
-        )}
-      </div>
-    </label>
+      {locked ? (
+        <div className="flex h-[50px] items-center gap-2.5 rounded-[16px] bg-panel px-4"><span className="flex-1 truncate text-[14px] font-semibold text-ink">{value}</span></div>
+      ) : (
+        <Dropdown value={value} onChange={(v) => onChange?.(v)} options={options ?? [value]} />
+      )}
+    </div>
   )
 }
 
@@ -476,16 +466,8 @@ export function MappingTable({ rows, options }) {
         <div key={field} className={cx('flex items-center gap-3 rounded-[12px] bg-white px-3 py-2.5', warn && 'border border-[#f1d9a8]')}>
           <span className="w-[248px] shrink-0 text-[13px] font-semibold whitespace-nowrap text-ink">{field}</span>
           <span className="flex w-10 shrink-0"><Icon name="arrow" size={15} className="text-muted" /></span>
-          <div className={cx('relative flex h-8 flex-1 items-center gap-2 rounded-[10px] px-3', warn ? 'bg-[#fff9ef]' : 'bg-panel')}>
-            <select
-              value={vals[i]}
-              onChange={(e) => setVals((v) => v.map((x, j) => (j === i ? e.target.value : x)))}
-              className={cx('min-w-0 flex-1 cursor-pointer appearance-none bg-transparent text-[13px] font-bold outline-none', warn ? 'text-[#8a5a12]' : 'text-ink')}
-            >
-              {options.map((o) => <option key={o} value={o}>{o}</option>)}
-            </select>
-            <Icon name="chev-down" size={14} className="pointer-events-none text-muted" />
-          </div>
+          <Dropdown value={vals[i]} onChange={(val) => setVals((v) => v.map((x, j) => (j === i ? val : x)))} options={options} className="flex-1"
+            buttonClassName={cx('h-8 rounded-[10px] px-3 text-[13px]', warn ? 'bg-[#fff9ef]' : 'bg-panel')} />
         </div>
       ))}
     </div>

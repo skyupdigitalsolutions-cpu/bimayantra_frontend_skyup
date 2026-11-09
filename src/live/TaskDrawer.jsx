@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Icon from '../components/Icon'
 import { Modal, cx } from '../components/ui'
+import { DatePicker, TimePicker } from '../components/pickers'
 import { PriorityTabs, SH_NAVY, SH_SOFT } from '../screens/tasks/_parts'
 import { useLockScroll } from '../screens/sales/_overlay'
 import { api, useMutation, useDebounced, invalidate } from '../api'
@@ -12,12 +13,9 @@ import { TASK_TYPE_LABEL, TASK_TYPE_CODE } from './views'
 import { useToast } from '../components/LiveToast'
 
 const ERR = 'text-[#b4323c]'
-// Every 30 minutes from 8:00 AM to 9:00 PM
-const TIMES = Array.from({ length: 27 }, (_, i) => { const m = 480 + i * 30; return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}` })
 /** "HH:mm" now in India, for blocking past slots today */
 const istNowHHMM = () => new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false })
 const addDays = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return istDay(d) }
-const label12 = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}` }
 const to24 = (d) => { const t = fmtTime(d); const m = /(\d+):(\d+) (AM|PM)/.exec(t); if (!m) return ''; let h = Number(m[1]) % 12; if (m[3] === 'PM') h += 12; return `${String(h).padStart(2, '0')}:${m[2]}` }
 
 function Box({ error, className = '', children }) {
@@ -168,30 +166,16 @@ export default function TaskDrawer({ task = null, related: presetRelated = null,
 
         <div className="flex shrink-0 flex-col gap-2">
           <div className="flex gap-2.5 md:gap-3">
-            <label className="flex min-w-0 flex-1 flex-col gap-2">
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
               <Label error={fe.dueDate}>Due date *</Label>
-              <Box error={fe.dueDate}>
-                <Icon name="calendar" size={17} className="shrink-0 text-muted" />
-                <input type="date" min={istDay()} value={date} onClick={(e) => e.currentTarget.showPicker?.()}
-                  onChange={(e) => { const v = e.target.value; setDate(v); setLocal((x) => ({ ...x, dueDate: undefined })); if (v === istDay() && time && time <= istNowHHMM()) setTime('') }}
-                  className={cx(inputCls, 'cursor-pointer', !date && 'text-faint')} />
-              </Box>
-            </label>
-            <label className="flex min-w-0 flex-1 flex-col gap-2">
+              <DatePicker value={date} min={istDay()} clearable={false} invalid={!!fe.dueDate} quick={false}
+                onChange={(v) => { setDate(v); setLocal((x) => ({ ...x, dueDate: undefined })); if (v === istDay() && time && time <= istNowHHMM()) setTime('') }} />
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
               <Label error={fe.dueTime}>Due time *</Label>
-              <Box className="relative" error={fe.dueTime}>
-                <Icon name="clock" size={17} className="shrink-0 text-muted" />
-                <select value={time} onChange={(e) => { setTime(e.target.value); setLocal((x) => ({ ...x, dueTime: undefined })) }}
-                  className={cx('min-w-0 flex-1 cursor-pointer appearance-none bg-transparent outline-none', time ? 'font-semibold text-ink' : 'font-medium text-faint')}>
-                  <option value="" disabled hidden>Choose a time</option>
-                  {[...new Set([...(time && !TIMES.includes(time) ? [time] : []), ...TIMES])].sort().map((t) => {
-                    const past = date === istDay() && t <= istNowHHMM() && t !== time
-                    return <option key={t} value={t} disabled={past} className={past ? 'text-faint' : 'font-semibold text-ink'}>{label12(t)}{past ? ' · passed' : ''}</option>
-                  })}
-                </select>
-                <Icon name="chev-down" size={18} className="pointer-events-none text-muted" />
-              </Box>
-            </label>
+              <TimePicker value={time} after={date === istDay() ? istNowHHMM() : undefined} invalid={!!fe.dueTime} from="08:00" to="21:00" step={30}
+                onChange={(v) => { setTime(v); setLocal((x) => ({ ...x, dueTime: undefined })) }} />
+            </div>
           </div>
           <div className="flex flex-wrap gap-1.5">
             {[['Today', 0], ['Tomorrow', 1], ['In 3 days', 3], ['Next week', 7]].map(([l, n]) => (

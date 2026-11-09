@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import AppLayout from '../../components/AppLayout'
 import Icon from '../../components/Icon'
 import { PageHeader, cx } from '../../components/ui'
+import { Dropdown } from '../../components/pickers'
 import { useHeaderSearch } from '../customer-tabs/_search'
 import { STEPS, SUMMARY, QUOTE_NO } from '../../data/quotation-flow'
 
@@ -102,16 +103,7 @@ export function OutlineButton({ to, icon, children, className = '', ...rest }) {
 /** Field select on #f4f6fb (h50, r16) with muted chevron */
 export function PlainSelect({ value, onChange, options, className = '' }) {
   return (
-    <span className={cx('relative flex h-[50px] items-center rounded-[16px] bg-panel px-4', className)}>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="min-w-0 flex-1 cursor-pointer appearance-none bg-transparent pr-7 text-[14px] font-semibold text-ink outline-none"
-      >
-        {options.map((o) => <option key={o}>{o}</option>)}
-      </select>
-      <Icon name="chev-down" size={18} className="pointer-events-none absolute right-4 text-muted" />
-    </span>
+    <Dropdown value={value} onChange={onChange} options={options} className={className} />
   )
 }
 

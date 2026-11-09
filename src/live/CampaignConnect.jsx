@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import Icon from '../components/Icon'
 import { Modal, cx } from '../components/ui'
+import { Dropdown } from '../components/pickers'
 import { api, useQuery, invalidate } from '../api'
 import { useToast } from '../components/LiveToast'
 import { check, useAct, ErrorNote } from './kit'
@@ -59,14 +60,7 @@ function Secret({ value, onChange, error, placeholder, onGenerate }) {
   )
 }
 function Select({ value, onChange, options, className = '' }) {
-  return (
-    <span className={cx('relative block', className)}>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className={cx(boxCls(), 'cursor-pointer appearance-none pr-10 font-semibold')}>
-        {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-      </select>
-      <Icon name="chev-down" size={16} className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-muted" />
-    </span>
-  )
+  return <Dropdown value={value} onChange={onChange} options={options} className={className} buttonClassName="h-[48px] rounded-[14px] border border-[#e6e9f0] bg-[#f6f7fb]" />
 }
 function CopyField({ label, value, hint }) {
   const { toast } = useToast()

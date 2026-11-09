@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import AppLayout from '../../components/AppLayout'
 import Icon from '../../components/Icon'
 import { cx } from '../../components/ui'
+import { SelectCompat } from '../../components/pickers'
 import { FixedScrim } from '../catalogue/_overlay'
 import { useHeaderSearch } from '../customer-tabs/_search'
 
@@ -195,12 +196,7 @@ export function TextBox({ bg, focused, prefix, icon, trailing, className = '', .
 
 export function SelectBox({ bg, options = [], className = '', ...rest }) {
   return (
-    <div className={cx(shell(bg), 'relative', className)}>
-      <select className="min-w-0 flex-1 cursor-pointer appearance-none bg-transparent font-semibold text-ink outline-none" {...rest}>
-        {options.map((o) => <option key={o} value={o}>{o}</option>)}
-      </select>
-      <Icon name="chev-down" size={18} className="pointer-events-none text-muted" />
-    </div>
+    <SelectCompat options={options} className={className} buttonClassName={bg === 'white' ? 'bg-white' : ''} {...rest} />
   )
 }
 

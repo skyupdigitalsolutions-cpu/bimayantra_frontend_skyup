@@ -1,5 +1,6 @@
 // Figma 40:4974 · Q5 · Quotation — Product
 import { useState } from 'react'
+import { SelectCompat } from '../../components/pickers'
 import { Link } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { cx } from '../../components/ui'
@@ -9,14 +10,12 @@ import { products, STEPS } from '../../data/quotation-flow'
 function VariantSelect({ value, options, onChange, active }) {
   return (
     <span className={cx('relative inline-flex h-[38px] shrink-0 items-center rounded-[14px] border bg-white px-3', active ? 'border-blue' : 'border-line')} onClick={(e) => e.stopPropagation()}>
-      <select
+      <SelectCompat className="min-w-0 flex-1" buttonClassName="h-auto min-h-0 w-full gap-1.5 rounded-none bg-transparent p-0 ring-0 focus-visible:ring-0 text-[12px] font-bold"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="cursor-pointer appearance-none bg-transparent pr-[23px] text-[12px] font-bold text-ink outline-none"
       >
         {options.map((o) => <option key={o}>{o}</option>)}
-      </select>
-      <Icon name="chev-down" size={15} className="pointer-events-none absolute right-3 text-muted" />
+      </SelectCompat>
     </span>
   )
 }

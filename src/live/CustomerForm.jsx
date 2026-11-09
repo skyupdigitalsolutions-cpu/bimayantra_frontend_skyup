@@ -8,6 +8,7 @@ import { cx } from '../components/ui'
 import LeadShell, { FormCard, Row, FField, TInput, SInput, AfterSave, cardShadow } from '../screens/flow-lead/_parts'
 import { api, useQuery, useMutation, ApiError } from '../api'
 import { cleanMobile, fmtMobile, titleCase, typeMobile, mobileError, isEmail } from '../api/format'
+import { DatePicker } from '../components/pickers'
 import { useAuth } from '../auth/AuthProvider'
 import { useToast } from '../components/LiveToast'
 import { LoadingPanel, ErrorPanel } from './common'
@@ -30,9 +31,7 @@ export default function LiveCustomerForm({ mode = 'new' }) {
 
 function DateBox({ value, onChange, error }) {
   return (
-    <span className={cx('flex h-[50px] items-center gap-2.5 rounded-[16px] bg-panel px-4', error && 'ring-2 ring-[#b4323c]')}>
-      <input type="date" value={value} onChange={(e) => onChange(e.target.value)} className="min-w-0 flex-1 bg-transparent text-[14px] font-semibold text-ink outline-none" />
-    </span>
+    <DatePicker value={value} onChange={onChange} invalid={!!error} max="today" placeholder="Choose date of birth" />
   )
 }
 const Err = ({ children }) => (children ? <span className="text-[12px] font-semibold text-[#b4323c]">{children}</span> : null)
