@@ -86,7 +86,14 @@ export function LiveAddProduct() {
       setReadErr(e)
     } finally { setReading(false) }
   }
-  const removeBrochure = () => { set('brochureFileId')(null); setBrochureName(''); setJob(null); setReadErr(null) }
+  // The brochure looks like another category (OCR-09) but the advisor is sure: read the same file anyway
+  const readAnyway = async () => {
+    setReading(true); setReadErr(null)
+    try { setJob((await api.myProducts.startReading({ typeId, fileId: d.brochureFileId, ignoreCategoryCheck: true })).data) } catch (e) { setReadErr(e) } finally { setReading(false) }
+  }
+  const removeBrochure = () => { set('brochureFileId')(null); setBrochureName(''); setJob(null); setReadErr(null); setOcrJobId(null) }
+  const readingNow = reading || (!!job && ['QUEUED', 'RUNNING', 'PENDING', 'PROCESSING'].includes(job.status))
+  const readyToUse = !!job && ['REVIEW_REQUIRED', 'REVIEWED'].includes(job.status) && !ocrJobId
   const decide = async (row, decision, value) => {
     try { setJob((await api.myProducts.readingDecisions(job.id, { decisions: [{ section: row.section, key: row.key, decision, value: value ?? null }] })).data) } catch (e) { setReadErr(e) }
   }
@@ -101,7 +108,8 @@ export function LiveAddProduct() {
       if (x.features) setFeatures(x.features)
       if (x.details) setDetails((cur) => ({ ...cur, ...detailsFromData(form, x.details) }))
       if (r.variants?.length) setVariants(r.variants.map((v) => ({ ...v, sumInsuredMin: v.sumInsuredMin ?? '', sumInsuredMax: v.sumInsuredMax ?? '' })))
-      toast('Values from the brochure are filled in. Check each step.')
+      const left = (r.left?.features?.length ?? 0) + (r.left?.details?.length ?? 0)
+      toast(left ? `Values from the brochure are filled in. ${left} could not be read clearly: type them in and check each step.` : 'Values from the brochure are filled in. Check each step.')
       setStep(3)
     } catch (e) { setReadErr(e) }
   }
@@ -271,6 +279,11 @@ export function LiveAddProduct() {
                 <div className="flex items-center gap-3 rounded-[16px] bg-[#fbebec] px-4 py-3 text-[13px] font-semibold text-[#b4323c]"><Icon name="alert" size={16} /><span className="flex-1">{job.error ?? 'The brochure could not be read.'} Enter the values yourself, or try again.</span>
                   <SmallButton variant="outline" onClick={async () => { try { setReadErr(null); setJob((await api.myProducts.readingRetry(job.id, {})).data) } catch (e) { setReadErr(e) } }}>Try again</SmallButton></div>
               )}
+              {job?.status === 'WRONG_CATEGORY' && (
+                <div className="flex items-center gap-3 rounded-[16px] bg-[#fbebec] px-4 py-3 text-[13px] font-semibold text-[#b4323c]"><Icon name="alert" size={16} /><span className="flex-1">{job.message ?? 'This brochure does not look like this category.'}</span>
+                  <SmallButton variant="outline" disabled={reading} onClick={readAnyway}>Read anyway</SmallButton>
+                  <SmallButton variant="ghost" onClick={removeBrochure}>Upload another</SmallButton></div>
+              )}
               {job && ['REVIEW_REQUIRED', 'REVIEWED'].includes(job.status) && (
                 <>
                   <div className="flex items-center gap-2"><p className="flex-1 text-[13px] font-semibold text-ink">Check each value. Low confidence values are flagged.</p>
@@ -366,7 +379,9 @@ export function LiveAddProduct() {
           )}
           {step > 0 && <div className="flex justify-between">
             <SmallButton variant="outline" disabled={step === 0} onClick={() => setStep(step - 1)}>Back</SmallButton>
-            {step < 6 ? <SmallButton variant="navy" icon="arrow" disabled={!canNext} onClick={() => setStep(step + 1)}>{step === 2 && !job && !d.brochureFileId ? 'Skip' : 'Next'}</SmallButton>
+            {step === 2 && readyToUse ? <SmallButton variant="navy" icon="check" onClick={useReading}>Use values and continue</SmallButton>
+              : step === 2 && readingNow ? <SmallButton variant="navy" disabled className="disabled:cursor-not-allowed disabled:opacity-50">Reading the brochure…</SmallButton>
+              : step < 6 ? <SmallButton variant="navy" icon="arrow" disabled={!canNext} onClick={() => setStep(step + 1)}>{step === 2 && !job && !d.brochureFileId ? 'Skip' : 'Next'}</SmallButton>
               : <SmallButton variant="navy" icon="check" disabled={busy} onClick={publish}>{busy ? 'Publishing…' : 'Publish product'}</SmallButton>}
           </div>}
         </div>
