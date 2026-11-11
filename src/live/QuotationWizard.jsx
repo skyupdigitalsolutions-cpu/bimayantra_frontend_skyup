@@ -65,19 +65,49 @@ function Wizard({ initial, presetCustomer }) {
     try { return await fn() } catch (e) { setErr(e); return undefined } finally { setBusy(false) }
   }
 
+  /**
+   * Save a step with the version we hold. Every successful save is kept right away (q), so a later failure
+   * (e.g. calculating before the premium is typed) can never leave us holding an old version. If the draft
+   * still moved on (another tab, a stale copy of a resumed draft), reload it and save once more with the latest
+   * version: a draft is only edited through this wizard.
+   */
+  const keepVersion = (e, cur) => {
+    // A save refused for missing fields still stored what was typed and moved the version on: keep that version.
+    const v = e?.details?.quotation?.version
+    if (v != null) setQ((x) => ({ ...(x ?? cur), version: v, step: e.details.quotation.step ?? (x ?? cur).step }))
+    return v
+  }
+  const save = async (cur, step, body) => {
+    try {
+      const res = await api.quotations.saveStep(cur.id, { version: cur.version, step, inputs: clean(body) })
+      setQ(res.data)
+      return res
+    } catch (e) {
+      keepVersion(e, cur)
+      if (e?.code !== 'VERSION_CONFLICT') throw e
+      const latest = (await api.quotations.get(cur.id)).data
+      if (latest.status !== 'DRAFT') throw e
+      try {
+        const res = await api.quotations.saveStep(cur.id, { version: latest.version, step, inputs: clean(body) })
+        setQ(res.data)
+        return res
+      } catch (e2) { keepVersion(e2, latest); throw e2 }
+    }
+  }
+
   /** Save the inputs for the step just completed, then move on. */
   const saveAndNext = (n, extra = {}) => run(async () => {
     let cur = q
-    if (!cur) cur = (await api.quotations.create(customerId)).data
+    if (!cur) { cur = (await api.quotations.create(customerId)).data; setQ(cur) }
     const body = { ...inputs, ...extra }
-    const res = await api.quotations.saveStep(cur.id, { version: cur.version, step: n + 1, inputs: clean(body) })
-    setQ(res.data); setInputs(res.data.inputs ?? body)
+    const res = await save(cur, n + 1, body)
+    setInputs(res.data.inputs ?? body)
     invalidate('quotations')
     setStep(n + 1)
   })
 
   const calculate = () => run(async () => {
-    const res = await api.quotations.saveStep(q.id, { version: q.version, step: 8, inputs: clean(inputs) })
+    const res = await save(q, 8, inputs) // kept even if calculating fails below
     const calc = await api.quotations.calculate(res.data.id)
     setQ(calc.data)
     return calc
@@ -89,6 +119,9 @@ function Wizard({ initial, presetCustomer }) {
     toast(out.meta?.message)
     navigate(`/quotations/${q.id}`)
   })
+
+  // Leaving the wizard drops the stored copy of the draft, so resuming it later loads the latest version.
+  useEffect(() => () => invalidate('quotation'), [])
 
   // Entering the premium or review step prices the quotation with what is saved.
   useEffect(() => {
