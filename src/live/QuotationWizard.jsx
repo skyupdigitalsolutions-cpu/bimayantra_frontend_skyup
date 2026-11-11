@@ -4,7 +4,7 @@
 // step's checks; POST …/calculate prices it; POST …/generate freezes revision 1 and gives the QT number.
 // Nothing is pre-filled: the lists come from GET /quotations/choices (what this advisor may quote today).
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Icon from '../components/Icon'
 import { Stepper, cx } from '../components/ui'
@@ -125,8 +125,10 @@ function Wizard({ initial, presetCustomer }) {
       <Stepper className="mt-4" steps={STEPS} current={step} />
       <div className={cx('mt-5 flex flex-col gap-5', CARD)}>
         {step === 0 && <CustomerStep customerId={customerId} onPick={(c) => { setCustomerId(c.id); setQ(null) }} locked={!!q} />}
-        {step === 1 && <ListStep title="What are you quoting?" items={choices.data?.types} empty="No insurance type is open to you yet. Add your licence categories in Settings › My profile." value={inputs.typeId} onPick={(i) => set({ typeId: i.id, insurerId: undefined, productId: undefined })} loading={choices.loading} />}
-        {step === 2 && <ListStep title="Which insurer?" items={choices.data?.insurers} empty="No active insurer. Add an insurer with your agent code in Settings › My insurers." value={inputs.insurerId} onPick={(i) => set({ insurerId: i.id, productId: undefined })} loading={choices.loading} />}
+        {step === 1 && <ListStep title="What are you quoting?" items={choices.data?.types}
+          empty="No insurance type is open to you yet. Tick the insurance categories you are licensed for (for example Health) in My profile → Professional details, then come back."
+          emptyAction={{ label: 'Open My profile', to: '/settings' }} value={inputs.typeId} onPick={(i) => set({ typeId: i.id, insurerId: undefined, productId: undefined })} loading={choices.loading} />}
+        {step === 2 && <ListStep title="Which insurer?" items={choices.data?.insurers} empty="No insurer with an active agent code yet. Add the insurers you sell for, with your agent code, in My insurers." emptyAction={{ label: 'Open My insurers', to: '/settings/insurers' }} value={inputs.insurerId} onPick={(i) => set({ insurerId: i.id, productId: undefined })} loading={choices.loading} />}
         {step === 3 && <ListStep title="Which product?" items={choices.data?.products} empty="No quotable product for this insurer and type." value={inputs.productId} onPick={(p) => set({ productId: p.id, riders: [], sumInsured: undefined, policyTerm: undefined })} loading={choices.loading} sub={(p) => label(p.pricingMode)} />}
         {step === 4 && <DetailsStep people={people} product={product} inputs={inputs} set={set} errors={fieldErrors} />}
         {step === 5 && <RidersStep product={product} inputs={inputs} set={set} />}
@@ -186,14 +188,19 @@ function CustomerStep({ customerId, onPick, locked }) {
   )
 }
 
-function ListStep({ title, items, empty, value, onPick, loading, sub }) {
+function ListStep({ title, items, empty, emptyAction, value, onPick, loading, sub }) {
   return (
     <>
       <p className="text-[19px] font-bold text-ink">{title}</p>
       <div className="grid grid-cols-2 gap-3">
         {(items ?? []).map((i) => <Choice key={i.id} on={value === i.id} onClick={() => onPick(i)} title={i.name} sub={sub?.(i)} />)}
       </div>
-      {!loading && !(items ?? []).length && <p className="text-[13px] font-medium text-muted">{empty}</p>}
+      {!loading && !(items ?? []).length && (
+        <div className="flex items-center gap-3 rounded-[16px] border border-[#f1d6a6] bg-[#fdf6ea] px-4 py-3">
+          <p className="flex-1 text-[13px] font-semibold text-[#8a5a12]">{empty}</p>
+          {emptyAction && <Link to={emptyAction.to} className="shrink-0 rounded-[12px] border border-line bg-white px-3 py-1.5 text-[12px] font-semibold text-ink hover:bg-panel-2">{emptyAction.label}</Link>}
+        </div>
+      )}
       {loading && !items && <p className="text-[13px] font-medium text-muted">Loading…</p>}
     </>
   )
