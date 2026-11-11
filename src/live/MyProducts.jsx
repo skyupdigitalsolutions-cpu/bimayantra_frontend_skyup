@@ -130,6 +130,7 @@ export function LiveAddProduct() {
   const pickType = (id) => { if (id !== typeId) { setInsurerId(''); setDetails({}); setFeatures({}) } setTypeId(id) }
   const typeName = T.find((t) => t.id === typeId)?.name
   const insName = I.find((t) => t.id === insurerId)?.name
+  const detailsMissing = missingRequired(form, details)
   const canNext = [!!typeId, !!insurerId, true, !!code.trim() && !!d.name && !!d.uin && !detailsMissing.length, variants.some((v) => v.name.trim()), true, true][step]
   const feats = tpl.data?.features ?? []
   // The category's product form: which shared fields apply and what they are called, plus its own details.
@@ -137,7 +138,6 @@ export function LiveAddProduct() {
   const ages = form?.entryAges ?? 'ADULT_CHILD'
   const L = form?.labels ?? { sumInsured: 'Sum insured', policyTerms: 'Policy terms (years)', adultEntryAge: 'Adult entry age' }
   const canRead = tpl.data?.brochureReading !== false
-  const detailsMissing = missingRequired(form, details)
   // A new category that means one already listed ("Health insurance" next to Health) is refused here and by the API.
   const sameCat = newCat.trim() ? T.find((t) => categoryKey(t.name) === categoryKey(newCat)) : null
   const groups = [...new Set(feats.map((f) => f.group || 'Features'))]
