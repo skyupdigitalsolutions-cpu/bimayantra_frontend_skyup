@@ -188,6 +188,13 @@ export default function LiveBestFit() {
                 <p className="text-[15px] font-bold text-ink">{res.results.length ? `${res.excluded.length} more product${res.excluded.length === 1 ? ' was' : 's were'} left out` : 'Why no products are ranked'}</p>
                 <p className="text-[13px] font-medium text-muted">Each product of this category that is not ranked, and what to fix.</p>
               </div>
+              {res.profileBlock && (
+                <div className="flex items-center gap-3 rounded-[14px] border border-[#f1d6a6] bg-[#fdf6ea] px-4 py-3">
+                  <Icon name="alert" size={16} className="shrink-0 text-[#8a5a12]" />
+                  <p className="flex-1 text-[13px] font-semibold text-[#8a5a12]">First: {res.profileBlock}</p>
+                  <SmallLink to="/settings">My profile</SmallLink>
+                </div>
+              )}
               {res.excluded.map((x) => (
                 <div key={x.productId} className="flex items-start gap-3 rounded-[14px] bg-panel px-4 py-3">
                   <Icon name="alert" size={16} className="mt-0.5 shrink-0 text-[#8a5a12]" />
