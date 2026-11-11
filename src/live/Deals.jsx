@@ -150,6 +150,20 @@ export function LiveQuotations() {
     <AppLayout active="quotations">
       <Header breadcrumb={'SALES  /  QUOTATIONS'} title="Quotations" subtitle="Every quotation and its revisions. Share, accept, then take payment."
         actions={<><HeadButton variant="white" icon="compare" to="/comparisons">Comparisons</HeadButton><HeadButton icon="plus" to="/quotations/new">New quotation</HeadButton></>} />
+      {/* Figma 07L stat cards */}
+      <div className="mt-[13px] flex gap-5">
+        {[
+          { icon: 'quote', label: 'All quotations', value: Object.values(counts).reduce((a, b) => a + b, 0), bg: '#eef1f5' },
+          { icon: 'check', label: 'Accepted', value: counts.ACCEPTED ?? 0, bg: '#e7f4ee' },
+          { icon: 'send', label: 'Shared', value: counts.SHARED ?? 0, bg: '#e8f0fd' },
+          { icon: 'clock', label: 'Ready', value: counts.READY ?? 0, bg: '#f0ecfb' },
+        ].map((s) => (
+          <div key={s.label} className="flex h-[117px] w-[280px] flex-col gap-1.5 rounded-[24px] p-5" style={{ background: s.bg }}>
+            <div className="flex items-center gap-2.5"><span className="flex size-9 items-center justify-center rounded-full bg-white/70 text-ink"><Icon name={s.icon} size={18} /></span><p className="text-[13px] font-semibold whitespace-nowrap text-ink-2">{s.label}</p></div>
+            <p className="text-[28px] font-bold tracking-[-0.6px] text-ink">{s.value}</p>
+          </div>
+        ))}
+      </div>
       <SegTabs className="mt-[13px]" items={Q_TABS.map(([key, l]) => ({ key, label: l, count: key === 'all' ? Object.values(counts).reduce((a, b) => a + b, 0) : counts[key] ?? 0 }))} value={tab} onChange={(k) => { setTab(k); setPage(1) }} />
       <DataTable className="mt-7 w-[1180px]" columns={columns} rows={rows} rowTo={(r) => `/quotations/${r.id}`}
         empty={list.loading ? 'Loading…' : hq.trim() ? `No quotations match “${hq.trim()}”.` : 'No quotations here yet.'} onClear={hq.trim() ? clearQ : undefined} />
@@ -203,8 +217,18 @@ export function LiveQuotationDetail() {
           {canPay && <HeadButton icon="card" onClick={() => setDlg('pay')}>Record payment</HeadButton>}
           {x.status === 'ACCEPTED' && paid && <HeadButton icon="arrow" onClick={() => act(() => api.proposals.create({ quotationId: x.id }), { invalidates: ['proposals'], onDone: (r) => r?.data?.id && navigate(`/proposals/${r.data.id}/edit`) })}>Start proposal</HeadButton>}
         </>} />
-      <div className="mt-6 flex items-start gap-6">
-        <div className="flex w-[756px] flex-col gap-5">
+      <div className="mt-[37px] flex items-start gap-5">
+        <div className="flex w-[760px] shrink-0 flex-col gap-5">
+          {/* Quotation KV card - Figma 08 */}
+          <Panel className="flex flex-col gap-3">
+            <PanelHead title="Quotation" subtitle="Everything printed on the PDF" right={rev?.pdfFileId && <SmallButton variant="ghost" icon="folder" onClick={() => window.open(api.files.url(rev.pdfFileId), '_blank')}>PDF</SmallButton>} />
+            <div className="flex flex-wrap gap-x-5 gap-y-[18px]">
+              {[['Customer', s.customer?.name], ['Insurer', s.insurer?.name], ['Product', s.product?.name], ['Variant', s.variant?.name], ['Sum insured', s.sumInsured ? fmtMoney(s.sumInsured) : null], ['Policy term', s.policyTerm ? `${s.policyTerm} year${s.policyTerm > 1 ? 's' : ''}` : null], ['Start date', s.startDate], ['People', (s.people || []).map((m) => m.name).join(', ')]].filter(([, v]) => v).map(([k, v]) => (
+                <div key={k} className="flex w-[220px] flex-col gap-0.5"><p className="text-[12px] font-medium text-muted">{k}</p><p className="text-[14px] font-bold text-ink">{v}</p></div>
+              ))}
+            </div>
+          </Panel>
+          {/* Premium ledger card */}
           <Panel className="flex flex-col gap-3">
             <PanelHead title="Premium" subtitle={s.calculationDate ? `Calculated ${s.calculationDate}` : ''} right={<p className="text-[24px] font-bold text-ink">{fmtMoney(b.final ?? rev?.final, { decimals: 2 })}</p>} />
             {b.final != null && <Breakdown b={b} />}
@@ -225,6 +249,20 @@ export function LiveQuotationDetail() {
                 <span className="font-semibold text-ink">{fmtMoney(r.final, { decimals: 2 })}</span>
                 <StatusChip tone={Q_TONE[r.status] ?? 'neutral'}>{label(r.status)}</StatusChip>
                 {r.pdfFileId && <SmallButton variant="ghost" icon="folder" onClick={() => window.open(api.files.url(r.pdfFileId), '_blank')}>PDF</SmallButton>}
+              </div>
+            ))}
+          </Panel>
+          {/* Activity timeline - Figma 08 */}
+          <Panel className="flex flex-col gap-3.5">
+            <p className="text-[17px] font-bold text-ink">Activity</p>
+            {[...(paid ? [{ icon: 'card', title: `Payment recorded`, meta: `${fmtDate(paid.paymentDate ?? paid.createdAt, { year: false })} · ${fmtMoney(paid.amount ?? paid.portalAmount)}`, bg: '#e7f4ee' }] : []),
+              ...(x.sharedAt ? [{ icon: 'send', title: 'Shared with customer', meta: fmtDateTime(x.sharedAt), bg: '#e8f0fd' }] : []),
+              ...(rev?.generatedAt ? [{ icon: 'sparkle', title: `Generated R${rev.revision}`, meta: fmtDateTime(rev.generatedAt), bg: '#f0ecfb' }] : []),
+              { icon: 'quote', title: 'Quotation created', meta: fmtDateTime(x.createdAt), bg: '#eef1f5' },
+            ].map((a, i) => (
+              <div key={i} className="flex items-center gap-3.5">
+                <span className="flex size-[38px] shrink-0 items-center justify-center rounded-full text-ink" style={{ background: a.bg }}><Icon name={a.icon} size={17} /></span>
+                <div className="flex flex-col gap-0.5"><p className="text-[13px] font-semibold text-ink">{a.title}</p><p className="text-[12px] font-medium text-muted">{a.meta}</p></div>
               </div>
             ))}
           </Panel>
