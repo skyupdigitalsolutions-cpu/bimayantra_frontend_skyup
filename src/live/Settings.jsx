@@ -346,17 +346,43 @@ export function LiveInsurers() {
 }
 function InsurerDialog({ m, onClose }) {
   const avail = useQuery('my-insurers:available', () => api.myInsurers.available(), { enabled: !m })
-  const opts = (avail.data || []).map((i) => ({ value: i.id, label: i.name }))
+  // Which categories each insurer has products in (from the product library), so the advisor can pick the insurers
+  // that sell e.g. Health. An agent code is per insurer: it covers all of that insurer's products.
+  const prods = useQuery('products', () => api.products.list(), { enabled: !m })
+  const [cat, setCat] = useState('all')
+  const byInsurer = useMemo(() => {
+    const out = new Map()
+    for (const p of prods.data || []) {
+      if (!p.insurerId || !p.type) continue
+      const c = out.get(p.insurerId) ?? {}
+      c[p.type] = (c[p.type] ?? 0) + 1
+      out.set(p.insurerId, c)
+    }
+    return out
+  }, [prods.data])
+  const cats = useMemo(() => [...new Set([...byInsurer.values()].flatMap((c) => Object.keys(c)))].sort(), [byInsurer])
+  const opts = (avail.data || [])
+    .filter((i) => cat === 'all' || byInsurer.get(i.id)?.[cat])
+    .map((i) => {
+      const c = byInsurer.get(i.id) ?? {}
+      const what = cat === 'all' ? Object.entries(c).map(([k, n]) => `${k} ${n}`).join(', ') : `${c[cat]} ${cat} product${c[cat] === 1 ? '' : 's'}`
+      return { value: i.id, label: what ? `${i.name} · ${what}` : i.name }
+    })
   const [f, setF] = useState({ insurerId: '', agentCode: m?.agentCode ?? '', validUntil: isoDay(m?.validUntil), appointmentLetterFileId: null, declaration: false })
+  const chosen = opts.some((o) => o.value === f.insurerId) ? f.insurerId : opts[0]?.value
   const set = (k) => (v) => setF((x) => ({ ...x, [k]: v }))
   const { act, busy, error, fieldErrors: fe } = useAct()
   const save = () => act(() => (m
     ? api.myInsurers.update(m.id, { version: m.version, agentCode: f.agentCode, validUntil: f.validUntil ? dmy(f.validUntil) : null, ...(f.appointmentLetterFileId ? { appointmentLetterFileId: f.appointmentLetterFileId } : {}) })
-    : api.myInsurers.add({ insurerId: f.insurerId || opts[0]?.value, agentCode: f.agentCode, validUntil: f.validUntil ? dmy(f.validUntil) : null, appointmentLetterFileId: f.appointmentLetterFileId, declaration: f.declaration })),
+    : api.myInsurers.add({ insurerId: chosen, agentCode: f.agentCode, validUntil: f.validUntil ? dmy(f.validUntil) : null, appointmentLetterFileId: f.appointmentLetterFileId, declaration: f.declaration })),
   { invalidates: ['my-insurers', 'products', 'profile'], onDone: onClose, quiet: true })
   return (
     <ActionDialog title={m ? `Edit ${m.insurer?.name}` : 'Add insurer'} confirm="Save" busy={busy} error={error} onConfirm={save} onClose={onClose}>
-      {!m && <Field label="Insurer *" type="select" value={f.insurerId || opts[0]?.value} onChange={set('insurerId')} options={opts} error={fe.insurerId} />}
+      {!m && cats.length > 0 && (
+        <Field label="Products in" type="select" value={cat} onChange={setCat} hint="Shows only insurers with products in this category. The agent code covers all of the insurer's products."
+          options={[{ value: 'all', label: 'All categories' }, ...cats.map((c) => ({ value: c, label: c }))]} />
+      )}
+      {!m && <Field label="Insurer *" type="select" value={chosen} onChange={set('insurerId')} options={opts} error={fe.insurerId} placeholder={opts.length ? 'Choose' : 'No insurer you have not added yet sells this category'} />}
       <div className="flex gap-3"><Field label="Agent code *" value={f.agentCode} onChange={set('agentCode')} error={fe.agentCode} /><Field label="Valid until" type="date" value={f.validUntil} onChange={set('validUntil')} error={fe.validUntil} /></div>
       <FilePick label="Appointment letter" purpose="APPOINTMENT_LETTER" value={f.appointmentLetterFileId} onChange={set('appointmentLetterFileId')} />
       {!m && <Field type="checkbox" label="I hold this agent code and may sell this insurer's products." value={f.declaration} onChange={set('declaration')} />}
