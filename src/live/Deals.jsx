@@ -274,6 +274,9 @@ function ShareDialog({ x, onClose }) {
   return (
     <ActionDialog title="Share quotation" icon="send" confirm="Share" busy={busy} error={error} onConfirm={save} onClose={onClose}>
       <Field label="Share by" type="select" value={channel} onChange={setChannel} options={[{ value: 'WHATSAPP', label: 'WhatsApp' }, { value: 'EMAIL', label: 'Email' }, { value: 'LINK', label: 'Copy link' }, { value: 'DOWNLOAD', label: 'Download PDF' }]} />
+      {['PRF-03', 'PRF-13'].includes(error?.messageId) && (
+        <Link to="/settings" className="self-start rounded-[12px] border border-line bg-white px-3 py-1.5 text-[13px] font-semibold text-ink hover:bg-panel-2">Open My profile</Link>
+      )}
     </ActionDialog>
   )
 }
