@@ -18,7 +18,8 @@ import { useToast } from '../components/LiveToast'
 import { matchesQuery, useHeaderSearch } from '../screens/tasks/_filter'
 
 const TONE = { DRAFT: 'neutral', READY: 'sky', SHARED: 'violet', PRODUCT_CHOSEN: 'green', EXPIRED: 'amber' }
-const STEPS = ['Customer', 'Type', 'Cover', 'Products', 'Premiums', 'Recommend', 'Review', 'Generated']
+// Figma CQ2–CQ9: 8-step stepper matching the comparison wizard
+const STEPS = ['Customer', 'Type', 'Insurance', 'Options', 'Details', 'Premiums', 'Recommend', 'Review']
 const lakh = (n) => (n >= 10_000_000 ? `₹${n / 10_000_000} crore` : n >= 100_000 ? `₹${n / 100_000} lakh` : fmtMoney(n))
 
 /* ═════════════ list ═════════════ */
@@ -109,17 +110,20 @@ function Editor({ c }) {
   const run = async (fn) => { setBusy(true); setError(null); try { await fn() } catch (e) { setError(e) } finally { setBusy(false) } }
   const doPreview = () => run(async () => { await save(); setPreview((await api.comparisons.preview(c.id, {})).data) })
   const doGenerate = () => run(async () => { await save(); const r = await api.comparisons.generate(c.id, {}); toast(r.meta?.message || 'Comparison generated.'); invalidate('comparison', 'comparisons'); navigate(`/comparisons/${c.id}`, { replace: true }) })
-  const step = !inp.typeId ? 1 : !inp.people.length || !inp.sumInsured ? 2 : opts.length < 2 ? 3 : !preview ? 4 : !rec.id ? 5 : 6
+  // Steps: 0=Customer(done) 1=Type(done) 2=Insurance 3=Options 4=Details 5=Premiums 6=Recommend 7=Review
+  const step = !inp.typeId ? 2 : opts.length < 2 ? 3 : !inp.people.length || !inp.sumInsured ? 4 : !preview ? 5 : !rec.id ? 6 : 7
   const siOptions = [...new Set(P.flatMap(() => []))]
   void siOptions
   return (
     <AppLayout active="quotations">
-      <Header back="/comparisons" breadcrumb={'SALES  /  COMPARISONS  /  NEW'} title={`Comparison${customer.data ? ` for ${customer.data.name}` : ''}`} subtitle="Same people and cover for every product. Up to 5 products." />
+      <Header back="/comparisons" breadcrumb={'QUOTATIONS  /  NEW COMPARISON'} title="New comparative quotation"
+        titleExtra={<span className="inline-flex items-center gap-[5px] rounded-[14px] bg-[#e7f4ee] py-[5px] pr-3 pl-2 text-[12px] font-semibold text-[#127650]"><Icon name="check" size={13} />Draft saved</span>}
+        subtitle={customer.data ? `${customer.data.name} · 2 to 3 options side by side` : '2 to 3 options side by side'} />
       <Stepper className="mt-5" steps={STEPS} current={step} />
       <div className="mt-6 flex items-start gap-6">
         <div className="flex w-[756px] flex-col gap-5">
           <Panel className="flex flex-col gap-4">
-            <PanelHead title="Type and cover" />
+            <PanelHead title="Insurance type and details" subtitle="Same for every option in this comparison" />
             <Field label="Insurance type *" type="select" value={inp.typeId} onChange={(v) => { setInp({ ...inp, typeId: v }); setOpts([]); setPreview(null) }} options={[{ value: '', label: 'Choose' }, ...((types.data?.types) || []).map((t) => ({ value: t.id, label: t.name }))]} error={fe['inputs.typeId']} />
             <div className="flex flex-col gap-2"><span className="text-[13px] font-semibold text-ink">People *</span>
               <div className="flex flex-wrap gap-2">{everyone.map((p) => { const on = inp.people.includes(p.key); return <button key={p.key} type="button" disabled={!p.dob} onClick={() => setInp({ ...inp, people: on ? inp.people.filter((k) => k !== p.key) : [...inp.people, p.key] })} className={cx('flex h-[38px] items-center gap-2 rounded-[19px] border px-3.5 text-[13px] font-semibold', !p.dob ? 'border-line text-faint' : on ? 'border-blue bg-blue-50 text-blue' : 'border-line bg-white text-muted')}>{on && <Icon name="check" size={13} />}{p.name} · {p.rel}{p.dob ? '' : ' · add DOB'}</button> })}</div>
@@ -130,7 +134,7 @@ function Editor({ c }) {
           </Panel>
           {inp.typeId && (
             <Panel className="flex flex-col gap-3">
-              <PanelHead title="Products" subtitle="Products you can quote in this category (2 to 5)." />
+              <PanelHead title="Options" subtitle="Pick 2 to 3 products or variants. Insurers with an active agent code only." />
               <div className="grid grid-cols-2 gap-2">
                 {P.map((p) => { const on = opts.some((o) => o.productId === p.id); return <button key={p.id} type="button" disabled={!on && opts.length >= 5} onClick={() => { setOpts(on ? opts.filter((o) => o.productId !== p.id) : [...opts, { productId: p.id }]); setPreview(null) }} className={cx('flex items-center gap-2 rounded-[14px] px-3.5 py-3 text-left text-[13px] font-semibold', on ? 'bg-navy text-white' : 'bg-panel text-ink')}>{on && <Icon name="check" size={14} />}<span className="flex-1">{p.insurer} · {p.name}</span></button> })}
               </div>
@@ -162,19 +166,31 @@ function Editor({ c }) {
           )}
           {preview && (
             <Panel className="flex flex-col gap-3">
-              <PanelHead title="Your recommendation" subtitle="Shown on the PDF" />
+              <PanelHead title="Recommend" subtitle="Pick one and say why. The reason is printed on the comparison." />
               <Field label="Recommended product" type="select" value={rec.id} onChange={(v) => setRec({ ...rec, id: v })} options={[{ value: '', label: 'No recommendation' }, ...preview.columns.filter((x) => !x.error).map((x) => ({ value: x.productId, label: `${x.insurer} · ${x.name}` }))]} />
               <Field label="Why" type="textarea" value={rec.reason} onChange={(v) => setRec({ ...rec, reason: v })} error={fe.recommendedReason} />
             </Panel>
           )}
           <ErrorNote error={error} />
         </div>
-        <Panel className="flex w-[400px] flex-col gap-3">
-          <PanelHead title="Review" />
-          <p className="text-[13px] font-medium text-muted">{opts.length} products · {inp.people.length} people · {inp.sumInsured ? lakh(Number(inp.sumInsured)) : 'sum insured not set'}</p>
-          <SmallButton variant="outline" disabled={busy} onClick={() => run(async () => { await save(); toast('Draft saved.') })}>Save draft</SmallButton>
-          <button type="button" disabled={!preview || busy} onClick={doGenerate} className="flex h-[50px] items-center justify-center gap-2 rounded-[25px] bg-navy text-[15px] font-semibold text-white disabled:opacity-50"><Icon name="quote" size={18} />{busy ? 'Working…' : 'Generate comparison'}</button>
-        </Panel>
+        {/* Figma: pink "Your comparison" live summary */}
+        <div className="w-[400px] shrink-0 rounded-[28px] bg-gradient-to-b from-[#fbd3dc] to-[#f6b3c3] p-6 shadow-[0px_18px_18px_rgba(232,137,156,0.25)]">
+          <div className="flex items-start justify-between">
+            <div><p className="text-[17px] font-bold text-ink">Your comparison</p><p className="text-[12px] font-medium text-muted">Same people and sum insured for every option</p></div>
+            <span className="rounded-[14px] bg-[#fde8ec] px-3 py-[5px] text-[12px] font-semibold text-[#b4325a]">Draft</span>
+          </div>
+          <div className="mt-3.5 flex flex-col gap-2.5 rounded-[20px] bg-white/75 p-4">
+            <div className="flex items-center"><span className="flex-1 text-[12px] font-medium text-[#8b3a4c]">Customer</span><span className="text-[13px] font-bold text-ink">{customer.data?.name ?? '—'}</span></div>
+            <div className="flex items-center"><span className="flex-1 text-[12px] font-medium text-[#8b3a4c]">Type</span><span className="text-[13px] font-bold text-ink">Comparative</span></div>
+            <div className="flex items-center"><span className="flex-1 text-[12px] font-medium text-[#8b3a4c]">Insurance</span><span className={cx('text-[13px] font-bold', inp.typeId ? 'text-ink' : 'text-[#b98b96]')}>{(types.data?.types ?? []).find((t) => t.id === inp.typeId)?.name ?? '—'}</span></div>
+            <div className="flex items-center"><span className="flex-1 text-[12px] font-medium text-[#8b3a4c]">Options</span><span className={cx('text-[13px] font-bold', opts.length ? 'text-ink' : 'text-[#b98b96]')}>{opts.length ? `${opts.length} products` : '—'}</span></div>
+            <div className="flex items-center"><span className="flex-1 text-[12px] font-medium text-[#8b3a4c]">People and cover</span><span className={cx('text-[13px] font-bold', inp.people.length ? 'text-ink' : 'text-[#b98b96]')}>{inp.people.length ? `${inp.people.length} people${inp.sumInsured ? ` · ${lakh(Number(inp.sumInsured))}` : ''}` : '—'}</span></div>
+          </div>
+          <div className="mt-4 flex flex-col gap-2">
+            <SmallButton variant="outline" disabled={busy} onClick={() => run(async () => { await save(); toast('Draft saved.') })}>Save draft</SmallButton>
+            <button type="button" disabled={!preview || busy} onClick={doGenerate} className="flex h-[50px] items-center justify-center gap-2 rounded-[25px] bg-navy text-[15px] font-semibold text-white disabled:opacity-50"><Icon name="sparkle" size={18} />{busy ? 'Working…' : 'Generate comparison'}</button>
+          </div>
+        </div>
       </div>
     </AppLayout>
   )
