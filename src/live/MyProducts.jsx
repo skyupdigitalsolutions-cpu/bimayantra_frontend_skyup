@@ -17,6 +17,7 @@ import { LoadingPanel, ErrorPanel } from './common'
 import { Stepper as FlowStepper, StepCard, StepFooter, PreviewCard, Btn, Chip, Note, TextInput, Field as FlowField } from '../screens/flow-add-product/_parts'
 import { Dropdown } from '../components/pickers'
 import { useToast } from '../components/LiveToast'
+import ProductDetailsForm, { categoryKey, detailsBody, detailsFromData, missingRequired } from './ProductDetailsForm'
 
 // Tile look for a category (Figma AP1): icon + pastel background, picked from the category's name.
 const catLook = (name = '') => {
@@ -55,6 +56,7 @@ export function LiveAddProduct() {
   const [d, setD] = useState({ name: '', uin: '', launchDate: '', adultMin: 18, adultMax: 65, coversChildren: false, childMin: '', childMax: '', siOptions: '', siMin: '', siMax: '', policyTerms: '1', pricingMode: 'MANUAL_ENTRY', taxPercent: 18, gracePeriodDays: 30, nomineeRequired: true, brochureFileId: null, sourceLink: '' })
   const set = (k) => (v) => setD((s) => ({ ...s, [k]: v }))
   const [features, setFeatures] = useState({}) // key → { value, notStated }
+  const [details, setDetails] = useState({}) // the category's own product details (Home: covers, perils…)
   const [variants, setVariants] = useState([{ name: 'Standard', coverType: 'INDIVIDUAL', sumInsuredMin: '', sumInsuredMax: '' }])
   const [ocrJobId, setOcrJobId] = useState(null)
   const [newCat, setNewCat] = useState('')
@@ -70,15 +72,21 @@ export function LiveAddProduct() {
     const t = setTimeout(async () => { try { setJob((await api.myProducts.reading(job.id)).data) } catch (e) { setReadErr(e) } }, 2500)
     return () => clearTimeout(t)
   }, [job])
+  const [brochureName, setBrochureName] = useState('')
   const startReading = async (file) => {
     setReading(true); setReadErr(null)
     try {
+      // The PDF is attached to the product first: it stays attached even when it cannot be read.
       const fileId = (await api.files.upload(file, 'BROCHURE')).data.id
       set('brochureFileId')(fileId)
-      const r = await api.myProducts.startReading({ typeId, fileId })
-      setJob(r.data)
-    } catch (e) { setReadErr(e) } finally { setReading(false) }
+      setBrochureName(file.name)
+      if (canRead) setJob((await api.myProducts.startReading({ typeId, fileId })).data)
+    } catch (e) {
+      if (e?.messageId === 'OCR-07') return // reading switched off: attached, values typed by hand
+      setReadErr(e)
+    } finally { setReading(false) }
   }
+  const removeBrochure = () => { set('brochureFileId')(null); setBrochureName(''); setJob(null); setReadErr(null) }
   const decide = async (row, decision, value) => {
     try { setJob((await api.myProducts.readingDecisions(job.id, { decisions: [{ section: row.section, key: row.key, decision, value: value ?? null }] })).data) } catch (e) { setReadErr(e) }
   }
@@ -91,6 +99,7 @@ export function LiveAddProduct() {
         launchDate: x.launchDate ? isoDay(x.launchDate) : s.launchDate, coversChildren: x.coversChildren ?? s.coversChildren,
         siOptions: x.sumInsured?.options?.join(', ') ?? s.siOptions, siMin: x.sumInsured?.min ?? s.siMin, siMax: x.sumInsured?.max ?? s.siMax, policyTerms: x.policyTerms?.join(', ') ?? s.policyTerms }))
       if (x.features) setFeatures(x.features)
+      if (x.details) setDetails((cur) => ({ ...cur, ...detailsFromData(form, x.details) }))
       if (r.variants?.length) setVariants(r.variants.map((v) => ({ ...v, sumInsuredMin: v.sumInsuredMin ?? '', sumInsuredMax: v.sumInsuredMax ?? '' })))
       toast('Values from the brochure are filled in. Check each step.')
       setStep(3)
@@ -101,29 +110,40 @@ export function LiveAddProduct() {
     insurerId, typeId, code: code.trim(), ...(ocrJobId ? { ocrJobId } : {}),
     data: {
       name: d.name || undefined, uin: d.uin || undefined, launchDate: d.launchDate ? dmy(d.launchDate) : undefined,
-      adultMin: Number(d.adultMin), adultMax: Number(d.adultMax), coversChildren: !!d.coversChildren,
-      ...(d.coversChildren ? { childMin: Number(d.childMin), childMax: Number(d.childMax) } : {}),
+      // Entry ages only where the category has them (none for Motor or Home; no children for Term Life)
+      ...(ages !== 'NONE' ? { adultMin: Number(d.adultMin), adultMax: Number(d.adultMax) } : {}),
+      coversChildren: ages === 'ADULT_CHILD' && !!d.coversChildren,
+      ...(ages === 'ADULT_CHILD' && d.coversChildren ? { childMin: Number(d.childMin), childMax: Number(d.childMax) } : {}),
       sumInsured: { ...(nums(d.siOptions).length ? { options: nums(d.siOptions) } : {}), ...(d.siMin ? { min: Number(d.siMin) } : {}), ...(d.siMax ? { max: Number(d.siMax) } : {}) },
       policyTerms: nums(d.policyTerms), pricingMode: d.pricingMode, taxPercent: Number(d.taxPercent), gracePeriodDays: Number(d.gracePeriodDays), nomineeRequired: !!d.nomineeRequired,
       ...(d.brochureFileId ? { brochureFileId: d.brochureFileId } : {}), ...(d.sourceLink ? { sourceLink: d.sourceLink } : {}),
+      details: detailsBody(form, details),
       features: Object.fromEntries(Object.entries(features).filter(([, f]) => f && (f.notStated || (f.value !== '' && f.value != null))).map(([k, f]) => [k, toFeatureValue(f, feats.find((x) => x.key === k)?.dataType)])),
     },
-    variants: variants.filter((v) => v.name.trim()).map((v) => ({ name: v.name.trim(), coverType: v.coverType || undefined, ...(v.sumInsuredMin ? { sumInsuredMin: Number(v.sumInsuredMin) } : {}), ...(v.sumInsuredMax ? { sumInsuredMax: Number(v.sumInsuredMax) } : {}), ...(v.features ? { features: v.features } : {}) })),
+    variants: variants.filter((v) => v.name.trim()).map((v) => ({ name: v.name.trim(), coverType: (form?.variantCoverTypes !== false && v.coverType) || undefined, ...(v.sumInsuredMin ? { sumInsuredMin: Number(v.sumInsuredMin) } : {}), ...(v.sumInsuredMax ? { sumInsuredMax: Number(v.sumInsuredMax) } : {}), ...(v.features ? { features: v.features } : {}) })),
   })
   const publish = () => act(() => api.myProducts.create(body()), { invalidates: ['products'], quiet: true, success: 'Product published in your account.', onDone: (r) => navigate(`/products/${r.data.id}`) })
 
   const T = (types.data || [])
   const I = (insurers.data || [])
   // A new category means a new company list: the earlier pick may not sell it.
-  const pickType = (id) => { if (id !== typeId) setInsurerId(''); setTypeId(id) }
+  const pickType = (id) => { if (id !== typeId) { setInsurerId(''); setDetails({}); setFeatures({}) } setTypeId(id) }
   const typeName = T.find((t) => t.id === typeId)?.name
   const insName = I.find((t) => t.id === insurerId)?.name
-  const canNext = [!!typeId, !!insurerId, true, !!code.trim() && !!d.name && !!d.uin, variants.some((v) => v.name.trim()), true, true][step]
+  const canNext = [!!typeId, !!insurerId, true, !!code.trim() && !!d.name && !!d.uin && !detailsMissing.length, variants.some((v) => v.name.trim()), true, true][step]
   const feats = tpl.data?.features ?? []
+  // The category's product form: which shared fields apply and what they are called, plus its own details.
+  const form = tpl.data?.form ?? null
+  const ages = form?.entryAges ?? 'ADULT_CHILD'
+  const L = form?.labels ?? { sumInsured: 'Sum insured', policyTerms: 'Policy terms (years)', adultEntryAge: 'Adult entry age' }
+  const canRead = tpl.data?.brochureReading !== false
+  const detailsMissing = missingRequired(form, details)
+  // A new category that means one already listed ("Health insurance" next to Health) is refused here and by the API.
+  const sameCat = newCat.trim() ? T.find((t) => categoryKey(t.name) === categoryKey(newCat)) : null
   const groups = [...new Set(feats.map((f) => f.group || 'Features'))]
   const addCategory = () => {
     const name = newCat.trim()
-    if (!name || busy) return
+    if (!name || busy || sameCat) return
     act(() => api.myProducts.createType({ name }), { invalidates: ['my-products'], onDone: (r) => { pickType(r.data.id); setNewCat('') } })
   }
   const namedVariants = variants.map((v) => v.name.trim()).filter(Boolean)
@@ -193,9 +213,15 @@ export function LiveAddProduct() {
                   <FlowField label="New category name *" className="flex-1">
                     <TextInput tone="white" placeholder="e.g. Pet insurance" value={newCat} onChange={(e) => setNewCat(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addCategory()} />
                   </FlowField>
-                  <Btn icon="plus" disabled={!newCat.trim() || busy} onClick={addCategory} className="disabled:cursor-not-allowed disabled:opacity-50">Add category</Btn>
+                  <Btn icon="plus" disabled={!newCat.trim() || busy || !!sameCat} onClick={addCategory} className="disabled:cursor-not-allowed disabled:opacity-50">Add category</Btn>
                 </div>
-                {fe.name && <p className="text-[12px] font-semibold text-[#b4323c]">{fe.name}</p>}
+                {sameCat && (
+                  <p className="flex items-center gap-2 text-[12px] font-semibold text-[#8a5a12]">
+                    <Icon name="alert" size={14} />“{sameCat.name}” is already a category.
+                    <button type="button" className="underline" onClick={() => { pickType(sameCat.id); setNewCat('') }}>Choose {sameCat.name}</button>
+                  </p>
+                )}
+                {fe.name && !sameCat && <p className="text-[12px] font-semibold text-[#b4323c]">{fe.name}</p>}
               </div>
 
               {typeId && (
@@ -227,12 +253,21 @@ export function LiveAddProduct() {
           )}
           {step === 2 && (
             <Panel className="flex flex-col gap-3">
-              <PanelHead title="Brochure (optional)" subtitle="Upload the PDF and the values are read for you to check. Premium plan and trial." />
-              {!job && (
+              <PanelHead title="Brochure (optional)" subtitle={canRead ? 'Upload the PDF: it is attached to the product, and its values are read for you to check (Premium plan and trial).' : 'Attach the PDF to the product, so you and your customers can open it later.'} />
+              {!d.brochureFileId && !job && (
                 <label className="flex h-[64px] cursor-pointer items-center justify-center gap-2.5 rounded-[18px] border-2 border-dashed border-line text-[14px] font-semibold text-ink hover:bg-panel-2">
-                  <Icon name="folder" size={18} />{reading ? 'Uploading…' : 'Choose brochure PDF'}<input type="file" accept=".pdf" className="hidden" disabled={reading} onChange={(e) => e.target.files?.[0] && startReading(e.target.files[0])} />
+                  <Icon name="folder" size={18} />{reading ? 'Uploading…' : canRead ? 'Choose brochure PDF' : 'Attach brochure PDF'}<input type="file" accept=".pdf" className="hidden" disabled={reading} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) startReading(f) }} />
                 </label>
               )}
+              {d.brochureFileId && (
+                <div className="flex items-center gap-3 rounded-[16px] bg-[#eefaf3] px-4 py-3">
+                  <Icon name="check" size={16} className="text-[#127650]" />
+                  <span className="flex-1 truncate text-[13px] font-semibold text-[#127650]">Brochure attached{brochureName ? `: ${brochureName}` : ''}</span>
+                  <SmallButton variant="outline" onClick={() => window.open(api.files.url(d.brochureFileId), '_blank')}>Open</SmallButton>
+                  <SmallButton variant="ghost" onClick={removeBrochure}>Remove</SmallButton>
+                </div>
+              )}
+              {d.brochureFileId && !canRead && <p className="text-[12px] font-medium text-muted">Reading brochures automatically is not set up on this server, so type the values in the next steps.</p>}
               {readErr && <ErrorNote error={readErr} />}
               {job && ['QUEUED', 'RUNNING', 'PENDING', 'PROCESSING'].includes(job.status) && <p className="flex items-center gap-2 text-[13px] font-semibold text-blue"><span className="size-4 animate-spin rounded-full border-2 border-blue/30 border-t-blue" />Reading the brochure…</p>}
               {job?.status === 'FAILED' && (
@@ -260,19 +295,21 @@ export function LiveAddProduct() {
                   <SmallButton variant="navy" icon="check" className="self-start" onClick={useReading}>Use these values</SmallButton>
                 </>
               )}
-              <p className="text-[12px] font-medium text-muted">You can skip this step and type the values.</p>
+              {!d.brochureFileId && <p className="text-[12px] font-medium text-muted">You can skip this step and type the values.</p>}
             </Panel>
           )}
           {step === 3 && (
             <Panel className="flex flex-col gap-4">
-              <PanelHead title="Product" />
+              <PanelHead title="Product" subtitle={form ? `${typeName}: the details a ${form.label.toLowerCase()} product needs.` : undefined} />
               <div className="flex gap-3"><Field label="Product code *" value={code} onChange={setCode} error={fe.code} hint="Your own short code, e.g. FS-01" /><Field label="Product name *" value={d.name} onChange={set('name')} error={(fe.name ?? fe['data.name'])} /></div>
               <div className="flex gap-3"><Field label="UIN *" value={d.uin} onChange={set('uin')} error={(fe.uin ?? fe['data.uin'])} /><Field label="Launch date" type="date" value={d.launchDate} onChange={set('launchDate')} error={(fe.launchDate ?? fe['data.launchDate'])} /></div>
-              <div className="flex gap-3"><Field label="Adult entry age from" type="number" value={d.adultMin} onChange={set('adultMin')} /><Field label="to" type="number" value={d.adultMax} onChange={set('adultMax')} error={(fe.adultMax ?? fe['data.adultMax'])} /></div>
-              <Field type="checkbox" label="Covers children" value={d.coversChildren} onChange={set('coversChildren')} />
-              {d.coversChildren && <div className="flex gap-3"><Field label="Child age from" type="number" value={d.childMin} onChange={set('childMin')} /><Field label="to" type="number" value={d.childMax} onChange={set('childMax')} /></div>}
-              <div className="flex gap-3"><Field label="Sum insured options (₹, comma separated)" value={d.siOptions} onChange={set('siOptions')} placeholder="500000, 1000000" error={(fe.sumInsured ?? fe['data.sumInsured'])} /><Field label="or range from" type="number" value={d.siMin} onChange={set('siMin')} /><Field label="to" type="number" value={d.siMax} onChange={set('siMax')} /></div>
-              <div className="flex gap-3"><Field label="Policy terms (years)" value={d.policyTerms} onChange={set('policyTerms')} placeholder="1, 2, 3" /><Field label="Tax %" type="number" value={d.taxPercent} onChange={set('taxPercent')} /><Field label="Grace period (days)" type="number" value={d.gracePeriodDays} onChange={set('gracePeriodDays')} /></div>
+              {ages !== 'NONE' && <div className="flex gap-3"><Field label={`${L.adultEntryAge} from`} type="number" value={d.adultMin} onChange={set('adultMin')} /><Field label="to" type="number" value={d.adultMax} onChange={set('adultMax')} error={(fe.adultMax ?? fe['data.adultMax'])} /></div>}
+              {ages === 'ADULT_CHILD' && <Field type="checkbox" label="Covers children" value={d.coversChildren} onChange={set('coversChildren')} />}
+              {ages === 'ADULT_CHILD' && d.coversChildren && <div className="flex gap-3"><Field label="Child age from" type="number" value={d.childMin} onChange={set('childMin')} /><Field label="to" type="number" value={d.childMax} onChange={set('childMax')} /></div>}
+              <div className="flex gap-3"><Field label={`${L.sumInsured} options (₹, comma separated)`} value={d.siOptions} onChange={set('siOptions')} placeholder="500000, 1000000" error={(fe.sumInsured ?? fe['data.sumInsured'])} /><Field label="or range from" type="number" value={d.siMin} onChange={set('siMin')} /><Field label="to" type="number" value={d.siMax} onChange={set('siMax')} /></div>
+              <div className="flex gap-3"><Field label={L.policyTerms} value={d.policyTerms} onChange={set('policyTerms')} placeholder="1, 2, 3" /><Field label="Tax %" type="number" value={d.taxPercent} onChange={set('taxPercent')} /><Field label="Grace period (days)" type="number" value={d.gracePeriodDays} onChange={set('gracePeriodDays')} /></div>
+              {form && <ProductDetailsForm form={form} values={details} onChange={setDetails} errors={fe} />}
+              {detailsMissing.length > 0 && <p className="text-[12px] font-semibold text-[#8a5a12]">Still needed for {form.label}: {detailsMissing.map((f) => f.label).join(', ')}.</p>}
               <Field label="How the premium is worked out" type="select" value={d.pricingMode} onChange={set('pricingMode')} options={[{ value: 'MANUAL_ENTRY', label: 'Typed from the insurer portal at each quotation' }, { value: 'RATE_TABLE', label: 'From my rate table (add a price version after publishing)' }]} />
               <Field type="checkbox" label="Nominee required" value={d.nomineeRequired} onChange={set('nomineeRequired')} />
               <Field label="Source link" value={d.sourceLink} onChange={set('sourceLink')} placeholder="https://" />
@@ -284,8 +321,8 @@ export function LiveAddProduct() {
               {variants.map((v, i) => (
                 <div key={i} className="flex items-end gap-3">
                   <Field label="Name *" value={v.name} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, name: x } : y)))} />
-                  <Field label="Cover" type="select" value={v.coverType ?? ''} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, coverType: x } : y)))} options={[{ value: 'INDIVIDUAL', label: 'Individual' }, { value: 'FLOATER', label: 'Family floater' }]} />
-                  <Field label="Sum insured from (₹)" type="number" value={v.sumInsuredMin} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, sumInsuredMin: x } : y)))} />
+                  {form?.variantCoverTypes !== false && <Field label="Cover" type="select" value={v.coverType ?? ''} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, coverType: x } : y)))} options={[{ value: 'INDIVIDUAL', label: 'Individual' }, { value: 'FLOATER', label: 'Family floater' }]} />}
+                  <Field label={`${L.sumInsured} from (₹)`} type="number" value={v.sumInsuredMin} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, sumInsuredMin: x } : y)))} />
                   <Field label="to (₹)" type="number" value={v.sumInsuredMax} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, sumInsuredMax: x } : y)))} />
                   {variants.length > 1 && <button type="button" aria-label="Remove" className="mb-3 text-muted" onClick={() => setVariants(variants.filter((_, j) => j !== i))}><Icon name="x" size={16} /></button>}
                 </div>
@@ -320,7 +357,7 @@ export function LiveAddProduct() {
           {step === 6 && (
             <Panel className="flex flex-col gap-3">
               <PanelHead title="Review and publish" />
-              {[['Category', typeName], ['Company', insName], ['Code', code], ['Name', d.name], ['UIN', d.uin], ['Entry age', `${d.adultMin}–${d.adultMax}`], ['Sum insured', nums(d.siOptions).map((n) => fmtMoney(n)).join(', ') || (d.siMin ? `${fmtMoney(d.siMin)}–${fmtMoney(d.siMax)}` : '—')], ['Policy terms', d.policyTerms], ['Pricing', d.pricingMode === 'RATE_TABLE' ? 'Rate table' : 'Typed at quotation'], ['Variants', variants.map((v) => v.name).filter(Boolean).join(', ')], ['Features filled', `${Object.values(features).filter((f) => f && (f.notStated || (f.value !== '' && f.value != null))).length} of ${feats.length}`], ['From brochure', ocrJobId ? 'Yes' : 'No']].map(([k, v]) => (
+              {[['Category', typeName], ['Company', insName], ['Code', code], ['Name', d.name], ['UIN', d.uin], ...(ages !== 'NONE' ? [[L.adultEntryAge, `${d.adultMin}–${d.adultMax}`]] : []), ...(form?.fields?.length ? [[`${form.label} details`, `${Object.keys(detailsBody(form, details)).length} of ${form.fields.length} filled`]] : []), ['Brochure', d.brochureFileId ? 'Attached' : 'None'], [L.sumInsured, nums(d.siOptions).map((n) => fmtMoney(n)).join(', ') || (d.siMin ? `${fmtMoney(d.siMin)}–${fmtMoney(d.siMax)}` : '—')], ['Policy terms', d.policyTerms], ['Pricing', d.pricingMode === 'RATE_TABLE' ? 'Rate table' : 'Typed at quotation'], ['Variants', variants.map((v) => v.name).filter(Boolean).join(', ')], ['Features filled', `${Object.values(features).filter((f) => f && (f.notStated || (f.value !== '' && f.value != null))).length} of ${feats.length}`], ['From brochure', ocrJobId ? 'Yes' : 'No']].map(([k, v]) => (
                 <div key={k} className="flex justify-between text-[13px]"><span className="font-medium text-muted">{k}</span><span className="font-semibold text-ink">{v || '—'}</span></div>
               ))}
               <ErrorNote error={error} />
@@ -328,7 +365,7 @@ export function LiveAddProduct() {
           )}
           {step > 0 && <div className="flex justify-between">
             <SmallButton variant="outline" disabled={step === 0} onClick={() => setStep(step - 1)}>Back</SmallButton>
-            {step < 6 ? <SmallButton variant="navy" icon="arrow" disabled={!canNext} onClick={() => setStep(step + 1)}>{step === 2 && !job ? 'Skip' : 'Next'}</SmallButton>
+            {step < 6 ? <SmallButton variant="navy" icon="arrow" disabled={!canNext} onClick={() => setStep(step + 1)}>{step === 2 && !job && !d.brochureFileId ? 'Skip' : 'Next'}</SmallButton>
               : <SmallButton variant="navy" icon="check" disabled={busy} onClick={publish}>{busy ? 'Publishing…' : 'Publish product'}</SmallButton>}
           </div>}
         </div>

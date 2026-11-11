@@ -3,7 +3,7 @@
 //   POST /customers/:id/best-fit                  → ranked products with each score's reason
 //   POST /customers/:id/best-fit/:rankingId/choose → logged, then a draft quotation is created for the customer
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Icon from '../components/Icon'
 import { Dropdown } from '../components/pickers'
@@ -181,7 +181,27 @@ export default function LiveBestFit() {
               </div>
             </Panel>
           ))}
-          {res && !res.results.length && <Panel><p className="text-[14px] font-semibold text-ink">{res.message}</p><p className="mt-1 text-[13px] font-medium text-muted">Check My insurers (agent codes), the insurance categories in your profile, and that the products have a current price.</p></Panel>}
+          {res && !res.results.length && !res.excluded?.length && <Panel><p className="text-[14px] font-semibold text-ink">{res.message}</p><p className="mt-1 text-[13px] font-medium text-muted">There are no {types.data?.find((t) => t.id === tid)?.name ?? ''} products in the catalogue or in your own products yet.</p></Panel>}
+          {res?.excluded?.length > 0 && (
+            <Panel className="flex flex-col gap-3">
+              <div>
+                <p className="text-[15px] font-bold text-ink">{res.results.length ? `${res.excluded.length} more product${res.excluded.length === 1 ? ' was' : 's were'} left out` : 'Why no products are ranked'}</p>
+                <p className="text-[13px] font-medium text-muted">Each product of this category that is not ranked, and what to fix.</p>
+              </div>
+              {res.excluded.map((x) => (
+                <div key={x.productId} className="flex items-start gap-3 rounded-[14px] bg-panel px-4 py-3">
+                  <Icon name="alert" size={16} className="mt-0.5 shrink-0 text-[#8a5a12]" />
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <p className="truncate text-[13px] font-bold text-ink">{x.insurer ? `${x.insurer} · ` : ''}{x.name}</p>
+                    <p className="text-[13px] font-medium text-ink-2">{x.reason}</p>
+                  </div>
+                  {/agent code/i.test(x.reason) && <SmallLink to="/settings/insurers">My insurers</SmallLink>}
+                  {/categories in your profile/i.test(x.reason) && <SmallLink to="/settings">My profile</SmallLink>}
+                  {/rate table|price version/i.test(x.reason) && <SmallLink to={`/products/${x.productId}`}>Product</SmallLink>}
+                </div>
+              ))}
+            </Panel>
+          )}
         </div>
       </div>
       {showCompare && (
@@ -197,4 +217,9 @@ export default function LiveBestFit() {
       )}
     </AppLayout>
   )
+}
+
+/** A small link button beside a left-out product: where to fix it. */
+function SmallLink({ to, children }) {
+  return <Link to={to} className="shrink-0 rounded-[12px] border border-line bg-white px-3 py-1.5 text-[12px] font-semibold text-ink hover:bg-panel-2">{children}</Link>
 }
