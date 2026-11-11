@@ -300,7 +300,7 @@ export function LiveAddProduct() {
           )}
           {step === 3 && (
             <Panel className="flex flex-col gap-4">
-              <PanelHead title={`4 · Product details`} subtitle={form ? `As printed on the insurer's brochure. ${typeName}: the details a ${form.label.toLowerCase()} product needs.` : 'As printed on the insurer's brochure'} />
+              <PanelHead title={`4 · Product details`} subtitle={form ? `As printed on the insurer's brochure. ${typeName}: the details a ${form.label.toLowerCase()} product needs.` : "As printed on the insurer's brochure"} />
               <div className="grid grid-cols-2 gap-x-3.5 gap-y-[18px]">
                 <Field label="Product name *" value={d.name} onChange={set('name')} error={(fe.name ?? fe['data.name'])} />
                 <Field label="IRDAI product UIN *" value={d.uin} onChange={set('uin')} error={(fe.uin ?? fe['data.uin'])} hint="Printed on every quotation" />
