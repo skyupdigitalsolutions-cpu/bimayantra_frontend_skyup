@@ -95,12 +95,14 @@ export function LiveProfile() {
  *  sent back unchanged so nothing is dropped. */
 function PersonalContactCard({ s }) {
   const p = s.personal, c = s.contact
-  const [f, setF] = useState({ fullName: p.fullName ?? '', dob: isoDay(p.dob), email: c.email ?? '', address1: c.address1 ?? '' })
+  const { reference } = useAuth()
+  const states = reference?.states ?? []
+  const [f, setF] = useState({ fullName: p.fullName ?? '', dob: isoDay(p.dob), email: c.email ?? '', address1: c.address1 ?? '', city: c.city ?? '', state: c.state ?? '', pin: c.pin ?? '' })
   const set = (k) => (v) => setF((x) => ({ ...x, [k]: v }))
   const { act, busy, error, fieldErrors: fe } = useAct()
   const save = () => act(async () => {
     await api.profile.updateSection('personal', { version: p.version, fullName: f.fullName, dob: f.dob ? dmy(f.dob) : null, gender: p.gender ?? null })
-    return api.profile.updateSection('contact', { version: c.version, email: f.email || null, altMobile: c.altMobile ?? null, address1: f.address1 || null, address2: c.address2 ?? null, city: c.city ?? null, state: c.state ?? null, pin: c.pin ?? null })
+    return api.profile.updateSection('contact', { version: c.version, email: f.email || null, altMobile: c.altMobile ?? null, address1: f.address1 || null, address2: c.address2 ?? null, city: f.city.trim() || null, state: f.state || null, pin: f.pin.replace(/\s/g, '') || null })
   }, { invalidates: ['profile', 'dashboard'], quiet: true })
   const addr = [c.address1, c.address2, c.city, c.state, c.pin].filter(Boolean).join(', ')
   return (
@@ -115,8 +117,14 @@ function PersonalContactCard({ s }) {
         <Field label="Email *" value={f.email} onChange={set('email')} error={fe.email} />
         <ReadField label="Login mobile" prefix="+91" value={fmtMobile(c.loginMobile)} hint="Change it in Security." />
       </div>
-      {/* Figma shows one Address line → bound to address 1; the rest of the stored address is preserved on save. */}
-      <Field label="Address *" value={f.address1} onChange={set('address1')} error={fe.address1} placeholder={addr || 'Address'} />
+      {/* Address line 1, then City, State and PIN code: all four are needed before quotations can be shared (PRF-03). */}
+      <Field label="Address *" value={f.address1} onChange={set('address1')} error={fe.address1} placeholder={addr || 'House / flat, street, area'} />
+      <div className="flex gap-4">
+        <Field label="City *" value={f.city} onChange={set('city')} error={fe.city} placeholder="e.g. Bengaluru" />
+        <Field label="State *" type="select" value={f.state} onChange={set('state')} error={fe.state}
+          options={[{ value: '', label: 'Choose' }, ...states.map((x) => ({ value: x, label: x }))]} />
+        <Field label="PIN code *" value={f.pin} onChange={set('pin')} error={fe.pin} placeholder="560049" />
+      </div>
       <ErrorNote error={error} />
     </SCard>
   )
