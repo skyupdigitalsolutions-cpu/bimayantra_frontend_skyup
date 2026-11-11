@@ -315,11 +315,11 @@ export function LiveAddProduct() {
             </StepCard>
           )}
           {step === 3 && (
-            <StepCard title="4 · Product details" subtitle={form ? `As printed on the insurer\u2019s brochure. ${typeName}.` : "As printed on the insurer\u2019s brochure"}>
+            <StepCard title={"4 \u00b7 Product details"} subtitle={form ? `As printed on the insurer\u2019s brochure. ${typeName}.` : "As printed on the insurer\u2019s brochure"}>
               <div className="grid grid-cols-2 gap-x-3.5 gap-y-[18px]">
-                <Field label="Product name *" value={d.name} onChange={set('name')} error={(fe.name ?? fe['data.name'])} />
-                <Field label="IRDAI product UIN *" value={d.uin} onChange={set('uin')} error={(fe.uin ?? fe['data.uin'])} hint="Printed on every quotation" />
-                <Field label="Product code" value={code} onChange={setCode} error={fe.code} hint="Your own short code, e.g. FS-01" />
+                <FlowField label="Product name *"><TextInput value={d.name} onChange={(e) => set('name')(e.target.value)} /></FlowField>
+                <FlowField label="IRDAI product UIN *" hint="Printed on every quotation"><TextInput value={d.uin} onChange={(e) => set('uin')(e.target.value)} /></FlowField>
+                <FlowField label="Product code" hint="Your own short code, e.g. FS-01"><TextInput value={code} onChange={(e) => setCode(e.target.value)} /></FlowField>
                 <Field label="Launch date *" type="date" value={d.launchDate} onChange={set('launchDate')} error={(fe.launchDate ?? fe['data.launchDate'])} />
               </div>
               {d.brochureFileId && (
@@ -332,20 +332,46 @@ export function LiveAddProduct() {
                       <span className="text-[12px] font-medium text-muted">Uploaded at step 3</span>
                     </div>
                     {ocrJobId && <Chip tone="violet" icon="sparkle">Read by AI</Chip>}
-                    <SmallButton variant="outline" onClick={() => window.open(api.files.url(d.brochureFileId), '_blank')}>View</SmallButton>
+                    <Btn variant="outline" size="sm" onClick={() => window.open(api.files.url(d.brochureFileId), '_blank')}>View</Btn>
                   </div>
                 </div>
               )}
-              {ages !== 'NONE' && <div className="flex gap-3"><Field label={`${L.adultEntryAge} from`} type="number" value={d.adultMin} onChange={set('adultMin')} /><Field label="to" type="number" value={d.adultMax} onChange={set('adultMax')} error={(fe.adultMax ?? fe['data.adultMax'])} /></div>}
-              {ages === 'ADULT_CHILD' && <Field type="checkbox" label="Covers children" value={d.coversChildren} onChange={set('coversChildren')} />}
-              {ages === 'ADULT_CHILD' && d.coversChildren && <div className="flex gap-3"><Field label="Child age from" type="number" value={d.childMin} onChange={set('childMin')} /><Field label="to" type="number" value={d.childMax} onChange={set('childMax')} /></div>}
-              <div className="flex gap-3"><Field label={`${L.sumInsured} options (₹, comma separated)`} value={d.siOptions} onChange={set('siOptions')} placeholder="500000, 1000000" error={(fe.sumInsured ?? fe['data.sumInsured'])} /><Field label="or range from" type="number" value={d.siMin} onChange={set('siMin')} /><Field label="to" type="number" value={d.siMax} onChange={set('siMax')} /></div>
-              <div className="flex gap-3"><Field label={L.policyTerms} value={d.policyTerms} onChange={set('policyTerms')} placeholder="1, 2, 3" /><Field label="Tax %" type="number" value={d.taxPercent} onChange={set('taxPercent')} /><Field label="Grace period (days)" type="number" value={d.gracePeriodDays} onChange={set('gracePeriodDays')} /></div>
+              {ages !== 'NONE' && (
+                <div className="grid grid-cols-2 gap-x-3.5">
+                  <FlowField label={`${L.adultEntryAge} from`}><TextInput type="number" value={String(d.adultMin ?? '')} onChange={(e) => set('adultMin')(e.target.value)} /></FlowField>
+                  <FlowField label="to"><TextInput type="number" value={String(d.adultMax ?? '')} onChange={(e) => set('adultMax')(e.target.value)} /></FlowField>
+                </div>
+              )}
+              {ages === 'ADULT_CHILD' && (
+                <label className="flex items-center gap-2.5 text-[13px] font-semibold text-ink">
+                  <input type="checkbox" checked={!!d.coversChildren} onChange={(e) => set('coversChildren')(e.target.checked)} className="size-[18px] accent-[#13294b]" />
+                  Covers children
+                </label>
+              )}
+              {ages === 'ADULT_CHILD' && d.coversChildren && (
+                <div className="grid grid-cols-2 gap-x-3.5">
+                  <FlowField label="Child age from"><TextInput type="number" value={String(d.childMin ?? '')} onChange={(e) => set('childMin')(e.target.value)} /></FlowField>
+                  <FlowField label="to"><TextInput type="number" value={String(d.childMax ?? '')} onChange={(e) => set('childMax')(e.target.value)} /></FlowField>
+                </div>
+              )}
+              <div className="grid grid-cols-3 gap-x-3.5">
+                <FlowField label={`${L.sumInsured} options (\u20b9)`}><TextInput value={d.siOptions} onChange={(e) => set('siOptions')(e.target.value)} placeholder="500000, 1000000" /></FlowField>
+                <FlowField label="or range from"><TextInput type="number" value={String(d.siMin ?? '')} onChange={(e) => set('siMin')(e.target.value)} /></FlowField>
+                <FlowField label="to"><TextInput type="number" value={String(d.siMax ?? '')} onChange={(e) => set('siMax')(e.target.value)} /></FlowField>
+              </div>
+              <div className="grid grid-cols-3 gap-x-3.5">
+                <FlowField label={L.policyTerms}><TextInput value={d.policyTerms} onChange={(e) => set('policyTerms')(e.target.value)} placeholder="1, 2, 3" /></FlowField>
+                <FlowField label="Tax %"><TextInput type="number" value={String(d.taxPercent ?? '')} onChange={(e) => set('taxPercent')(e.target.value)} /></FlowField>
+                <FlowField label="Grace period (days)"><TextInput type="number" value={String(d.gracePeriodDays ?? '')} onChange={(e) => set('gracePeriodDays')(e.target.value)} /></FlowField>
+              </div>
               {form && <ProductDetailsForm form={form} values={details} onChange={setDetails} errors={fe} />}
               {detailsMissing.length > 0 && <p className="text-[12px] font-semibold text-[#8a5a12]">Still needed for {form.label}: {detailsMissing.map((f) => f.label).join(', ')}.</p>}
               <Field label="How the premium is worked out" type="select" value={d.pricingMode} onChange={set('pricingMode')} options={[{ value: 'MANUAL_ENTRY', label: 'Typed from the insurer portal at each quotation' }, { value: 'RATE_TABLE', label: 'From my rate table (add a price version after publishing)' }]} />
-              <Field type="checkbox" label="Nominee required" value={d.nomineeRequired} onChange={set('nomineeRequired')} />
-              <Field label="Source link" value={d.sourceLink} onChange={set('sourceLink')} placeholder="https://" />
+              <label className="flex items-center gap-2.5 text-[13px] font-semibold text-ink">
+                <input type="checkbox" checked={!!d.nomineeRequired} onChange={(e) => set('nomineeRequired')(e.target.checked)} className="size-[18px] accent-[#13294b]" />
+                Nominee required
+              </label>
+              <FlowField label="Source link"><TextInput value={d.sourceLink} onChange={(e) => set('sourceLink')(e.target.value)} placeholder="https://" /></FlowField>
               <div className="h-px bg-line" />
               <StepNav back={() => setStep(2)} next={canNext ? () => setStep(4) : null} nextLabel="Next: Variants" />
             </StepCard>
