@@ -41,21 +41,7 @@ function toFeatureValue(f, dataType) {
 }
 const nums = (v) => String(v ?? '').split(',').map((x) => Number(x.trim().replace(/[₹,\s]/g, ''))).filter((n) => n > 0)
 
-/** In-card navigation row: Back · Draft saved · Next (or Publish). */
-function StepNav({ back, next, nextLabel = 'Next', publish, busy, onPublish }) {
-  return (
-    <div className="flex items-center gap-3">
-      <Btn variant="outline" onClick={back}>Back</Btn>
-      <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted"><Icon name="check" size={16} className="text-[#127650]" />Draft saved</span>
-      <span className="flex-1" />
-      {publish
-        ? <Btn icon="check" disabled={busy} onClick={onPublish}>{busy ? 'Publishing\u2026' : nextLabel}</Btn>
-        : next && <Btn icon="arrow" onClick={next}>{nextLabel}</Btn>}
-    </div>
-  )
-}
-
-/* ═════════════ AP1–AP7 · New product ═════════════ */
+/* ═════════════ AP1–AP7 · Add my product ═════════════ */
 export function LiveAddProduct() {
   const navigate = useNavigate()
   const { toast } = useToast()
@@ -185,7 +171,7 @@ export function LiveAddProduct() {
       <div className="mt-[35px] mb-5 flex items-start gap-5">
         <div className="flex w-[760px] shrink-0 flex-col gap-5">
           {step === 0 && (
-            <StepCard title="1 · Category" subtitle="Decides which features SkyUp’s template asks for">
+            <StepCard title="1 · Product category" subtitle="Decides which features SkyUp’s template asks for">
               {types.loading && !types.data && <p className="text-[13px] font-medium text-muted">Loading categories…</p>}
               {types.error && <ErrorNote error={types.error} />}
               {T.length > 0 && (
@@ -256,18 +242,18 @@ export function LiveAddProduct() {
             </StepCard>
           )}
           {step === 1 && (
-            <StepCard title="2 · Company" subtitle={`Insurers that sell ${typeName ?? 'this category'}, and companies you added yourself.`}>
+            <Panel className="flex flex-col gap-3">
+              <PanelHead title="Which company?" subtitle={`Insurers that sell ${typeName ?? 'this category'}, and companies you added yourself.`} />
               <Dropdown value={insurerId} onChange={setInsurerId} placeholder={insurers.loading && !insurers.data ? 'Loading companies…' : 'Choose a company'} options={I.map((i) => ({ value: i.id, label: `${i.name}${i.private ? ' (mine)' : ''}` }))} />
               {insurers.error && <ErrorNote error={insurers.error} />}
               {insurers.data && !I.length && <p className="text-[13px] font-medium text-muted">No companies sell {typeName} yet. Add one below.</p>}
               <div className="flex items-end gap-3"><Field label="Add a company" value={newCo} onChange={setNewCo} />
                 <SmallButton variant="outline" icon="plus" className="mb-[7px]" disabled={!newCo.trim() || busy} onClick={() => act(() => api.myProducts.createInsurer({ name: newCo.trim() }), { invalidates: ['my-products'], onDone: (r) => { setInsurerId(r.data.id); setNewCo('') } })}>Add</SmallButton></div>
-              <div className="h-px bg-line" />
-              <StepNav back={() => setStep(0)} next={canNext ? () => setStep(2) : null} nextLabel="Next: Brochure" />
-            </StepCard>
+            </Panel>
           )}
           {step === 2 && (
-            <StepCard title="3 · Brochure" subtitle={canRead ? 'Upload the PDF: it is attached to the product, and its values are read for you to check.' : 'Attach the PDF to the product.'}>
+            <Panel className="flex flex-col gap-3">
+              <PanelHead title="Brochure (optional)" subtitle={canRead ? 'Upload the PDF: it is attached to the product, and its values are read for you to check (Premium plan and trial).' : 'Attach the PDF to the product, so you and your customers can open it later.'} />
               {!d.brochureFileId && !job && (
                 <label className="flex h-[64px] cursor-pointer items-center justify-center gap-2.5 rounded-[18px] border-2 border-dashed border-line text-[14px] font-semibold text-ink hover:bg-panel-2">
                   <Icon name="folder" size={18} />{reading ? 'Uploading…' : canRead ? 'Choose brochure PDF' : 'Attach brochure PDF'}<input type="file" accept=".pdf" className="hidden" disabled={reading} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) startReading(f) }} />
@@ -310,78 +296,32 @@ export function LiveAddProduct() {
                 </>
               )}
               {!d.brochureFileId && <p className="text-[12px] font-medium text-muted">You can skip this step and type the values.</p>}
-              <div className="h-px bg-line" />
-              <StepNav back={() => setStep(1)} next={() => setStep(3)} nextLabel={!job && !d.brochureFileId ? 'Skip' : 'Next: Product'} />
-            </StepCard>
+            </Panel>
           )}
           {step === 3 && (
-            <StepCard title={"4 \u00b7 Product details"} subtitle={form ? `As printed on the insurer\u2019s brochure. ${typeName}.` : "As printed on the insurer\u2019s brochure"}>
+            <Panel className="flex flex-col gap-4">
+              <PanelHead title="4 &middot; Product details" subtitle={form ? `As printed on the insurer's brochure. ${typeName}.` : "As printed on the insurer's brochure"} />
               <div className="grid grid-cols-2 gap-x-3.5 gap-y-[18px]">
-                <FlowField label="Product name *"><TextInput value={d.name} onChange={(e) => set('name')(e.target.value)} /></FlowField>
-                <FlowField label="IRDAI product UIN *" hint="Printed on every quotation"><TextInput value={d.uin} onChange={(e) => set('uin')(e.target.value)} /></FlowField>
-                <FlowField label="Product code" hint="Your own short code, e.g. FS-01"><TextInput value={code} onChange={(e) => setCode(e.target.value)} /></FlowField>
+                <Field label="Product name *" value={d.name} onChange={set('name')} error={(fe.name ?? fe['data.name'])} />
+                <Field label="IRDAI product UIN *" value={d.uin} onChange={set('uin')} error={(fe.uin ?? fe['data.uin'])} hint="Printed on every quotation" />
+                <Field label="Product code" value={code} onChange={setCode} error={fe.code} hint="Your own short code, e.g. FS-01" />
                 <Field label="Launch date *" type="date" value={d.launchDate} onChange={set('launchDate')} error={(fe.launchDate ?? fe['data.launchDate'])} />
               </div>
-              {d.brochureFileId && (
-                <div className="flex flex-col gap-2">
-                  <p className="text-[13px] font-semibold text-ink">Brochure</p>
-                  <div className="flex items-center gap-3.5 rounded-[18px] border border-[#c7ebda] bg-[#f5fbf8] p-3.5">
-                    <span className="flex h-[52px] w-11 items-center justify-center rounded-[12px] bg-pink-100 text-[#b4325a]"><Icon name="folder" size={20} /></span>
-                    <div className="flex flex-1 flex-col gap-[3px]">
-                      <span className="text-[14px] font-bold text-ink">{brochureName || 'Brochure'}</span>
-                      <span className="text-[12px] font-medium text-muted">Uploaded at step 3</span>
-                    </div>
-                    {ocrJobId && <Chip tone="violet" icon="sparkle">Read by AI</Chip>}
-                    <Btn variant="outline" size="sm" onClick={() => window.open(api.files.url(d.brochureFileId), '_blank')}>View</Btn>
-                  </div>
-                </div>
-              )}
-              {ages !== 'NONE' && (
-                <div className="grid grid-cols-2 gap-x-3.5">
-                  <FlowField label={`${L.adultEntryAge} from`}><TextInput type="number" value={String(d.adultMin ?? '')} onChange={(e) => set('adultMin')(e.target.value)} /></FlowField>
-                  <FlowField label="to"><TextInput type="number" value={String(d.adultMax ?? '')} onChange={(e) => set('adultMax')(e.target.value)} /></FlowField>
-                </div>
-              )}
-              {ages === 'ADULT_CHILD' && (
-                <label className="flex items-center gap-2.5 text-[13px] font-semibold text-ink">
-                  <input type="checkbox" checked={!!d.coversChildren} onChange={(e) => set('coversChildren')(e.target.checked)} className="size-[18px] accent-[#13294b]" />
-                  Covers children
-                </label>
-              )}
-              {ages === 'ADULT_CHILD' && d.coversChildren && (
-                <div className="grid grid-cols-2 gap-x-3.5">
-                  <FlowField label="Child age from"><TextInput type="number" value={String(d.childMin ?? '')} onChange={(e) => set('childMin')(e.target.value)} /></FlowField>
-                  <FlowField label="to"><TextInput type="number" value={String(d.childMax ?? '')} onChange={(e) => set('childMax')(e.target.value)} /></FlowField>
-                </div>
-              )}
-              <div className="grid grid-cols-3 gap-x-3.5">
-                <FlowField label={`${L.sumInsured} options (\u20b9)`}><TextInput value={d.siOptions} onChange={(e) => set('siOptions')(e.target.value)} placeholder="500000, 1000000" /></FlowField>
-                <FlowField label="or range from"><TextInput type="number" value={String(d.siMin ?? '')} onChange={(e) => set('siMin')(e.target.value)} /></FlowField>
-                <FlowField label="to"><TextInput type="number" value={String(d.siMax ?? '')} onChange={(e) => set('siMax')(e.target.value)} /></FlowField>
-              </div>
-              <div className="grid grid-cols-3 gap-x-3.5">
-                <FlowField label={L.policyTerms}><TextInput value={d.policyTerms} onChange={(e) => set('policyTerms')(e.target.value)} placeholder="1, 2, 3" /></FlowField>
-                <FlowField label="Tax %"><TextInput type="number" value={String(d.taxPercent ?? '')} onChange={(e) => set('taxPercent')(e.target.value)} /></FlowField>
-                <FlowField label="Grace period (days)"><TextInput type="number" value={String(d.gracePeriodDays ?? '')} onChange={(e) => set('gracePeriodDays')(e.target.value)} /></FlowField>
-              </div>
+              {ages !== 'NONE' && <div className="flex gap-3"><Field label={`${L.adultEntryAge} from`} type="number" value={d.adultMin} onChange={set('adultMin')} /><Field label="to" type="number" value={d.adultMax} onChange={set('adultMax')} error={(fe.adultMax ?? fe['data.adultMax'])} /></div>}
+              {ages === 'ADULT_CHILD' && <Field type="checkbox" label="Covers children" value={d.coversChildren} onChange={set('coversChildren')} />}
+              {ages === 'ADULT_CHILD' && d.coversChildren && <div className="flex gap-3"><Field label="Child age from" type="number" value={d.childMin} onChange={set('childMin')} /><Field label="to" type="number" value={d.childMax} onChange={set('childMax')} /></div>}
+              <div className="flex gap-3"><Field label={`${L.sumInsured} options (₹, comma separated)`} value={d.siOptions} onChange={set('siOptions')} placeholder="500000, 1000000" error={(fe.sumInsured ?? fe['data.sumInsured'])} /><Field label="or range from" type="number" value={d.siMin} onChange={set('siMin')} /><Field label="to" type="number" value={d.siMax} onChange={set('siMax')} /></div>
+              <div className="flex gap-3"><Field label={L.policyTerms} value={d.policyTerms} onChange={set('policyTerms')} placeholder="1, 2, 3" /><Field label="Tax %" type="number" value={d.taxPercent} onChange={set('taxPercent')} /><Field label="Grace period (days)" type="number" value={d.gracePeriodDays} onChange={set('gracePeriodDays')} /></div>
               {form && <ProductDetailsForm form={form} values={details} onChange={setDetails} errors={fe} />}
               {detailsMissing.length > 0 && <p className="text-[12px] font-semibold text-[#8a5a12]">Still needed for {form.label}: {detailsMissing.map((f) => f.label).join(', ')}.</p>}
               <Field label="How the premium is worked out" type="select" value={d.pricingMode} onChange={set('pricingMode')} options={[{ value: 'MANUAL_ENTRY', label: 'Typed from the insurer portal at each quotation' }, { value: 'RATE_TABLE', label: 'From my rate table (add a price version after publishing)' }]} />
-              <label className="flex items-center gap-2.5 text-[13px] font-semibold text-ink">
-                <input type="checkbox" checked={!!d.nomineeRequired} onChange={(e) => set('nomineeRequired')(e.target.checked)} className="size-[18px] accent-[#13294b]" />
-                Nominee required
-              </label>
-              <FlowField label="Source link"><TextInput value={d.sourceLink} onChange={(e) => set('sourceLink')(e.target.value)} placeholder="https://" /></FlowField>
-              <div className="h-px bg-line" />
-              <StepNav back={() => setStep(2)} next={canNext ? () => setStep(4) : null} nextLabel="Next: Variants" />
-            </StepCard>
+              <Field type="checkbox" label="Nominee required" value={d.nomineeRequired} onChange={set('nomineeRequired')} />
+              <Field label="Source link" value={d.sourceLink} onChange={set('sourceLink')} placeholder="https://" />
+            </Panel>
           )}
           {step === 4 && (
-            <StepCard title="5 · Variants" subtitle="Silver, Gold, Plus… Each can have its own sum-insured range.">
-              <div className="flex items-center justify-between">
-                <span />
-                <SmallButton variant="outline" icon="plus" onClick={() => setVariants([...variants, { name: '', coverType: 'INDIVIDUAL', sumInsuredMin: '', sumInsuredMax: '' }])}>Add variant</SmallButton>
-              </div>
+            <Panel className="flex flex-col gap-3">
+              <PanelHead title="Variants" subtitle="Silver, Gold, Plus… Each can have its own sum-insured range." right={<SmallButton variant="outline" icon="plus" onClick={() => setVariants([...variants, { name: '', coverType: 'INDIVIDUAL', sumInsuredMin: '', sumInsuredMax: '' }])}>Add variant</SmallButton>} />
               {variants.map((v, i) => (
                 <div key={i} className="flex items-end gap-3">
                   <Field label="Name *" value={v.name} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, name: x } : y)))} />
@@ -391,12 +331,11 @@ export function LiveAddProduct() {
                   {variants.length > 1 && <button type="button" aria-label="Remove" className="mb-3 text-muted" onClick={() => setVariants(variants.filter((_, j) => j !== i))}><Icon name="x" size={16} /></button>}
                 </div>
               ))}
-              <div className="h-px bg-line" />
-              <StepNav back={() => setStep(3)} next={canNext ? () => setStep(5) : null} nextLabel="Next: Features" />
-            </StepCard>
+            </Panel>
           )}
           {step === 5 && (
-            <StepCard title="6 · Features" subtitle={tpl.data ? `${typeName} template v${tpl.data.template.number}. Leave blank or tick "Not stated".` : tpl.error ? 'The feature list could not be loaded.' : 'Loading the template…'}>
+            <Panel className="flex flex-col gap-4">
+              <PanelHead title="Features" subtitle={tpl.data ? `${typeName} template v${tpl.data.template.number}. Leave blank if you don't know; tick "Not stated" when the brochure says nothing.` : tpl.error ? `${typeName}: the feature list could not be loaded.` : 'Loading the template…'} />
               {tpl.error && <div className="flex items-center gap-3"><ErrorNote error={tpl.error} /><SmallButton variant="outline" icon="refresh" onClick={tpl.refetch}>Try again</SmallButton></div>}
               {groups.map((g) => (
                 <div key={g} className="flex flex-col gap-2">
@@ -417,20 +356,22 @@ export function LiveAddProduct() {
                 </div>
               ))}
               {tpl.data && !feats.length && <p className="text-[13px] font-medium text-muted">This category has no feature template.</p>}
-              <div className="h-px bg-line" />
-              <StepNav back={() => setStep(4)} next={() => setStep(6)} nextLabel="Next: Review" />
-            </StepCard>
+            </Panel>
           )}
           {step === 6 && (
-            <StepCard title="7 · Review and publish" subtitle="Check everything before publishing.">
-              {[['Category', typeName], ['Company', insName], ['Code', code], ['Name', d.name], ['UIN', d.uin], ...(ages !== 'NONE' ? [[L.adultEntryAge, `${d.adultMin}\u2013${d.adultMax}`]] : []), ...(form?.fields?.length ? [[`${form.label} details`, `${Object.keys(detailsBody(form, details)).length} of ${form.fields.length} filled`]] : []), ['Brochure', d.brochureFileId ? 'Attached' : 'None'], [L.sumInsured, nums(d.siOptions).map((n) => fmtMoney(n)).join(', ') || (d.siMin ? `${fmtMoney(d.siMin)}\u2013${fmtMoney(d.siMax)}` : '\u2014')], ['Policy terms', d.policyTerms], ['Pricing', d.pricingMode === 'RATE_TABLE' ? 'Rate table' : 'Typed at quotation'], ['Variants', variants.map((v) => v.name).filter(Boolean).join(', ')], ['Features filled', `${Object.values(features).filter((f) => f && (f.notStated || (f.value !== '' && f.value != null))).length} of ${feats.length}`], ['From brochure', ocrJobId ? 'Yes' : 'No']].map(([k, v]) => (
-                <div key={k} className="flex justify-between text-[13px]"><span className="font-medium text-muted">{k}</span><span className="font-semibold text-ink">{v || '\u2014'}</span></div>
+            <Panel className="flex flex-col gap-3">
+              <PanelHead title="Review and publish" />
+              {[['Category', typeName], ['Company', insName], ['Code', code], ['Name', d.name], ['UIN', d.uin], ...(ages !== 'NONE' ? [[L.adultEntryAge, `${d.adultMin}–${d.adultMax}`]] : []), ...(form?.fields?.length ? [[`${form.label} details`, `${Object.keys(detailsBody(form, details)).length} of ${form.fields.length} filled`]] : []), ['Brochure', d.brochureFileId ? 'Attached' : 'None'], [L.sumInsured, nums(d.siOptions).map((n) => fmtMoney(n)).join(', ') || (d.siMin ? `${fmtMoney(d.siMin)}–${fmtMoney(d.siMax)}` : '—')], ['Policy terms', d.policyTerms], ['Pricing', d.pricingMode === 'RATE_TABLE' ? 'Rate table' : 'Typed at quotation'], ['Variants', variants.map((v) => v.name).filter(Boolean).join(', ')], ['Features filled', `${Object.values(features).filter((f) => f && (f.notStated || (f.value !== '' && f.value != null))).length} of ${feats.length}`], ['From brochure', ocrJobId ? 'Yes' : 'No']].map(([k, v]) => (
+                <div key={k} className="flex justify-between text-[13px]"><span className="font-medium text-muted">{k}</span><span className="font-semibold text-ink">{v || '—'}</span></div>
               ))}
               <ErrorNote error={error} />
-              <div className="h-px bg-line" />
-              <StepNav back={() => setStep(5)} publish next={null} nextLabel="Publish product" busy={busy} onPublish={publish} />
-            </StepCard>
+            </Panel>
           )}
+          {step > 0 && <div className="flex justify-between">
+            <SmallButton variant="outline" disabled={step === 0} onClick={() => setStep(step - 1)}>Back</SmallButton>
+            {step < 6 ? <SmallButton variant="navy" icon="arrow" disabled={!canNext} onClick={() => setStep(step + 1)}>{step === 2 && !job && !d.brochureFileId ? 'Skip' : 'Next'}</SmallButton>
+              : <SmallButton variant="navy" icon="check" disabled={busy} onClick={publish}>{busy ? 'Publishing…' : 'Publish product'}</SmallButton>}
+          </div>}
         </div>
         <PreviewCard values={preview} />
       </div>
