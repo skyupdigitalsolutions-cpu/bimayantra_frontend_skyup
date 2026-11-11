@@ -90,7 +90,8 @@ export function SegTabs({ items, value, onChange, className = '' }) {
     <div className={cx('inline-flex shrink-0 items-start gap-1 rounded-[26px] bg-white p-[5px] shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)]', className)}>
       {items.map((t) => {
         const on = t.key === value
-        const cls = cx('flex items-center gap-2 rounded-[21px] px-4 py-[9px] text-[13px] font-semibold whitespace-nowrap transition', on ? 'bg-navy text-white' : 'text-slate hover:text-ink')
+        // t.dim: an option with nothing in it (e.g. a category with no products) stays clickable but looks quieter
+        const cls = cx('flex items-center gap-2 rounded-[21px] px-4 py-[9px] text-[13px] font-semibold whitespace-nowrap transition', on ? 'bg-navy text-white' : t.dim ? 'text-muted/70 hover:text-ink' : 'text-slate hover:text-ink')
         const inner = (
           <>
             {t.icon && <Icon name={t.icon} size={15} />}

@@ -143,6 +143,8 @@ export function LiveProducts() {
   const typeKeyOf = (p) => typeIdOf(p) ?? p.type ?? ''
 
   const rows = all.filter((p) => p.kind === source && (type === 'all' || p.type === type) && matchesQuery(q, p.name, p.insurer, p.type, p.code, p.defaultVariant))
+  // How many products each category tab holds for the chosen source (and search), so empty categories are obvious.
+  const countOf = (t) => all.filter((p) => p.kind === source && (t === 'all' || p.type === t) && matchesQuery(q, p.name, p.insurer, p.type, p.code, p.defaultVariant)).length
 
   // Key features: one feature-table call per insurance type on screen (cached; shared with the Feature table page).
   const typeIds = [...new Set(rows.map(typeIdOf).filter(Boolean))].sort()
@@ -193,7 +195,7 @@ export function LiveProducts() {
         </>} />
       <div className="mt-[13px] flex flex-wrap items-center gap-3">
         <SegTabs items={[{ key: 'VERIFIED', label: 'Verified by SkyUp', count: all.filter((p) => p.kind === 'VERIFIED').length }, { key: 'OWN', label: 'My products', count: all.filter((p) => p.kind === 'OWN').length }]} value={source} onChange={(v) => { setSource(v); setOpen(null) }} />
-        <SegTabs items={[{ key: 'all', label: 'All' }, ...typeList.map((t) => ({ key: t.name, label: t.name }))]} value={type} onChange={(v) => { setType(v); setOpen(null) }} />
+        <SegTabs items={[{ key: 'all', label: 'All', count: countOf('all') }, ...typeList.map((t) => ({ key: t.name, label: t.name, count: countOf(t.name), dim: countOf(t.name) === 0 }))]} value={type} onChange={(v) => { setType(v); setOpen(null) }} />
       </div>
 
       <div className="mt-5 flex w-[1180px] flex-wrap gap-x-5 gap-y-[18px]">
@@ -210,7 +212,9 @@ export function LiveProducts() {
         })}
         {rows.length === 0 && (
           <NoMatches className="w-full rounded-[28px] bg-white shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]" text={list.loading ? 'Loading…' : q.trim() ? 'No matches' : 'No products here yet'}
-            sub={list.loading ? '' : q.trim() ? `No products match “${q.trim()}”.` : source === 'OWN' ? 'You have not added your own products yet.' : `No ${type === 'all' ? '' : `${type} `}products in Verified by SkyUp.`}
+            sub={list.loading ? '' : q.trim() ? `No products match “${q.trim()}”.` : source === 'OWN'
+              ? `You have not added your own ${type === 'all' ? '' : `${type} `}products yet. Use + My product to add one.`
+              : `SkyUp has not added any ${type === 'all' ? '' : `${type} `}products yet.${type !== 'all' ? ` You can add your own ${type} product with + My product.` : ''}`}
             onClear={q.trim() ? clearQ : type !== 'all' ? () => setType('all') : undefined} />
         )}
       </div>
