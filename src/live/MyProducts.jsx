@@ -106,11 +106,26 @@ export function LiveAddProduct() {
     } catch (e) { setReadErr(e) }
   }
 
+  // ── derived constants (must come before body() and JSX) ──
+  const T = (types.data || [])
+  const I = (insurers.data || [])
+  const feats = tpl.data?.features ?? []
+  const form = tpl.data?.form ?? null
+  const ages = form?.entryAges ?? 'ADULT_CHILD'
+  const L = form?.labels ?? { sumInsured: 'Sum insured', policyTerms: 'Policy terms (years)', adultEntryAge: 'Adult entry age' }
+  const canRead = tpl.data?.brochureReading !== false
+  const detailsMissing = missingRequired(form, details)
+  const typeName = T.find((t) => t.id === typeId)?.name
+  const insName = I.find((t) => t.id === insurerId)?.name
+  const canNext = [!!typeId, !!insurerId, true, !!code.trim() && !!d.name && !!d.uin && !detailsMissing.length, variants.some((v) => v.name.trim()), true, true][step]
+  const sameCat = newCat.trim() ? T.find((t) => categoryKey(t.name) === categoryKey(newCat)) : null
+  const groups = [...new Set(feats.map((f) => f.group || 'Features'))]
+  const pickType = (id) => { if (id !== typeId) { setInsurerId(''); setDetails({}); setFeatures({}) } setTypeId(id) }
+
   const body = () => ({
     insurerId, typeId, code: code.trim(), ...(ocrJobId ? { ocrJobId } : {}),
     data: {
       name: d.name || undefined, uin: d.uin || undefined, launchDate: d.launchDate ? dmy(d.launchDate) : undefined,
-      // Entry ages only where the category has them (none for Motor or Home; no children for Term Life)
       ...(ages !== 'NONE' ? { adultMin: Number(d.adultMin), adultMax: Number(d.adultMax) } : {}),
       coversChildren: ages === 'ADULT_CHILD' && !!d.coversChildren,
       ...(ages === 'ADULT_CHILD' && d.coversChildren ? { childMin: Number(d.childMin), childMax: Number(d.childMax) } : {}),
@@ -123,24 +138,6 @@ export function LiveAddProduct() {
     variants: variants.filter((v) => v.name.trim()).map((v) => ({ name: v.name.trim(), coverType: (form?.variantCoverTypes !== false && v.coverType) || undefined, ...(v.sumInsuredMin ? { sumInsuredMin: Number(v.sumInsuredMin) } : {}), ...(v.sumInsuredMax ? { sumInsuredMax: Number(v.sumInsuredMax) } : {}), ...(v.features ? { features: v.features } : {}) })),
   })
   const publish = () => act(() => api.myProducts.create(body()), { invalidates: ['products'], quiet: true, success: 'Product published in your account.', onDone: (r) => navigate(`/products/${r.data.id}`) })
-
-  const T = (types.data || [])
-  const I = (insurers.data || [])
-  // A new category means a new company list: the earlier pick may not sell it.
-  const pickType = (id) => { if (id !== typeId) { setInsurerId(''); setDetails({}); setFeatures({}) } setTypeId(id) }
-  const typeName = T.find((t) => t.id === typeId)?.name
-  const insName = I.find((t) => t.id === insurerId)?.name
-  const detailsMissing = missingRequired(form, details)
-  const canNext = [!!typeId, !!insurerId, true, !!code.trim() && !!d.name && !!d.uin && !detailsMissing.length, variants.some((v) => v.name.trim()), true, true][step]
-  const feats = tpl.data?.features ?? []
-  // The category's product form: which shared fields apply and what they are called, plus its own details.
-  const form = tpl.data?.form ?? null
-  const ages = form?.entryAges ?? 'ADULT_CHILD'
-  const L = form?.labels ?? { sumInsured: 'Sum insured', policyTerms: 'Policy terms (years)', adultEntryAge: 'Adult entry age' }
-  const canRead = tpl.data?.brochureReading !== false
-  // A new category that means one already listed ("Health insurance" next to Health) is refused here and by the API.
-  const sameCat = newCat.trim() ? T.find((t) => categoryKey(t.name) === categoryKey(newCat)) : null
-  const groups = [...new Set(feats.map((f) => f.group || 'Features'))]
   const addCategory = () => {
     const name = newCat.trim()
     if (!name || busy || sameCat) return
