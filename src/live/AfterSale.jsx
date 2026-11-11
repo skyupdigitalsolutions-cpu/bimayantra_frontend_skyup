@@ -345,6 +345,22 @@ export function LiveRenewals() {
       <Header breadcrumb={'AFTER-SALE  /  RENEWALS'} title="Renewals" subtitle="The system moves each renewal by date. You close each one."
         actions={<Dropdown value={range} onChange={setRange} options={RANGES} minWidth={200} className="w-[210px]" buttonClassName="h-[46px] rounded-[24px] border border-line bg-white" />} />
       <SegTabs items={R_TABS.map(([key, l]) => ({ key, label: l, count: all.filter((r) => r.status === key).length }))} value={tab} onChange={setTab} className="mt-[13px]" />
+      {cur && !lapsedTab && cur.status !== 'RENEWED' && (() => { const dl = cur.daysLeft ?? daysFromToday(cur.dueDate) ?? 0; return (
+        <div className="mt-5 flex h-[120px] items-center gap-[22px] rounded-[34px] bg-gradient-to-r from-[#fde8c9] to-[#fbd9b0] px-[30px] shadow-[0px_18px_36px_-12px_rgba(201,138,46,0.2)]">
+          <span className="flex size-[80px] shrink-0 flex-col items-center justify-center rounded-full bg-white">
+            <span className="text-[26px] font-bold text-ink">{Math.max(0, dl)}</span>
+            <span className="text-[11px] font-semibold text-[#8a5a12]">days</span>
+          </span>
+          <div className="flex flex-1 flex-col gap-1">
+            <p className="text-[22px] font-bold tracking-[-0.2px] text-ink">{cur.customer?.name}{cur.policy?.product ? ` \u00b7 ${[cur.policy.insurer, cur.policy.product].filter(Boolean).join(' ')}` : ''}</p>
+            <p className="text-[13px] font-medium text-[#8a5a12]">{cur.dueDate ? `Renews ${fmtDate(cur.dueDate)}` : ''}{cur.graceUntil ? ` \u00b7 grace till ${fmtDate(cur.graceUntil)}` : ''}</p>
+          </div>
+          <div className="flex flex-col gap-0.5 rounded-[18px] bg-white/80 px-[18px] py-3">
+            <p className="text-[12px] font-semibold text-[#8a5a12]">Premium</p>
+            <p className="text-[16px] font-bold whitespace-nowrap text-ink">{fmtMoney(cur.premium ?? cur.policy?.premium)}</p>
+          </div>
+        </div>
+      ) })()}
       <div className="mt-7 flex items-start gap-6">
         <div className={cx('w-[756px]', lapsedTab ? 'flex flex-col gap-4' : 'flex flex-wrap gap-5')}>
           {rows.map((r, i) => lapsedTab ? (
