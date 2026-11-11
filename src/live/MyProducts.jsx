@@ -160,8 +160,8 @@ export function LiveAddProduct() {
     <AppLayout active="products">
       <Header
         back="/products"
-        breadcrumb={'PRODUCTS  /  ADD MY PRODUCT'}
-        title="Add my product"
+        breadcrumb={'PRODUCTS  /  NEW PRODUCT'}
+        title="New product"
         titleExtra={<Chip tone="green" icon="check">Draft saved</Chip>}
         subtitle="Add a product the catalogue does not have"
         search={false}
@@ -171,7 +171,7 @@ export function LiveAddProduct() {
       <div className="mt-[35px] mb-5 flex items-start gap-5">
         <div className="flex w-[760px] shrink-0 flex-col gap-5">
           {step === 0 && (
-            <StepCard title="1 · Product category" subtitle="Decides which features SkyUp’s template asks for">
+            <StepCard title="1 · Category" subtitle="Decides which features SkyUp’s template asks for">
               {types.loading && !types.data && <p className="text-[13px] font-medium text-muted">Loading categories…</p>}
               {types.error && <ErrorNote error={types.error} />}
               {T.length > 0 && (
@@ -243,7 +243,7 @@ export function LiveAddProduct() {
           )}
           {step === 1 && (
             <Panel className="flex flex-col gap-3">
-              <PanelHead title="Which company?" subtitle={`Insurers that sell ${typeName ?? 'this category'}, and companies you added yourself.`} />
+              <PanelHead title="2 · Company" subtitle={`Insurers that sell ${typeName ?? 'this category'}, and companies you added yourself.`} />
               <Dropdown value={insurerId} onChange={setInsurerId} placeholder={insurers.loading && !insurers.data ? 'Loading companies…' : 'Choose a company'} options={I.map((i) => ({ value: i.id, label: `${i.name}${i.private ? ' (mine)' : ''}` }))} />
               {insurers.error && <ErrorNote error={insurers.error} />}
               {insurers.data && !I.length && <p className="text-[13px] font-medium text-muted">No companies sell {typeName} yet. Add one below.</p>}
@@ -253,7 +253,7 @@ export function LiveAddProduct() {
           )}
           {step === 2 && (
             <Panel className="flex flex-col gap-3">
-              <PanelHead title="Brochure (optional)" subtitle={canRead ? 'Upload the PDF: it is attached to the product, and its values are read for you to check (Premium plan and trial).' : 'Attach the PDF to the product, so you and your customers can open it later.'} />
+              <PanelHead title="3 · Brochure" subtitle={canRead ? 'Upload the PDF: it is attached to the product, and its values are read for you to check (Premium plan and trial).' : 'Attach the PDF to the product, so you and your customers can open it later.'} />
               {!d.brochureFileId && !job && (
                 <label className="flex h-[64px] cursor-pointer items-center justify-center gap-2.5 rounded-[18px] border-2 border-dashed border-line text-[14px] font-semibold text-ink hover:bg-panel-2">
                   <Icon name="folder" size={18} />{reading ? 'Uploading…' : canRead ? 'Choose brochure PDF' : 'Attach brochure PDF'}<input type="file" accept=".pdf" className="hidden" disabled={reading} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) startReading(f) }} />
@@ -300,9 +300,27 @@ export function LiveAddProduct() {
           )}
           {step === 3 && (
             <Panel className="flex flex-col gap-4">
-              <PanelHead title="Product" subtitle={form ? `${typeName}: the details a ${form.label.toLowerCase()} product needs.` : undefined} />
-              <div className="flex gap-3"><Field label="Product code *" value={code} onChange={setCode} error={fe.code} hint="Your own short code, e.g. FS-01" /><Field label="Product name *" value={d.name} onChange={set('name')} error={(fe.name ?? fe['data.name'])} /></div>
-              <div className="flex gap-3"><Field label="UIN *" value={d.uin} onChange={set('uin')} error={(fe.uin ?? fe['data.uin'])} /><Field label="Launch date" type="date" value={d.launchDate} onChange={set('launchDate')} error={(fe.launchDate ?? fe['data.launchDate'])} /></div>
+              <PanelHead title={`4 · Product details`} subtitle={form ? `As printed on the insurer's brochure. ${typeName}: the details a ${form.label.toLowerCase()} product needs.` : 'As printed on the insurer's brochure'} />
+              <div className="grid grid-cols-2 gap-x-3.5 gap-y-[18px]">
+                <Field label="Product name *" value={d.name} onChange={set('name')} error={(fe.name ?? fe['data.name'])} />
+                <Field label="IRDAI product UIN *" value={d.uin} onChange={set('uin')} error={(fe.uin ?? fe['data.uin'])} hint="Printed on every quotation" />
+                <Field label="Product code" value={code} onChange={setCode} error={fe.code} hint="Your own short code, e.g. FS-01" />
+                <Field label="Launch date *" type="date" value={d.launchDate} onChange={set('launchDate')} error={(fe.launchDate ?? fe['data.launchDate'])} />
+              </div>
+              {d.brochureFileId && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-[13px] font-semibold text-ink">Brochure</p>
+                  <div className="flex items-center gap-3.5 rounded-[18px] border border-[#c7ebda] bg-[#f5fbf8] p-3.5">
+                    <span className="flex h-[52px] w-11 items-center justify-center rounded-[12px] bg-pink-100 text-[#b4325a]"><Icon name="folder" size={20} /></span>
+                    <div className="flex flex-1 flex-col gap-[3px]">
+                      <span className="text-[14px] font-bold text-ink">{brochureName || 'Brochure'}</span>
+                      <span className="text-[12px] font-medium text-muted">Uploaded at step 3</span>
+                    </div>
+                    {ocrJobId && <Chip tone="violet" icon="sparkle">Read by AI</Chip>}
+                    <SmallButton variant="outline" onClick={() => window.open(api.files.url(d.brochureFileId), '_blank')}>View</SmallButton>
+                  </div>
+                </div>
+              )}
               {ages !== 'NONE' && <div className="flex gap-3"><Field label={`${L.adultEntryAge} from`} type="number" value={d.adultMin} onChange={set('adultMin')} /><Field label="to" type="number" value={d.adultMax} onChange={set('adultMax')} error={(fe.adultMax ?? fe['data.adultMax'])} /></div>}
               {ages === 'ADULT_CHILD' && <Field type="checkbox" label="Covers children" value={d.coversChildren} onChange={set('coversChildren')} />}
               {ages === 'ADULT_CHILD' && d.coversChildren && <div className="flex gap-3"><Field label="Child age from" type="number" value={d.childMin} onChange={set('childMin')} /><Field label="to" type="number" value={d.childMax} onChange={set('childMax')} /></div>}
@@ -317,7 +335,7 @@ export function LiveAddProduct() {
           )}
           {step === 4 && (
             <Panel className="flex flex-col gap-3">
-              <PanelHead title="Variants" subtitle="Silver, Gold, Plus… Each can have its own sum-insured range." right={<SmallButton variant="outline" icon="plus" onClick={() => setVariants([...variants, { name: '', coverType: 'INDIVIDUAL', sumInsuredMin: '', sumInsuredMax: '' }])}>Add variant</SmallButton>} />
+              <PanelHead title="5 · Variants" subtitle="Silver, Gold, Plus… Each can have its own sum-insured range." right={<SmallButton variant="outline" icon="plus" onClick={() => setVariants([...variants, { name: '', coverType: 'INDIVIDUAL', sumInsuredMin: '', sumInsuredMax: '' }])}>Add variant</SmallButton>} />
               {variants.map((v, i) => (
                 <div key={i} className="flex items-end gap-3">
                   <Field label="Name *" value={v.name} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, name: x } : y)))} />
@@ -331,7 +349,7 @@ export function LiveAddProduct() {
           )}
           {step === 5 && (
             <Panel className="flex flex-col gap-4">
-              <PanelHead title="Features" subtitle={tpl.data ? `${typeName} template v${tpl.data.template.number}. Leave blank if you don't know; tick "Not stated" when the brochure says nothing.` : tpl.error ? `${typeName}: the feature list could not be loaded.` : 'Loading the template…'} />
+              <PanelHead title="6 · Features" subtitle={tpl.data ? `${typeName} template v${tpl.data.template.number}. Leave blank if you don't know; tick "Not stated" when the brochure says nothing.` : tpl.error ? `${typeName}: the feature list could not be loaded.` : 'Loading the template…'} />
               {tpl.error && <div className="flex items-center gap-3"><ErrorNote error={tpl.error} /><SmallButton variant="outline" icon="refresh" onClick={tpl.refetch}>Try again</SmallButton></div>}
               {groups.map((g) => (
                 <div key={g} className="flex flex-col gap-2">
@@ -356,7 +374,7 @@ export function LiveAddProduct() {
           )}
           {step === 6 && (
             <Panel className="flex flex-col gap-3">
-              <PanelHead title="Review and publish" />
+              <PanelHead title="7 · Review and publish" />
               {[['Category', typeName], ['Company', insName], ['Code', code], ['Name', d.name], ['UIN', d.uin], ...(ages !== 'NONE' ? [[L.adultEntryAge, `${d.adultMin}–${d.adultMax}`]] : []), ...(form?.fields?.length ? [[`${form.label} details`, `${Object.keys(detailsBody(form, details)).length} of ${form.fields.length} filled`]] : []), ['Brochure', d.brochureFileId ? 'Attached' : 'None'], [L.sumInsured, nums(d.siOptions).map((n) => fmtMoney(n)).join(', ') || (d.siMin ? `${fmtMoney(d.siMin)}–${fmtMoney(d.siMax)}` : '—')], ['Policy terms', d.policyTerms], ['Pricing', d.pricingMode === 'RATE_TABLE' ? 'Rate table' : 'Typed at quotation'], ['Variants', variants.map((v) => v.name).filter(Boolean).join(', ')], ['Features filled', `${Object.values(features).filter((f) => f && (f.notStated || (f.value !== '' && f.value != null))).length} of ${feats.length}`], ['From brochure', ocrJobId ? 'Yes' : 'No']].map(([k, v]) => (
                 <div key={k} className="flex justify-between text-[13px]"><span className="font-medium text-muted">{k}</span><span className="font-semibold text-ink">{v || '—'}</span></div>
               ))}
