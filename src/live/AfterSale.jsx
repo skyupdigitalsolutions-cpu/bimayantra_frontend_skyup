@@ -373,8 +373,8 @@ export function LiveRenewals() {
               <StatusChip tone="rose" icon="x">Lapsed</StatusChip>
             </button>
           ) : (
-            <div key={r.id} onClickCapture={(e) => { e.preventDefault(); setSel(r.id) }} className={cx('rounded-[32px]', cur?.id === r.id && 'ring-2 ring-blue')}>
-              <RenewalCard r={card(r, i)} to="#" />
+            <div key={r.id} className="rounded-[32px]">
+              <RenewalCard r={card(r, i)} to={`/renewals/${r.id}`} />
             </div>
           ))}
           {rows.length === 0 && (
@@ -458,6 +458,125 @@ function RenewalReopenDialog({ r, onClose }) {
     <ActionDialog title="Reopen this renewal?" icon="refresh" confirm="Reopen" busy={busy} error={error} disabled={!note.trim()} onConfirm={save} onClose={onClose}>
       <Field label="Reason *" value={note} onChange={setNote} error={fe.note} />
     </ActionDialog>
+  )
+}
+
+/* ═════════════ N1 · Renewal detail (full page) ═════════════ */
+
+const STATUS_CHIP = { DUE: ['amber', 'Due'], IN_FOLLOW_UP: ['blue', 'In follow-up'], UPCOMING: ['sky', 'Upcoming'], NOT_RENEWING: ['rose', 'Not renewing'], LAPSED: ['rose', 'Lapsed'], RENEWED: ['green', 'Renewed'] }
+const CONTACT_ICON = { phone: { icon: 'phone', bg: 'bg-[#e9e3fc]' }, email: { icon: 'mail', bg: 'bg-[#d9eafd]' }, whatsapp: { icon: 'chat', bg: 'bg-[#d4f1e7]' }, system: { icon: 'mail', bg: 'bg-[#eef1f5]' } }
+
+export function LiveRenewalDetail() {
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const q = useQuery(['renewal', id], () => api.renewals.get(id))
+  const [dlg, setDlg] = useState(null)
+  const { act, busy } = useAct()
+  if (q.error) return <ErrorPanel active="renewals" error={q.error} back="/renewals" />
+  if (!q.data) return <LoadingPanel active="renewals" />
+  const r = q.data
+  const dl = r.daysLeft ?? daysFromToday(r.dueDate) ?? 0
+  const chip = STATUS_CHIP[r.status] ?? ['neutral', label(r.status)]
+  const policyLine = [r.policy?.insurer, r.policy?.product].filter(Boolean).join(' ')
+  const policyNum = r.policy?.number ?? ''
+  const custName = r.customer?.name ?? ''
+  const pause = () => act(() => (r.remindersPaused ? api.renewals.resume(r.id, { version: r.version }) : api.renewals.pause(r.id, { version: r.version })), { invalidates: ['renewal', 'renewals'] })
+
+  // Contacts: API may return r.contacts or r.contactLog; fall back to lastContact
+  const contacts = Array.isArray(r.contacts) ? r.contacts : Array.isArray(r.contactLog) ? r.contactLog : r.lastContact ? [r.lastContact] : []
+  // Reminders
+  const reminders = Array.isArray(r.reminders) ? r.reminders : []
+  const sentCount = reminders.filter((rm) => rm.sentAt || rm.status === 'SENT' || rm.status === 'DELIVERED').length
+  const steps = reminders.length
+    ? reminders.map((rm, i) => {
+        const done = !!rm.sentAt || rm.status === 'SENT' || rm.status === 'DELIVERED'
+        const when = rm.sentAt ? fmtDate(rm.sentAt, { year: false }) : (rm.dueAt ?? rm.scheduledAt) ? fmtDate(rm.dueAt ?? rm.scheduledAt, { year: false }) : ''
+        const ch = Array.isArray(rm.channels) ? rm.channels.map(label).join(' + ') : rm.channel ? label(rm.channel) : ''
+        return { title: rm.label ?? rm.title ?? `Reminder ${i + 1}`, sub: [when, ch].filter(Boolean).join(' \u00b7 '), done }
+      })
+    : OFFSETS.map(([off, t]) => {
+        const d = new Date(`${isoDay(r.dueDate)}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + off)
+        return { title: t, sub: fmtDate(d, { year: false }), done: daysFromToday(d) < 0 }
+      })
+
+  return (
+    <AppLayout active="renewals">
+      {/* Header */}
+      <Header back="/renewals" breadcrumb={`RENEWALS  /  ${custName.toUpperCase()}`} title={`Renewal \u00b7 ${custName}`}
+        titleExtra={<StatusChip tone={chip[0]} icon={chip[0] === 'amber' ? 'alert' : chip[0] === 'green' ? 'check' : undefined}>{chip[1]}</StatusChip>}
+        subtitle={`${policyLine}${policyNum ? ` \u00b7 ${policyNum}` : ''}`}
+        actions={<>
+          {['DUE', 'IN_FOLLOW_UP', 'UPCOMING', 'LAPSED'].includes(r.status) && <SmallButton variant="danger" icon="x" onClick={() => setDlg('not')}>Not renewing</SmallButton>}
+          {r.status === 'NOT_RENEWING' && <SmallButton variant="outline" icon="refresh" onClick={() => setDlg('reopen')}>Reopen</SmallButton>}
+          <SmallButton variant="outline" icon="phone" onClick={() => setDlg('contact')}>Log contact</SmallButton>
+          {r.renewalQuotationId
+            ? <SmallButton variant="navy" icon="quote" to={`/quotations/${r.renewalQuotationId}`}>Open renewal quotation</SmallButton>
+            : <SmallButton variant="navy" icon="quote" onClick={() => setDlg('quote')}>Create renewal quotation</SmallButton>}
+        </>} />
+
+      {/* Countdown banner */}
+      {r.status !== 'RENEWED' && r.status !== 'LAPSED' && (
+        <div className="mt-5 flex h-[144px] items-center gap-[22px] rounded-[34px] bg-gradient-to-r from-[#fde8c9] to-[#fbd9b0] px-[30px] shadow-[0px_18px_36px_-12px_rgba(201,138,46,0.2)]">
+          <span className="flex size-[92px] shrink-0 flex-col items-center justify-center rounded-full bg-white">
+            <span className="text-[28px] font-bold text-ink">{Math.max(0, dl)}</span>
+            <span className="text-[11px] font-semibold text-[#8a5a12]">days</span>
+          </span>
+          <div className="flex flex-1 flex-col gap-1.5">
+            <p className="text-[24px] font-bold tracking-[-0.2px] text-ink">{r.dueDate ? `Renews on ${fmtDate(r.dueDate)}` : 'Renewal'}</p>
+            <p className="text-[13px] font-medium text-[#8a5a12]">{[r.graceUntil ? `Grace period until ${fmtDate(r.graceUntil)}` : null, r.policy?.premium ? `last premium ${fmtMoney(r.policy.premium)}` : null, r.policy?.sumInsured ? fmtLakh(r.policy.sumInsured) : null].filter(Boolean).join(' \u00b7 ')}</p>
+          </div>
+          <div className="flex flex-col gap-0.5 rounded-[18px] bg-white/80 px-[18px] py-3">
+            <p className="text-[12px] font-semibold text-[#8a5a12]">Reminders</p>
+            <p className="text-[16px] font-bold whitespace-nowrap text-ink">{sentCount} of {steps.length} sent</p>
+          </div>
+        </div>
+      )}
+
+      {/* Body: Contacts + How to renew */}
+      <div className="mt-9 flex items-start gap-5">
+        {/* Contacts card */}
+        <Panel className="flex w-[760px] flex-col gap-3.5">
+          <PanelHead title="Contacts" subtitle="Logging one moves the renewal to In follow-up" />
+          {contacts.length === 0 && <p className="text-[13px] font-medium text-muted">No contacts logged yet.</p>}
+          {contacts.map((c, i) => {
+            const look = CONTACT_ICON[c.channel?.toLowerCase()] ?? CONTACT_ICON[c.type?.toLowerCase()] ?? CONTACT_ICON.phone
+            const isSystem = c.source === 'SYSTEM' || c.type === 'REMINDER'
+            return (
+              <div key={i} className="flex items-start gap-3.5">
+                <span className={cx('flex size-10 shrink-0 items-center justify-center rounded-full', look.bg)}>
+                  <Icon name={look.icon} size={18} className="text-ink" />
+                </span>
+                <div className="flex flex-col gap-[3px]">
+                  <p className="text-[14px] font-bold text-ink">{c.outcome ?? c.title ?? c.label ?? (isSystem ? `Reminder ${c.channel ? label(c.channel).toLowerCase() : 'sent'}` : 'Contact')}</p>
+                  <p className="text-[12px] font-medium text-muted">{c.at ? `${fmtDateTime(c.at)} \u00b7 ` : ''}{isSystem ? 'System' : 'You'}</p>
+                  {c.note && <p className="self-start rounded-[12px] bg-panel px-3 py-2 text-[12px] font-medium text-ink-2">{c.note}</p>}
+                </div>
+              </div>
+            )
+          })}
+          <div className="flex gap-2.5">
+            <SmallButton variant="outline" icon="clock" onClick={pause} disabled={busy}>{r.remindersPaused ? 'Resume reminders' : 'Pause reminders'}</SmallButton>
+            <SmallButton variant="navy" icon="phone" onClick={() => setDlg('contact')}>Log contact</SmallButton>
+          </div>
+        </Panel>
+
+        {/* How to renew card */}
+        <div className="flex w-[400px] flex-col items-start gap-2.5 rounded-[28px] bg-gradient-to-b from-[#e9e3fc] to-[#dcd2fb] p-6 shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]">
+          <p className="text-[16px] font-bold text-ink">How to renew</p>
+          <p className="text-[13px] leading-[20px] font-medium text-ink-2">{"Renewal quotation \u2192 share \u2192 record payment \u2192 proposal \u2192 record the new policy. That closes this renewal."}</p>
+          {r.renewalQuotationId
+            ? <SmallButton variant="navy" icon="quote" to={`/quotations/${r.renewalQuotationId}`}>Open renewal quotation</SmallButton>
+            : <SmallButton variant="navy" icon="quote" onClick={() => setDlg('quote')}>Create renewal quotation</SmallButton>}
+          {r.policy?.id && <SmallButton variant="white" icon="shield" to={`/policies/${r.policy.id}`}>Open policy</SmallButton>}
+        </div>
+      </div>
+
+      {/* Dialogs */}
+      {dlg === 'contact' && <RenewalContactDialog r={r} onClose={() => setDlg(null)} />}
+      {dlg === 'not' && <NotRenewingDialog r={r} onClose={() => setDlg(null)} />}
+      {dlg === 'reopen' && <RenewalReopenDialog r={r} onClose={() => setDlg(null)} />}
+      {dlg === 'quote' && <RenewalQuoteDialog r={r} onClose={() => setDlg(null)} />}
+    </AppLayout>
   )
 }
 
