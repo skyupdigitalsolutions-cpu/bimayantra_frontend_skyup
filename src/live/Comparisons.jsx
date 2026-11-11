@@ -134,7 +134,17 @@ function Editor({ c }) {
               <div className="grid grid-cols-2 gap-2">
                 {P.map((p) => { const on = opts.some((o) => o.productId === p.id); return <button key={p.id} type="button" disabled={!on && opts.length >= 5} onClick={() => { setOpts(on ? opts.filter((o) => o.productId !== p.id) : [...opts, { productId: p.id }]); setPreview(null) }} className={cx('flex items-center gap-2 rounded-[14px] px-3.5 py-3 text-left text-[13px] font-semibold', on ? 'bg-navy text-white' : 'bg-panel text-ink')}>{on && <Icon name="check" size={14} />}<span className="flex-1">{p.insurer} · {p.name}</span></button> })}
               </div>
-              {prods.data && !P.length && <ErrorNote error={{ message: 'No products you can quote in this category. Check My insurers (agent codes).' }} />}
+              {prods.data && P.length < 2 && (
+                // A comparison needs 2 to 5 products the advisor can quote (agent code for the insurer): say why it cannot go on.
+                <div className="flex items-center gap-3 rounded-[16px] border border-[#f1d6a6] bg-[#fdf6ea] px-4 py-3">
+                  <p className="flex-1 text-[13px] font-semibold text-[#8a5a12]">
+                    {P.length === 0 ? 'You cannot quote any product in this category yet.' : 'You can quote only 1 product in this category, and a comparison needs at least 2.'}
+                    {' '}Add agent codes for more insurers in My insurers (use “Products in” to find the ones that sell it), or make a single quotation instead.
+                  </p>
+                  <Link to="/settings/insurers" className="shrink-0 rounded-[12px] border border-line bg-white px-3 py-1.5 text-[12px] font-semibold text-ink hover:bg-panel-2">Open My insurers</Link>
+                </div>
+              )}
+              {P.length >= 2 && opts.length < 2 && <p className="text-[12px] font-semibold text-[#8a5a12]">Choose at least 2 products to compare.</p>}
               {opts.map((o) => { const p = P.find((x) => x.id === o.productId); return (
                 <div key={o.productId} className="flex items-end gap-3 text-[13px]"><span className="mb-3 w-[260px] font-semibold text-ink">{p?.name ?? o.productId}</span>
                   <Field label="Net premium from portal (₹)" type="number" value={o.manual?.netPremium ?? ''} onChange={(v) => setOpts(opts.map((x) => (x.productId === o.productId ? { ...x, manual: { ...(x.manual || {}), netPremium: v } } : x)))} hint="Only for products priced at quotation" />
