@@ -1,9 +1,6 @@
 // CQ2–CQ9 Comparison wizard · C2 shared · C3 customer chose · CX1 expired (public) — on the live API.
-//   /comparisons              GET /comparisons
-//   /comparisons/new          POST /comparisons {customerId}
-//   /comparisons/:id          DRAFT → PUT (inputs, options, recommendation) · POST preview · POST generate
-//                             READY/SHARED → POST share · POST choose · POST create-quotation
-//   /c/:token (public)        GET /public/c/:token
+// The Figma shows an 8-step wizard: Customer → Type → Insurance → Options → Details → Premiums → Recommend → Review
+// The backend uses a single PUT /comparisons/:id to save the entire draft, so steps are local UI state.
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
@@ -18,9 +15,27 @@ import { useToast } from '../components/LiveToast'
 import { matchesQuery, useHeaderSearch } from '../screens/tasks/_filter'
 
 const TONE = { DRAFT: 'neutral', READY: 'sky', SHARED: 'violet', PRODUCT_CHOSEN: 'green', EXPIRED: 'amber' }
-// Figma CQ2–CQ9: 8-step stepper matching the comparison wizard
+// Figma CQ2–CQ9: 8-step stepper
 const STEPS = ['Customer', 'Type', 'Insurance', 'Options', 'Details', 'Premiums', 'Recommend', 'Review']
 const lakh = (n) => (n >= 10_000_000 ? `₹${n / 10_000_000} crore` : n >= 100_000 ? `₹${n / 100_000} lakh` : fmtMoney(n))
+
+// Icon + colour for each insurance type name
+const TYPE_META = {
+  health: { icon: 'heart', bg: 'bg-[#fde8ec]' },
+  motor: { icon: 'car', bg: 'bg-[#d9eafd]' },
+  life: { icon: 'users', bg: 'bg-[#e9e3fc]' },
+  term: { icon: 'umbrella', bg: 'bg-[#fde8c9]' },
+  travel: { icon: 'plane', bg: 'bg-[#d4f1e7]' },
+  home: { icon: 'box', bg: 'bg-[#fde8c9]' },
+  personal: { icon: 'shield', bg: 'bg-[#e9e3fc]' },
+}
+function typeMeta(name) {
+  const k = (name || '').toLowerCase()
+  for (const [prefix, meta] of Object.entries(TYPE_META)) if (k.includes(prefix)) return meta
+  return { icon: 'box', bg: 'bg-panel' }
+}
+
+const CARD = 'rounded-[28px] bg-white p-6 shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]'
 
 /* ═════════════ list ═════════════ */
 export function LiveComparisons() {
@@ -39,7 +54,7 @@ export function LiveComparisons() {
   return (
     <AppLayout active="quotations">
       <Header breadcrumb={'SALES  /  COMPARISONS'} title="Comparisons" subtitle="Several products side by side in one PDF. The customer picks one; you turn it into a quotation." actions={<HeadButton icon="plus" onClick={() => setPick(true)}>New comparison</HeadButton>} />
-      <DataTable className="mt-7 w-[1180px]" columns={columns} rows={rows} rowTo={(r) => `/comparisons/${r.id}`} empty={q.loading ? 'Loading…' : hq.trim() ? `No comparisons match “${hq.trim()}”.` : 'No comparisons yet.'} />
+      <DataTable className="mt-7 w-[1180px]" columns={columns} rows={rows} rowTo={(r) => `/comparisons/${r.id}`} empty={q.loading ? 'Loading…' : hq.trim() ? `No comparisons match "${hq.trim()}".` : 'No comparisons yet.'} />
       {hq.trim() && !rows.length && !q.loading && <button type="button" onClick={clearQ} className="mt-3 text-[13px] font-bold text-blue hover:underline">Clear search</button>}
       {pick && <PickCustomer onClose={() => setPick(false)} />}
     </AppLayout>
@@ -80,6 +95,8 @@ export function LiveComparison() {
   return q.data.status === 'DRAFT' ? <Editor key={q.data.version} c={q.data} /> : <Generated c={q.data} />
 }
 
+/* ═════════════ wizard editor (Figma CQ2–CQ8) ═════════════ */
+
 function Editor({ c }) {
   const navigate = useNavigate()
   const { toast } = useToast()
@@ -96,6 +113,15 @@ function Editor({ c }) {
   const fe = error?.fieldErrors ?? {}
   const P = (prods.data || []).filter((p) => p.canQuote ?? p.quotable)
   const everyone = customer.data ? [{ key: `C:${customer.data.id}`, name: customer.data.name, rel: 'Self', dob: customer.data.dob }, ...(customer.data.family || []).filter((m) => m.status === 'ACTIVE').map((m) => ({ key: `F:${m.id}`, name: m.name, rel: m.relationship, dob: m.dob }))] : []
+
+  // Wizard step (0-based). Customer (0) and Type (1) are already done when the editor opens.
+  const [step, setStep] = useState(() => {
+    if (!inp.typeId) return 2 // Insurance
+    if (opts.length < 2) return 3 // Options
+    if (!inp.people.length || !inp.sumInsured) return 4 // Details
+    return 5 // Premiums
+  })
+
   const save = async () => {
     const body = {
       version: ver,
@@ -110,91 +136,240 @@ function Editor({ c }) {
   const run = async (fn) => { setBusy(true); setError(null); try { await fn() } catch (e) { setError(e) } finally { setBusy(false) } }
   const doPreview = () => run(async () => { await save(); setPreview((await api.comparisons.preview(c.id, {})).data) })
   const doGenerate = () => run(async () => { await save(); const r = await api.comparisons.generate(c.id, {}); toast(r.meta?.message || 'Comparison generated.'); invalidate('comparison', 'comparisons'); navigate(`/comparisons/${c.id}`, { replace: true }) })
-  // Steps: 0=Customer(done) 1=Type(done) 2=Insurance 3=Options 4=Details 5=Premiums 6=Recommend 7=Review
-  const step = !inp.typeId ? 2 : opts.length < 2 ? 3 : !inp.people.length || !inp.sumInsured ? 4 : !preview ? 5 : !rec.id ? 6 : 7
-  const siOptions = [...new Set(P.flatMap(() => []))]
-  void siOptions
+
+  const canNext = [
+    true, true, !!inp.typeId, opts.length >= 2,
+    !!(inp.people.length && inp.sumInsured && inp.policyTerm && inp.startDate),
+    !!preview, !!rec.id, !!preview,
+  ][step]
+
+  const nextLabels = ['', '', 'Next: Options', 'Next: Details', 'Next: Premiums', 'Next: Recommend', 'Next: Review', '']
+
+  const handleNext = () => {
+    setError(null)
+    // At step 5 (Premiums), save + preview before advancing
+    if (step === 5 && !preview) { doPreview(); return }
+    if (step < 7) setStep(step + 1)
+  }
+
+  // Summary values for the pink panel
+  const typeName = (types.data?.types ?? []).find((t) => t.id === inp.typeId)?.name
+
   return (
     <AppLayout active="quotations">
       <Header back="/comparisons" breadcrumb={'QUOTATIONS  /  NEW COMPARISON'} title="New comparative quotation"
         titleExtra={<span className="inline-flex items-center gap-[5px] rounded-[14px] bg-[#e7f4ee] py-[5px] pr-3 pl-2 text-[12px] font-semibold text-[#127650]"><Icon name="check" size={13} />Draft saved</span>}
         subtitle={customer.data ? `${customer.data.name} · 2 to 3 options side by side` : '2 to 3 options side by side'} />
-      <Stepper className="mt-5" steps={STEPS} current={step} />
-      <div className="mt-6 flex items-start gap-6">
-        <div className="flex w-[756px] flex-col gap-5">
-          <Panel className="flex flex-col gap-4">
-            <PanelHead title="Insurance type and details" subtitle="Same for every option in this comparison" />
-            <Field label="Insurance type *" type="select" value={inp.typeId} onChange={(v) => { setInp({ ...inp, typeId: v }); setOpts([]); setPreview(null) }} options={[{ value: '', label: 'Choose' }, ...((types.data?.types) || []).map((t) => ({ value: t.id, label: t.name }))]} error={fe['inputs.typeId']} />
-            <div className="flex flex-col gap-2"><span className="text-[13px] font-semibold text-ink">People *</span>
-              <div className="flex flex-wrap gap-2">{everyone.map((p) => { const on = inp.people.includes(p.key); return <button key={p.key} type="button" disabled={!p.dob} onClick={() => setInp({ ...inp, people: on ? inp.people.filter((k) => k !== p.key) : [...inp.people, p.key] })} className={cx('flex h-[38px] items-center gap-2 rounded-[19px] border px-3.5 text-[13px] font-semibold', !p.dob ? 'border-line text-faint' : on ? 'border-blue bg-blue-50 text-blue' : 'border-line bg-white text-muted')}>{on && <Icon name="check" size={13} />}{p.name} · {p.rel}{p.dob ? '' : ' · add DOB'}</button> })}</div>
-            </div>
-            <div className="flex gap-3"><Field label="Sum insured (₹) *" type="number" value={inp.sumInsured} onChange={(v) => setInp({ ...inp, sumInsured: v })} error={fe['inputs.sumInsured']} hint={inp.sumInsured ? lakh(Number(inp.sumInsured)) : ''} />
-              <Field label="Policy term (years) *" type="number" value={inp.policyTerm} onChange={(v) => setInp({ ...inp, policyTerm: v })} />
-              <Field label="Planned start *" type="date" value={isoDay(inp.startDate)} onChange={(v) => setInp({ ...inp, startDate: v })} /></div>
-          </Panel>
-          {inp.typeId && (
-            <Panel className="flex flex-col gap-3">
-              <PanelHead title="Options" subtitle="Pick 2 to 3 products or variants. Insurers with an active agent code only." />
-              <div className="grid grid-cols-2 gap-2">
-                {P.map((p) => { const on = opts.some((o) => o.productId === p.id); return <button key={p.id} type="button" disabled={!on && opts.length >= 5} onClick={() => { setOpts(on ? opts.filter((o) => o.productId !== p.id) : [...opts, { productId: p.id }]); setPreview(null) }} className={cx('flex items-center gap-2 rounded-[14px] px-3.5 py-3 text-left text-[13px] font-semibold', on ? 'bg-navy text-white' : 'bg-panel text-ink')}>{on && <Icon name="check" size={14} />}<span className="flex-1">{p.insurer} · {p.name}</span></button> })}
-              </div>
-              {prods.data && P.length < 2 && (
-                // A comparison needs 2 to 5 products the advisor can quote (agent code for the insurer): say why it cannot go on.
-                <div className="flex items-center gap-3 rounded-[16px] border border-[#f1d6a6] bg-[#fdf6ea] px-4 py-3">
-                  <p className="flex-1 text-[13px] font-semibold text-[#8a5a12]">
-                    {P.length === 0 ? 'You cannot quote any product in this category yet.' : 'You can quote only 1 product in this category, and a comparison needs at least 2.'}
-                    {' '}Add agent codes for more insurers in My insurers (use “Products in” to find the ones that sell it), or make a single quotation instead.
-                  </p>
-                  <Link to="/settings/insurers" className="shrink-0 rounded-[12px] border border-line bg-white px-3 py-1.5 text-[12px] font-semibold text-ink hover:bg-panel-2">Open My insurers</Link>
+      <Stepper className="mt-4" steps={STEPS} current={step} />
+
+      <div className="mt-5 flex items-start gap-5">
+        {/* Main wizard card */}
+        <div className={cx('flex min-w-0 flex-1 flex-col gap-5', CARD)}>
+
+          {/* Step 2: Insurance type (CQ3) */}
+          {step === 2 && (
+            <>
+              <div><p className="text-[17px] font-bold text-ink">Insurance type</p><p className="text-[12px] font-medium text-muted">All options must be the same type</p></div>
+              {(types.data?.types ?? []).length > 0 && (
+                <div className="flex flex-wrap items-start gap-3">
+                  {(types.data?.types ?? []).map((t) => {
+                    const m = typeMeta(t.name)
+                    const on = inp.typeId === t.id
+                    return (
+                      <button key={t.id} type="button" onClick={() => { setInp({ ...inp, typeId: t.id }); setOpts([]); setPreview(null) }}
+                        className={cx('flex flex-col items-center justify-center gap-2.5 rounded-[22px] p-4', m.bg, on ? 'h-[113px] w-[137px] border-[2.5px] border-blue' : 'h-[108px] w-[132px]')}>
+                        <span className="flex size-12 items-center justify-center rounded-full bg-white/90"><Icon name={m.icon} size={22} className="text-ink" /></span>
+                        <span className="text-[14px] font-bold text-ink">{t.name}</span>
+                      </button>
+                    )
+                  })}
                 </div>
               )}
-              {P.length >= 2 && opts.length < 2 && <p className="text-[12px] font-semibold text-[#8a5a12]">Choose at least 2 products to compare.</p>}
+            </>
+          )}
+
+          {/* Step 3: Options — pick 2–3 products (CQ4) */}
+          {step === 3 && (
+            <>
+              <div><p className="text-[17px] font-bold text-ink">Options</p><p className="text-[12px] font-medium text-muted">Pick 2 to 3 products or variants. Insurers with an active agent code only.</p></div>
+              <div className="flex flex-col gap-3">
+                {P.map((p) => {
+                  const on = opts.some((o) => o.productId === p.id)
+                  return (
+                    <button key={p.id} type="button" disabled={!on && opts.length >= 5}
+                      onClick={() => { setOpts(on ? opts.filter((o) => o.productId !== p.id) : [...opts, { productId: p.id }]); setPreview(null) }}
+                      className={cx('flex h-[72px] items-center gap-3.5 rounded-[20px] p-3.5 text-left', on ? 'bg-navy text-white' : 'bg-panel text-ink')}>
+                      {on && <span className="flex size-[30px] shrink-0 items-center justify-center rounded-full bg-white text-navy"><Icon name="check" size={14} /></span>}
+                      {!on && <span className="flex size-[30px] shrink-0 items-center justify-center rounded-full bg-white/50 text-muted"><Icon name="plus" size={14} /></span>}
+                      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <span className="text-[14px] font-bold">{p.name}</span>
+                        <span className={cx('text-[12px] font-medium', on ? 'text-white/70' : 'text-muted')}>{p.insurer}</span>
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+              {prods.data && P.length < 2 && (
+                <div className="flex items-center gap-3 rounded-[16px] border border-[#f1d6a6] bg-[#fdf6ea] px-4 py-3">
+                  <p className="flex-1 text-[13px] font-semibold text-[#8a5a12]">{P.length === 0 ? 'No quotable products in this category.' : 'Only 1 product available — a comparison needs at least 2.'} Add agent codes for more insurers in My insurers.</p>
+                  <Link to="/settings/insurers" className="shrink-0 rounded-[12px] border border-line bg-white px-3 py-1.5 text-[12px] font-semibold text-ink hover:bg-panel-2">My insurers</Link>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Step 4: Details — people, sum insured, term, start (CQ5) */}
+          {step === 4 && (
+            <>
+              <div><p className="text-[17px] font-bold text-ink">Details</p><p className="text-[12px] font-medium text-muted">Applies to every option. Same people and sum insured for all.</p></div>
+              <div className="flex flex-col gap-2"><span className="text-[13px] font-semibold text-ink">People to cover *</span>
+                <div className="flex flex-wrap gap-2">{everyone.map((p) => { const on = inp.people.includes(p.key); return <button key={p.key} type="button" disabled={!p.dob} onClick={() => setInp({ ...inp, people: on ? inp.people.filter((k) => k !== p.key) : [...inp.people, p.key] })} className={cx('flex h-[38px] items-center gap-2 rounded-[19px] border px-3.5 text-[13px] font-semibold', !p.dob ? 'border-line text-faint' : on ? 'border-blue bg-blue-50 text-blue' : 'border-line bg-white text-muted')}>{on && <Icon name="check" size={13} />}{p.name} · {p.rel}{p.dob ? '' : ' · add DOB'}</button> })}</div>
+              </div>
+              <div className="flex gap-3">
+                <Field label="Sum insured (₹) *" type="number" value={inp.sumInsured} onChange={(v) => setInp({ ...inp, sumInsured: v })} error={fe['inputs.sumInsured']} />
+                <Field label="Policy term (years) *" type="number" value={inp.policyTerm} onChange={(v) => setInp({ ...inp, policyTerm: v })} />
+                <Field label="Planned start date *" type="date" value={isoDay(inp.startDate)} onChange={(v) => setInp({ ...inp, startDate: v })} />
+              </div>
+            </>
+          )}
+
+          {/* Step 5: Premiums — enter base premium per option (CQ6) */}
+          {step === 5 && (
+            <>
+              <div><p className="text-[17px] font-bold text-ink">Premiums</p><p className="text-[12px] font-medium text-muted">Enter the base premium from the insurer portal for each option.</p></div>
               {opts.map((o) => { const p = P.find((x) => x.id === o.productId); return (
-                <div key={o.productId} className="flex items-end gap-3 text-[13px]"><span className="mb-3 w-[260px] font-semibold text-ink">{p?.name ?? o.productId}</span>
-                  <Field label="Net premium from portal (₹)" type="number" value={o.manual?.netPremium ?? ''} onChange={(v) => setOpts(opts.map((x) => (x.productId === o.productId ? { ...x, manual: { ...(x.manual || {}), netPremium: v } } : x)))} hint="Only for products priced at quotation" />
-                  <Field label="GST (₹)" type="number" value={o.manual?.taxAmount ?? ''} onChange={(v) => setOpts(opts.map((x) => (x.productId === o.productId ? { ...x, manual: { ...(x.manual || {}), taxAmount: v } } : x)))} />
+                <div key={o.productId} className="flex flex-col gap-2 rounded-[20px] bg-panel p-4">
+                  <p className="text-[14px] font-bold text-ink">{p?.insurer} · {p?.name ?? o.productId}</p>
+                  <div className="flex items-end gap-3">
+                    <Field label="Net premium (₹)" type="number" value={o.manual?.netPremium ?? ''} onChange={(v) => setOpts(opts.map((x) => (x.productId === o.productId ? { ...x, manual: { ...(x.manual || {}), netPremium: v } } : x)))} />
+                    <Field label="GST (₹)" type="number" value={o.manual?.taxAmount ?? ''} onChange={(v) => setOpts(opts.map((x) => (x.productId === o.productId ? { ...x, manual: { ...(x.manual || {}), taxAmount: v } } : x)))} />
+                  </div>
                 </div>) })}
-              <SmallButton variant="navy" icon="refresh" className="self-start" disabled={busy || opts.length < 2 || !inp.people.length} onClick={doPreview}>{busy ? 'Working…' : 'Work out premiums'}</SmallButton>
-            </Panel>
+              <button type="button" disabled={busy || opts.length < 2 || !inp.people.length} onClick={doPreview}
+                className="flex h-[46px] items-center gap-2 self-start rounded-[24px] bg-navy px-5 text-[14px] font-semibold text-white shadow-[0px_10px_10px_rgba(19,41,75,0.25)] disabled:opacity-50 disabled:shadow-none">
+                <Icon name="refresh" size={16} />{busy ? 'Working…' : 'Work out premiums'}
+              </button>
+              {preview && <ComparisonTable preview={preview} />}
+            </>
           )}
-          {preview && (
-            <Panel className="flex flex-col gap-3 overflow-x-auto">
-              <PanelHead title="Comparison" subtitle="As the customer will see it" />
-              <table className="w-full text-[13px]"><thead><tr><th className="w-[200px]" />{preview.columns.map((x) => <th key={x.productId} className="py-2 text-left align-top"><p className="font-bold text-ink">{x.insurer} · {x.name}</p>{x.error ? <p className="font-semibold text-[#b4323c]">{x.error.message}</p> : <p className="text-[16px] font-bold text-ink">{fmtMoney(x.premium)}{x.lowest && <span className="ml-1.5 rounded-[8px] bg-[#e7f4ee] px-1.5 text-[10px] text-[#127650]">Lowest</span>}</p>}{x.coverage && <p className="text-[11px] font-semibold text-[#8a5a12]">{x.coverage.message}</p>}</th>)}</tr></thead>
-                <tbody>{preview.rows.map((r) => <tr key={r.label} className="border-t border-line"><td className="py-2 pr-3 font-semibold text-muted">{r.label}</td>{r.values.map((v, i) => <td key={i} className="py-2 pr-3 text-ink">{r.label === 'Sum insured' && v ? lakh(v) : String(v ?? '—')}</td>)}</tr>)}</tbody></table>
-            </Panel>
+
+          {/* Step 6: Recommend (CQ7) */}
+          {step === 6 && (
+            <>
+              <div><p className="text-[17px] font-bold text-ink">Recommend</p><p className="text-[12px] font-medium text-muted">Pick one and say why. The reason is printed on the comparison.</p></div>
+              {(preview?.columns ?? []).filter((x) => !x.error).map((x) => {
+                const on = rec.id === x.productId
+                return (
+                  <button key={x.productId} type="button" onClick={() => setRec({ ...rec, id: x.productId })}
+                    className={cx('flex items-center gap-3.5 rounded-[20px] p-4 text-left', on ? 'border-2 border-blue bg-[#f3f7ff]' : 'border border-line bg-white hover:bg-panel-2')}>
+                    <span className={cx('flex size-[22px] shrink-0 items-center justify-center rounded-full border bg-white', on ? 'border-[6px] border-navy' : 'border-[1.5px] border-[#c3ccd8]')} />
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="text-[14px] font-bold text-ink">{x.insurer} · {x.name}</span>
+                      <span className="text-[12px] font-medium text-muted">{fmtMoney(x.premium)} / year</span>
+                    </span>
+                    {x.lowest && <span className="rounded-[14px] bg-[#e7f4ee] px-2.5 py-[5px] text-[12px] font-semibold text-[#127650]">Lowest</span>}
+                  </button>
+                )
+              })}
+              <Field label="Why you recommend this option *" type="textarea" value={rec.reason} onChange={(v) => setRec({ ...rec, reason: v })} error={fe.recommendedReason} />
+            </>
           )}
-          {preview && (
-            <Panel className="flex flex-col gap-3">
-              <PanelHead title="Recommend" subtitle="Pick one and say why. The reason is printed on the comparison." />
-              <Field label="Recommended product" type="select" value={rec.id} onChange={(v) => setRec({ ...rec, id: v })} options={[{ value: '', label: 'No recommendation' }, ...preview.columns.filter((x) => !x.error).map((x) => ({ value: x.productId, label: `${x.insurer} · ${x.name}` }))]} />
-              <Field label="Why" type="textarea" value={rec.reason} onChange={(v) => setRec({ ...rec, reason: v })} error={fe.recommendedReason} />
-            </Panel>
+
+          {/* Step 7: Review (CQ8) */}
+          {step === 7 && (
+            <>
+              <div><p className="text-[17px] font-bold text-ink">Review and generate</p><p className="text-[12px] font-medium text-muted">Exactly what the customer will see.</p></div>
+              {preview && <ComparisonTable preview={preview} recId={rec.id} />}
+              {rec.reason && <p className="text-[13px] font-medium text-ink">Recommendation: {rec.reason}</p>}
+            </>
           )}
+
           <ErrorNote error={error} />
+
+          {/* Footer: Back + Continue/Generate */}
+          <div className="flex items-center gap-3">
+            <button type="button" disabled={step <= 2 || busy} onClick={() => { setError(null); setStep(step - 1) }}
+              className="flex h-[48px] w-[140px] items-center justify-center rounded-[24px] border border-line text-[14px] font-semibold text-ink disabled:opacity-40">Back</button>
+            <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted"><Icon name="check" size={16} className="text-[#127650]" />Draft saved</span>
+            <span className="flex-1" />
+            {step < 7 && (
+              <button type="button" disabled={busy || !canNext} onClick={handleNext}
+                className="flex h-[48px] items-center gap-2 rounded-[24px] bg-navy px-6 text-[14px] font-semibold text-white shadow-[0px_10px_10px_rgba(19,41,75,0.25)] disabled:opacity-50 disabled:shadow-none">
+                <Icon name="arrow" size={18} />{busy ? 'Saving…' : nextLabels[step]}
+              </button>
+            )}
+            {step === 7 && (
+              <button type="button" disabled={busy || !preview} onClick={doGenerate}
+                className="flex h-[48px] items-center gap-2 rounded-[24px] bg-navy px-6 text-[14px] font-semibold text-white shadow-[0px_10px_10px_rgba(19,41,75,0.25)] disabled:opacity-50 disabled:shadow-none">
+                <Icon name="sparkle" size={16} />{busy ? 'Generating…' : 'Generate comparison'}
+              </button>
+            )}
+          </div>
         </div>
+
         {/* Figma: pink "Your comparison" live summary */}
         <div className="w-[400px] shrink-0 rounded-[28px] bg-gradient-to-b from-[#fbd3dc] to-[#f6b3c3] p-6 shadow-[0px_18px_18px_rgba(232,137,156,0.25)]">
           <div className="flex items-start justify-between">
             <div><p className="text-[17px] font-bold text-ink">Your comparison</p><p className="text-[12px] font-medium text-muted">Same people and sum insured for every option</p></div>
             <span className="rounded-[14px] bg-[#fde8ec] px-3 py-[5px] text-[12px] font-semibold text-[#b4325a]">Draft</span>
           </div>
-          <div className="mt-3.5 flex flex-col gap-2.5 rounded-[20px] bg-white/75 p-4">
-            <div className="flex items-center"><span className="flex-1 text-[12px] font-medium text-[#8b3a4c]">Customer</span><span className="text-[13px] font-bold text-ink">{customer.data?.name ?? '—'}</span></div>
-            <div className="flex items-center"><span className="flex-1 text-[12px] font-medium text-[#8b3a4c]">Type</span><span className="text-[13px] font-bold text-ink">Comparative</span></div>
-            <div className="flex items-center"><span className="flex-1 text-[12px] font-medium text-[#8b3a4c]">Insurance</span><span className={cx('text-[13px] font-bold', inp.typeId ? 'text-ink' : 'text-[#b98b96]')}>{(types.data?.types ?? []).find((t) => t.id === inp.typeId)?.name ?? '—'}</span></div>
-            <div className="flex items-center"><span className="flex-1 text-[12px] font-medium text-[#8b3a4c]">Options</span><span className={cx('text-[13px] font-bold', opts.length ? 'text-ink' : 'text-[#b98b96]')}>{opts.length ? `${opts.length} products` : '—'}</span></div>
-            <div className="flex items-center"><span className="flex-1 text-[12px] font-medium text-[#8b3a4c]">People and cover</span><span className={cx('text-[13px] font-bold', inp.people.length ? 'text-ink' : 'text-[#b98b96]')}>{inp.people.length ? `${inp.people.length} people${inp.sumInsured ? ` · ${lakh(Number(inp.sumInsured))}` : ''}` : '—'}</span></div>
+          <div className="mt-3.5 flex flex-col gap-2.5 rounded-[20px] bg-white/80 p-4">
+            <SumRow k="Customer" v={customer.data?.name} />
+            <SumRow k="Type" v="Comparative" />
+            <SumRow k="Insurance" v={typeName} />
+            <SumRow k="Options" v={opts.length ? `${opts.length} products` : null} />
+            <SumRow k="People and cover" v={inp.people.length ? `${inp.people.length} people${inp.sumInsured ? ` · ${lakh(Number(inp.sumInsured))}` : ''}` : null} />
           </div>
-          <div className="mt-4 flex flex-col gap-2">
-            <SmallButton variant="outline" disabled={busy} onClick={() => run(async () => { await save(); toast('Draft saved.') })}>Save draft</SmallButton>
-            <button type="button" disabled={!preview || busy} onClick={doGenerate} className="flex h-[50px] items-center justify-center gap-2 rounded-[25px] bg-navy text-[15px] font-semibold text-white disabled:opacity-50"><Icon name="sparkle" size={18} />{busy ? 'Working…' : 'Generate comparison'}</button>
-          </div>
+          {opts.length > 0 && (
+            <div className="mt-3.5 flex flex-col gap-2 rounded-[20px] bg-white p-4">
+              <p className="text-[10px] font-bold tracking-[0.6px] text-muted">OPTIONS</p>
+              {opts.map((o) => { const p = P.find((x) => x.id === o.productId); return (
+                <div key={o.productId} className="flex items-center">
+                  <span className="flex-1 text-[12px] font-semibold text-ink-2">{p?.insurer} · {p?.name ?? '?'}</span>
+                  {rec.id === o.productId && <span className="rounded-[10px] bg-[#e7f4ee] px-2 py-0.5 text-[10px] font-bold text-[#127650]">Recommended</span>}
+                </div>
+              ) })}
+            </div>
+          )}
         </div>
       </div>
     </AppLayout>
   )
 }
+
+function SumRow({ k, v }) {
+  return (
+    <div className="flex items-center">
+      <span className="flex-1 text-[12px] font-medium text-[#8b3a4c]">{k}</span>
+      <span className={cx('text-[13px] font-bold', v ? 'text-ink' : 'text-[#b98b96]')}>{v || '—'}</span>
+    </div>
+  )
+}
+
+function ComparisonTable({ preview, recId }) {
+  return (
+    <div className="overflow-x-auto rounded-[20px] border border-line">
+      <table className="w-full text-[13px]">
+        <thead><tr><th className="w-[200px]" />{(preview.columns ?? []).map((x) => (
+          <th key={x.productId} className="py-3 px-3 text-left align-top">
+            <p className="font-bold text-ink">{x.insurer} · {x.name}</p>
+            {x.error ? <p className="font-semibold text-[#b4323c]">{x.error.message}</p> : <p className="text-[16px] font-bold text-ink">{fmtMoney(x.premium)}{x.lowest && <span className="ml-1.5 rounded-[8px] bg-[#e7f4ee] px-1.5 text-[10px] text-[#127650]">Lowest</span>}</p>}
+            {recId === x.productId && <span className="rounded-[8px] bg-[#f0ecfb] px-2 py-0.5 text-[11px] font-bold text-[#5b3fb8]">Recommended</span>}
+            {x.coverage && <p className="text-[11px] font-semibold text-[#8a5a12]">{x.coverage.message}</p>}
+          </th>
+        ))}</tr></thead>
+        <tbody>{(preview.rows ?? []).map((r) => (
+          <tr key={r.label} className="border-t border-line">
+            <td className="py-2.5 px-3 font-semibold text-muted">{r.label}</td>
+            {r.values.map((v, i) => <td key={i} className="py-2.5 px-3 text-ink">{r.label === 'Sum insured' && v ? lakh(v) : String(v ?? '—')}</td>)}
+          </tr>
+        ))}</tbody>
+      </table>
+    </div>
+  )
+}
+
+/* ═════════════ generated / shared (unchanged) ═════════════ */
 
 function Generated({ c }) {
   const navigate = useNavigate()
