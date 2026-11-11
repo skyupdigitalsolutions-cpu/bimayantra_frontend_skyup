@@ -61,7 +61,7 @@ const InsuranceTypeTile = ({ on, onClick, icon, title, sub, bg, disabled }) => (
     className={cx(
       'flex flex-col items-center justify-center gap-2.5 rounded-[24px] p-[18px] transition',
       bg,
-      on ? 'h-[145px] w-[171px] shrink-0 border-[2.5px] border-blue' : 'h-[140px] min-w-0 flex-1',
+      on ? 'h-[145px] border-[2.5px] border-blue' : 'h-[140px]',
       disabled ? 'cursor-not-allowed opacity-50' : !on && 'hover:brightness-[0.98]',
     )}
   >
@@ -263,7 +263,7 @@ function Wizard({ initial, presetCustomer }) {
               <div><p className="text-[17px] font-bold text-ink">Insurance type</p><p className="text-[12px] font-medium text-muted">Only the categories on your licence</p></div>
               {choices.loading && !choices.data && <p className="text-[13px] font-medium text-muted">Loading…</p>}
               {choices.data?.types?.length > 0 && (
-                <div className="flex flex-wrap items-start gap-3.5">
+                <div className="grid grid-cols-4 gap-3.5">
                   {choices.data.types.map((t) => {
                     const m = typeMeta(t.name)
                     return <InsuranceTypeTile key={t.id} on={inputs.typeId === t.id} onClick={() => set({ typeId: t.id, insurerId: undefined, productId: undefined })} icon={m.icon} title={t.name} bg={m.bg} />
