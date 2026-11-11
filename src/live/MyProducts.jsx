@@ -41,7 +41,21 @@ function toFeatureValue(f, dataType) {
 }
 const nums = (v) => String(v ?? '').split(',').map((x) => Number(x.trim().replace(/[₹,\s]/g, ''))).filter((n) => n > 0)
 
-/* ═════════════ AP1–AP7 · Add my product ═════════════ */
+/** In-card navigation row: Back · Draft saved · Next (or Publish). */
+function StepNav({ back, next, nextLabel = 'Next', publish, busy, onPublish }) {
+  return (
+    <div className="flex items-center gap-3">
+      <Btn variant="outline" onClick={back}>Back</Btn>
+      <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted"><Icon name="check" size={16} className="text-[#127650]" />Draft saved</span>
+      <span className="flex-1" />
+      {publish
+        ? <Btn icon="check" disabled={busy} onClick={onPublish}>{busy ? 'Publishing\u2026' : nextLabel}</Btn>
+        : next && <Btn icon="arrow" onClick={next}>{nextLabel}</Btn>}
+    </div>
+  )
+}
+
+/* ═════════════ AP1–AP7 · New product ═════════════ */
 export function LiveAddProduct() {
   const navigate = useNavigate()
   const { toast } = useToast()
@@ -242,18 +256,18 @@ export function LiveAddProduct() {
             </StepCard>
           )}
           {step === 1 && (
-            <Panel className="flex flex-col gap-3">
-              <PanelHead title="2 · Company" subtitle={`Insurers that sell ${typeName ?? 'this category'}, and companies you added yourself.`} />
+            <StepCard title="2 · Company" subtitle={`Insurers that sell ${typeName ?? 'this category'}, and companies you added yourself.`}>
               <Dropdown value={insurerId} onChange={setInsurerId} placeholder={insurers.loading && !insurers.data ? 'Loading companies…' : 'Choose a company'} options={I.map((i) => ({ value: i.id, label: `${i.name}${i.private ? ' (mine)' : ''}` }))} />
               {insurers.error && <ErrorNote error={insurers.error} />}
               {insurers.data && !I.length && <p className="text-[13px] font-medium text-muted">No companies sell {typeName} yet. Add one below.</p>}
               <div className="flex items-end gap-3"><Field label="Add a company" value={newCo} onChange={setNewCo} />
                 <SmallButton variant="outline" icon="plus" className="mb-[7px]" disabled={!newCo.trim() || busy} onClick={() => act(() => api.myProducts.createInsurer({ name: newCo.trim() }), { invalidates: ['my-products'], onDone: (r) => { setInsurerId(r.data.id); setNewCo('') } })}>Add</SmallButton></div>
-            </Panel>
+              <div className="h-px bg-line" />
+              <StepNav back={() => setStep(0)} next={canNext ? () => setStep(2) : null} nextLabel="Next: Brochure" />
+            </StepCard>
           )}
           {step === 2 && (
-            <Panel className="flex flex-col gap-3">
-              <PanelHead title="3 · Brochure" subtitle={canRead ? 'Upload the PDF: it is attached to the product, and its values are read for you to check (Premium plan and trial).' : 'Attach the PDF to the product, so you and your customers can open it later.'} />
+            <StepCard title="3 · Brochure" subtitle={canRead ? 'Upload the PDF: it is attached to the product, and its values are read for you to check.' : 'Attach the PDF to the product.'}>
               {!d.brochureFileId && !job && (
                 <label className="flex h-[64px] cursor-pointer items-center justify-center gap-2.5 rounded-[18px] border-2 border-dashed border-line text-[14px] font-semibold text-ink hover:bg-panel-2">
                   <Icon name="folder" size={18} />{reading ? 'Uploading…' : canRead ? 'Choose brochure PDF' : 'Attach brochure PDF'}<input type="file" accept=".pdf" className="hidden" disabled={reading} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) startReading(f) }} />
@@ -296,11 +310,12 @@ export function LiveAddProduct() {
                 </>
               )}
               {!d.brochureFileId && <p className="text-[12px] font-medium text-muted">You can skip this step and type the values.</p>}
-            </Panel>
+              <div className="h-px bg-line" />
+              <StepNav back={() => setStep(1)} next={() => setStep(3)} nextLabel={!job && !d.brochureFileId ? 'Skip' : 'Next: Product'} />
+            </StepCard>
           )}
           {step === 3 && (
-            <Panel className="flex flex-col gap-4">
-              <PanelHead title={`4 · Product details`} subtitle={form ? `As printed on the insurer's brochure. ${typeName}: the details a ${form.label.toLowerCase()} product needs.` : "As printed on the insurer's brochure"} />
+            <StepCard title="4 · Product details" subtitle={form ? `As printed on the insurer\u2019s brochure. ${typeName}.` : "As printed on the insurer\u2019s brochure"}>
               <div className="grid grid-cols-2 gap-x-3.5 gap-y-[18px]">
                 <Field label="Product name *" value={d.name} onChange={set('name')} error={(fe.name ?? fe['data.name'])} />
                 <Field label="IRDAI product UIN *" value={d.uin} onChange={set('uin')} error={(fe.uin ?? fe['data.uin'])} hint="Printed on every quotation" />
@@ -331,11 +346,16 @@ export function LiveAddProduct() {
               <Field label="How the premium is worked out" type="select" value={d.pricingMode} onChange={set('pricingMode')} options={[{ value: 'MANUAL_ENTRY', label: 'Typed from the insurer portal at each quotation' }, { value: 'RATE_TABLE', label: 'From my rate table (add a price version after publishing)' }]} />
               <Field type="checkbox" label="Nominee required" value={d.nomineeRequired} onChange={set('nomineeRequired')} />
               <Field label="Source link" value={d.sourceLink} onChange={set('sourceLink')} placeholder="https://" />
-            </Panel>
+              <div className="h-px bg-line" />
+              <StepNav back={() => setStep(2)} next={canNext ? () => setStep(4) : null} nextLabel="Next: Variants" />
+            </StepCard>
           )}
           {step === 4 && (
-            <Panel className="flex flex-col gap-3">
-              <PanelHead title="5 · Variants" subtitle="Silver, Gold, Plus… Each can have its own sum-insured range." right={<SmallButton variant="outline" icon="plus" onClick={() => setVariants([...variants, { name: '', coverType: 'INDIVIDUAL', sumInsuredMin: '', sumInsuredMax: '' }])}>Add variant</SmallButton>} />
+            <StepCard title="5 · Variants" subtitle="Silver, Gold, Plus… Each can have its own sum-insured range.">
+              <div className="flex items-center justify-between">
+                <span />
+                <SmallButton variant="outline" icon="plus" onClick={() => setVariants([...variants, { name: '', coverType: 'INDIVIDUAL', sumInsuredMin: '', sumInsuredMax: '' }])}>Add variant</SmallButton>
+              </div>
               {variants.map((v, i) => (
                 <div key={i} className="flex items-end gap-3">
                   <Field label="Name *" value={v.name} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, name: x } : y)))} />
@@ -345,11 +365,12 @@ export function LiveAddProduct() {
                   {variants.length > 1 && <button type="button" aria-label="Remove" className="mb-3 text-muted" onClick={() => setVariants(variants.filter((_, j) => j !== i))}><Icon name="x" size={16} /></button>}
                 </div>
               ))}
-            </Panel>
+              <div className="h-px bg-line" />
+              <StepNav back={() => setStep(3)} next={canNext ? () => setStep(5) : null} nextLabel="Next: Features" />
+            </StepCard>
           )}
           {step === 5 && (
-            <Panel className="flex flex-col gap-4">
-              <PanelHead title="6 · Features" subtitle={tpl.data ? `${typeName} template v${tpl.data.template.number}. Leave blank if you don't know; tick "Not stated" when the brochure says nothing.` : tpl.error ? `${typeName}: the feature list could not be loaded.` : 'Loading the template…'} />
+            <StepCard title="6 · Features" subtitle={tpl.data ? `${typeName} template v${tpl.data.template.number}. Leave blank or tick "Not stated".` : tpl.error ? 'The feature list could not be loaded.' : 'Loading the template…'}>
               {tpl.error && <div className="flex items-center gap-3"><ErrorNote error={tpl.error} /><SmallButton variant="outline" icon="refresh" onClick={tpl.refetch}>Try again</SmallButton></div>}
               {groups.map((g) => (
                 <div key={g} className="flex flex-col gap-2">
@@ -370,22 +391,20 @@ export function LiveAddProduct() {
                 </div>
               ))}
               {tpl.data && !feats.length && <p className="text-[13px] font-medium text-muted">This category has no feature template.</p>}
-            </Panel>
+              <div className="h-px bg-line" />
+              <StepNav back={() => setStep(4)} next={() => setStep(6)} nextLabel="Next: Review" />
+            </StepCard>
           )}
           {step === 6 && (
-            <Panel className="flex flex-col gap-3">
-              <PanelHead title="7 · Review and publish" />
-              {[['Category', typeName], ['Company', insName], ['Code', code], ['Name', d.name], ['UIN', d.uin], ...(ages !== 'NONE' ? [[L.adultEntryAge, `${d.adultMin}–${d.adultMax}`]] : []), ...(form?.fields?.length ? [[`${form.label} details`, `${Object.keys(detailsBody(form, details)).length} of ${form.fields.length} filled`]] : []), ['Brochure', d.brochureFileId ? 'Attached' : 'None'], [L.sumInsured, nums(d.siOptions).map((n) => fmtMoney(n)).join(', ') || (d.siMin ? `${fmtMoney(d.siMin)}–${fmtMoney(d.siMax)}` : '—')], ['Policy terms', d.policyTerms], ['Pricing', d.pricingMode === 'RATE_TABLE' ? 'Rate table' : 'Typed at quotation'], ['Variants', variants.map((v) => v.name).filter(Boolean).join(', ')], ['Features filled', `${Object.values(features).filter((f) => f && (f.notStated || (f.value !== '' && f.value != null))).length} of ${feats.length}`], ['From brochure', ocrJobId ? 'Yes' : 'No']].map(([k, v]) => (
-                <div key={k} className="flex justify-between text-[13px]"><span className="font-medium text-muted">{k}</span><span className="font-semibold text-ink">{v || '—'}</span></div>
+            <StepCard title="7 · Review and publish" subtitle="Check everything before publishing.">
+              {[['Category', typeName], ['Company', insName], ['Code', code], ['Name', d.name], ['UIN', d.uin], ...(ages !== 'NONE' ? [[L.adultEntryAge, `${d.adultMin}\u2013${d.adultMax}`]] : []), ...(form?.fields?.length ? [[`${form.label} details`, `${Object.keys(detailsBody(form, details)).length} of ${form.fields.length} filled`]] : []), ['Brochure', d.brochureFileId ? 'Attached' : 'None'], [L.sumInsured, nums(d.siOptions).map((n) => fmtMoney(n)).join(', ') || (d.siMin ? `${fmtMoney(d.siMin)}\u2013${fmtMoney(d.siMax)}` : '\u2014')], ['Policy terms', d.policyTerms], ['Pricing', d.pricingMode === 'RATE_TABLE' ? 'Rate table' : 'Typed at quotation'], ['Variants', variants.map((v) => v.name).filter(Boolean).join(', ')], ['Features filled', `${Object.values(features).filter((f) => f && (f.notStated || (f.value !== '' && f.value != null))).length} of ${feats.length}`], ['From brochure', ocrJobId ? 'Yes' : 'No']].map(([k, v]) => (
+                <div key={k} className="flex justify-between text-[13px]"><span className="font-medium text-muted">{k}</span><span className="font-semibold text-ink">{v || '\u2014'}</span></div>
               ))}
               <ErrorNote error={error} />
-            </Panel>
+              <div className="h-px bg-line" />
+              <StepNav back={() => setStep(5)} publish next={null} nextLabel="Publish product" busy={busy} onPublish={publish} />
+            </StepCard>
           )}
-          {step > 0 && <div className="flex justify-between">
-            <SmallButton variant="outline" disabled={step === 0} onClick={() => setStep(step - 1)}>Back</SmallButton>
-            {step < 6 ? <SmallButton variant="navy" icon="arrow" disabled={!canNext} onClick={() => setStep(step + 1)}>{step === 2 && !job && !d.brochureFileId ? 'Skip' : 'Next'}</SmallButton>
-              : <SmallButton variant="navy" icon="check" disabled={busy} onClick={publish}>{busy ? 'Publishing…' : 'Publish product'}</SmallButton>}
-          </div>}
         </div>
         <PreviewCard values={preview} />
       </div>
