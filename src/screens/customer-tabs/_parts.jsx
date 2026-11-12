@@ -20,7 +20,7 @@ export const CARD_SHADOW = 'shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]'
 function HeaderActions({ live }) {
   useHeaderSearch() // Ctrl/Cmd+K focuses the pill on every profile tab
   return (
-    <div className="flex flex-wrap items-center gap-3 xl:shrink-0 xl:flex-nowrap">
+    <div className="flex shrink-0 items-center gap-3">
       <label className="hidden h-[50px] w-[240px] items-center gap-2.5 rounded-[25px] bg-white pr-2 pl-[18px] shadow-[0px_6px_18px_-8px_rgba(19,41,75,0.1)] md:flex">
         <Icon name="search" size={18} className="text-muted" />
         <input
@@ -74,7 +74,7 @@ function ProfileHero({ live }) {
 /** Segmented pill tabs (white p5, tab px16 py9). items: [{key,label,count,to}] */
 export function PillTabs({ items, value, onChange, className = '' }) {
   return (
-    <div className={cx('flex w-max gap-1 rounded-[26px] bg-white p-[5px] shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)]', className)}>
+    <div className={cx('flex w-max max-w-full gap-1 rounded-[26px] bg-white p-[5px] shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)] max-xl:overflow-x-auto max-xl:[scrollbar-width:none] max-xl:[&::-webkit-scrollbar]:hidden', className)}>
       {items.map((t) => {
         const on = t.key === value
         const cls = cx(
@@ -111,16 +111,16 @@ export function ProfileShell({ tab, crumb, routes = {}, counts = {}, panelClass 
   }))
   return (
     <AppLayout active="customers" panelClass={panelClass}>
-      <header className="flex flex-col items-start gap-3 xl:flex-row xl:justify-between xl:gap-6">
-        <div className="flex min-w-0 flex-col gap-1.5 xl:whitespace-nowrap">
-          <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre-wrap xl:whitespace-pre text-muted uppercase">{`POLICY HOLDERS  /  ${(live?.name ?? 'Kavya Hegde').toUpperCase()}  /  ${crumb}`}</p>
+      <header className="flex items-start justify-between gap-6 max-xl:flex-col max-xl:gap-3">
+        <div className="flex flex-col gap-1.5 whitespace-nowrap">
+          <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre max-xl:whitespace-pre-wrap text-muted uppercase">{`POLICY HOLDERS  /  ${(live?.name ?? 'Kavya Hegde').toUpperCase()}  /  ${crumb}`}</p>
           <div className="flex items-center gap-3">
             <h1 className="text-[24px] md:text-[30px] font-bold tracking-[-0.6px] text-ink">{live?.name ?? P.name}</h1>
             {!live || live.active ? <SChip tone="green" icon="check">Active</SChip> : <SChip tone="gray" icon="x">Inactive</SChip>}
           </div>
           <p className="text-[14px] font-medium text-muted">{live?.meta ?? P.meta}</p>
         </div>
-        <div className="mt-1 max-w-full">
+        <div className="mt-1">
           <HeaderActions live={live} />
         </div>
       </header>
