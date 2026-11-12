@@ -13,7 +13,7 @@ import SubscriptionBanner from './SubscriptionBanner'
  *   panelClass — extra classes for the panel (e.g. "px-10")
  *   sidebar    — override the whole rail (admin / referrer shells)
  *
- * Responsive mode (Figma R1–R5) — on for every screen (`responsive={false}` keeps the fixed desktop frame):
+ * Responsive mode (opt-in, Figma R1–R5) — `responsive`:
  *   ≥1280 (xl)   identical to the desktop frame above (sticky 100px rail)
  *   768–1279     72px sticky icon rail (R1), panel r32 / padding 24
  *   <768         white app bar + fixed bottom tab bar (R2/R4), no rail
