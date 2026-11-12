@@ -58,7 +58,7 @@ export default function CustomerProfile({ data }) {
             {(data ? data.sourceChip : 'Referred by Shanthi Rao') && <SChip tone="gray" icon="link">{data ? data.sourceChip : 'Referred by Shanthi Rao'}</SChip>}
           </div>
         </div>
-        <div className="flex flex-wrap gap-6 xl:flex-nowrap">
+        <div className="flex flex-wrap gap-4 xl:gap-6">
           {C.minis.map(([k, v]) => (
             <div key={k} className="flex h-[70px] flex-col gap-0.5 rounded-[20px] bg-white/80 px-5 py-3.5">
               <p className="text-[12px] font-semibold whitespace-nowrap text-rose-ink">{k}</p>
