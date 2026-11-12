@@ -552,7 +552,7 @@ function QuotationsTab({ live, id }) {
       {rows.map((r) => (
         <Link key={r.k} to={r.to} className={cx('group flex h-[84px] items-center gap-4 rounded-[24px] bg-white px-[22px] py-[18px]', CARD_SHADOW)}>
           <IconTile icon={r.icon} bg={r.bg} />
-          <div className="flex min-w-0 flex-1 flex-col gap-[3px] xl:whitespace-nowrap">
+          <div className="flex min-w-0 flex-1 flex-col gap-[3px] max-xl:whitespace-normal">
             <p className="text-[15px] font-bold text-ink">{r.title}</p>
             <p className="text-[12px] font-medium text-muted">{r.sub}</p>
           </div>
