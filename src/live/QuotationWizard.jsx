@@ -253,7 +253,7 @@ function Wizard({ initial, presetCustomer }) {
               <div><p className="text-[17px] font-bold text-ink">Quotation type</p><p className="text-[12px] font-medium text-muted">Single, or 2 to 3 products side by side</p></div>
               <div className="flex items-start gap-4">
                 <TypeCard on={quoteType === 'single'} onClick={() => setQuoteType('single')} icon="quote" iconBg="bg-amber-100" title="Single quotation" text="One product. Can carry the insurer's payment link." />
-                <TypeCard on={quoteType === 'comparative'} to="/comparisons/new" icon="compare" iconBg="bg-[#d4f1e7]" title="Comparative quotation" text="2 to 3 products or variants side by side. No payment link." />
+                <TypeCard on={quoteType === 'comparative'} to={`/comparisons/new?customerId=${customerId}`} icon="compare" iconBg="bg-[#d4f1e7]" title="Comparative quotation" text="2 to 3 products or variants side by side. No payment link." />
               </div>
             </>
           )}
