@@ -67,13 +67,16 @@
 @utility bg-rail { background-image: linear-gradient(to bottom, #1a3460, #0e1f3b); }
 @utility bg-violet-cta { background-image: linear-gradient(to right, #e9e3fc, #dcd2fb); }
 
-/* ───────────── Phones and tablets (below 1280px) ─────────────
-   The screens were drawn for a 1280px+ desktop frame with fixed-width columns. Below 1280px:
-   - a fixed width of 300px or more becomes the full width of its container (the desktop size is untouched),
-   - a row holding such a column wraps, so the columns stack,
-   - wide content (tables, pill bars, comparison grids) scrolls sideways inside its own box instead of the page.
-   Classes with a breakpoint prefix (md:w-[…]) are not matched: screens built responsive keep their own rules. */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Mobile & tablet responsive rules (below 1280px)
+   Everything inside this @media block. Desktop (≥1280px) is untouched.
+   ═══════════════════════════════════════════════════════════════════════════ */
 @media (max-width: 1279.98px) {
+  /* ── Fixed-width columns become full-width and stack ── */
+  .w-\[280px\],
+  .w-\[287px\],
+  .w-\[290px\],
+  .w-\[294px\],
   .w-\[300px\],
   .w-\[302px\],
   .w-\[304px\],
@@ -128,31 +131,73 @@
   .w-\[900px\],
   .w-\[1180px\],
   .w-\[1200px\],
-  .w-\[1440px\] { width: 100%; max-width: 100%; }
-  .min-w-\[300px\],
-  .min-w-\[320px\],
-  .min-w-\[520px\],
-  .min-w-\[1280px\] { min-width: 0; }
-  .flex:not(.flex-col):has(> .w-\[300px\], > .w-\[302px\], > .w-\[304px\], > .w-\[312px\], > .w-\[320px\], > .w-\[322px\], > .w-\[330px\], > .w-\[340px\], > .w-\[344px\], > .w-\[349px\], > .w-\[352px\], > .w-\[360px\], > .w-\[368px\], > .w-\[370px\], > .w-\[380px\], > .w-\[386px\], > .w-\[400px\], > .w-\[408px\], > .w-\[413px\], > .w-\[416px\], > .w-\[420px\], > .w-\[430px\], > .w-\[440px\], > .w-\[442px\], > .w-\[458px\], > .w-\[470px\], > .w-\[475px\], > .w-\[480px\], > .w-\[484px\], > .w-\[500px\], > .w-\[512px\], > .w-\[520px\], > .w-\[540px\], > .w-\[560px\], > .w-\[580px\], > .w-\[587px\], > .w-\[600px\], > .w-\[602px\], > .w-\[640px\], > .w-\[660px\], > .w-\[671px\], > .w-\[700px\], > .w-\[714px\], > .w-\[720px\], > .w-\[753px\], > .w-\[756px\], > .w-\[760px\], > .w-\[780px\], > .w-\[800px\], > .w-\[840px\], > .w-\[846px\], > .w-\[900px\], > .w-\[1180px\], > .w-\[1200px\], > .w-\[1440px\]) { flex-wrap: wrap; }
-  .w-max { max-width: 100%; min-width: 0; flex-shrink: 1; overflow-x: auto; scrollbar-width: none; }
-  .w-max::-webkit-scrollbar { display: none; }
-  :where(div, section):has(> table) { max-width: 100%; overflow-x: auto; }
-  img, video { max-width: 100%; }
-  /* Div-based tables (rows marked min-w-max) scroll inside their rounded card */
-  .overflow-hidden:has(> .min-w-max), .overflow-hidden:has(> * > .min-w-max) { overflow-x: auto; min-width: 0; max-width: 100%; }
-  /* Stat tiles (fixed 280px) wrap onto more rows */
-  .flex:not(.flex-col):has(> .rounded-\[26px\].p-\[22px\], > .w-\[280px\].flex-col) { flex-wrap: wrap; }
+  .w-\[1440px\] {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .min-w-\[1280px\], .min-w-\[1440px\] { min-width: 0 !important; }
+
+  /* Rows of fixed-width columns: wrap so they stack vertically */
+  .flex:not(.flex-col) > [class*="w-["][class*="px]"] { flex-shrink: 1; }
+
+  /* Side-by-side panels (main content + aside preview card) stack */
+  .flex.items-start.gap-5,
+  .flex.items-start.gap-6 {
+    flex-wrap: wrap;
+  }
+
+  /* Tables (div-based): scroll horizontally inside their card */
+  .overflow-hidden { overflow-x: auto; }
+  .min-w-max { min-width: max-content; }
+
+  /* Images and media stay inside their container */
+  img, video, svg { max-width: 100%; height: auto; }
+
+  /* Cards: remove fixed heights that break when content wraps */
+  [class*="h-["][class*="px]"]:not(input):not(button):not(label):not(nav):not(header):not(span) {
+    height: auto;
+    min-height: auto;
+  }
 }
+
+/* ── Phones (below 768px): tighter layout ── */
 @media (max-width: 767.98px) {
-  /* Phones: dense grids drop to two columns */
-  .grid-cols-3, .grid-cols-4, .grid-cols-5, .grid-cols-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  /* Cards side by side (plan cards, setting tiles) stack when two no longer fit */
-  .flex:not(.flex-col):has(> .flex-1[class*="rounded-["]) { flex-wrap: wrap; }
-  .flex:not(.flex-col) > .flex-1[class*="rounded-["] { min-width: min(100%, 240px); }
-  /* Label / value rows: fixed label columns narrow, and values wrap instead of running past the edge */
-  .w-\[200px\].shrink-0, .w-\[220px\].shrink-0, .w-\[240px\].shrink-0, .w-\[260px\].shrink-0 { width: 38%; }
+  /* Dense grids: 2 columns max */
+  .grid-cols-3, .grid-cols-4, .grid-cols-5, .grid-cols-6 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  /* 2-column form grids: stack to 1 column */
+  .grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Label + value rows: label narrows, value wraps */
+  [class*="w-[200px]"][class*="shrink-0"],
+  [class*="w-[220px]"][class*="shrink-0"],
+  [class*="w-[240px]"][class*="shrink-0"],
+  [class*="w-[260px]"][class*="shrink-0"] {
+    width: 40% !important;
+    flex-shrink: 1 !important;
+  }
+
+  /* Stat / summary tiles (280px fixed): 2 per row */
+  .flex:not(.flex-col) > [class*="w-[280px]"] {
+    width: calc(50% - 8px) !important;
+    flex-shrink: 0;
+  }
+
+  /* Flex-1 items: allow text to wrap */
   .flex-1 { min-width: 0; }
-  p.flex-1, span.flex-1 { overflow-wrap: anywhere; }
-  /* Stat tiles: two to a row */
-  .w-\[280px\].flex-col { width: calc(50% - 12px); }
+  p.flex-1, span.flex-1 { overflow-wrap: anywhere; word-break: break-word; }
+
+  /* Side-by-side cards: full width */
+  .flex:not(.flex-col) > .flex-1[class*="rounded-["] {
+    min-width: 100% !important;
+  }
+
+  /* Smaller padding on panels */
+  [class*="px-10"] { padding-left: 1rem !important; padding-right: 1rem !important; }
+  [class*="px-8"] { padding-left: 1rem !important; padding-right: 1rem !important; }
+  [class*="px-7"] { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+  [class*="px-6"]:not(nav):not(header) { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
 }
