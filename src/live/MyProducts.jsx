@@ -369,7 +369,7 @@ export function LiveAddProduct() {
             const vNames = variants.filter((v) => v.name).map((v) => v.name)
             return (
             <Panel className="flex flex-col gap-3.5">
-              <PanelHead title="5 \u00b7 Variants" subtitle="Each variant can differ in cover type, sum insured and ages" right={ocrJobId && <Chip tone="violet" icon="sparkle">Auto-filled from brochure</Chip>} />
+              <PanelHead title="5 · Variants" subtitle="Each variant can differ in cover type, sum insured and ages" right={ocrJobId && <Chip tone="violet" icon="sparkle">Auto-filled from brochure</Chip>} />
               {ocrJobId && (
                 <div className="flex items-center gap-3 rounded-[18px] bg-[linear-gradient(to_right,#f0ecfb,#e6dffb)] px-4 py-3">
                   <span className="flex size-10 items-center justify-center rounded-full bg-white text-[#5b3fb8]"><Icon name="sparkle" size={18} /></span>
@@ -434,7 +434,7 @@ export function LiveAddProduct() {
             const vNames = variants.filter((v) => v.name).map((v) => v.name)
             return (
             <Panel className="flex flex-col gap-4">
-              <PanelHead title="6 \u00b7 Features" subtitle={`Standard features are included. ${ocrJobId ? 'Tick the AI suggestions this product offers, and add your own.' : 'Fill in or tick "Not stated".'}`} right={ocrJobId && <Chip tone="violet" icon="sparkle">Auto-filled from brochure</Chip>} />
+              <PanelHead title="6 · Features" subtitle={`Standard features are included. ${ocrJobId ? 'Tick the AI suggestions this product offers, and add your own.' : 'Fill in or tick "Not stated".'}`} right={ocrJobId && <Chip tone="violet" icon="sparkle">Auto-filled from brochure</Chip>} />
               {ocrJobId && (
                 <div className="flex items-center gap-3 rounded-[18px] bg-[linear-gradient(to_right,#f0ecfb,#e6dffb)] px-4 py-3">
                   <span className="flex size-10 items-center justify-center rounded-full bg-white text-[#5b3fb8]"><Icon name="sparkle" size={18} /></span>
