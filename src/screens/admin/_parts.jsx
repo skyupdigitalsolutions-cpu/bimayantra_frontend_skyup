@@ -136,7 +136,6 @@ export function AdminRail({ active }) {
 }
 
 /** Page frame for every SkyUp Admin screen (same geometry as AppLayout). */
-/** Phones: logo and the admin menu as one row that scrolls sideways (the rail is for tablets and desktops). */
 function AdminMobileBar({ active }) {
   return (
     <header className="sticky top-0 z-30 flex flex-col gap-3 bg-white px-4 pt-4 pb-3 shadow-[0px_6px_16px_-10px_rgba(19,41,75,0.15)]">
@@ -200,16 +199,16 @@ export function AdminBadge() {
 /** Violet breadcrumb · 30px title · muted subtitle + admin badge, bell, actions */
 export function AdminHeader({ crumb = 'SKYUP ADMIN', crumbClass = 'text-violet', title, titleExtra, subtitle, actions, badge = true }) {
   return (
-    <header className="flex flex-col items-start gap-3 xl:flex-row xl:justify-between xl:gap-6">
+    <header className="flex items-start justify-between gap-6 max-xl:flex-col max-xl:gap-3">
       <div className="flex min-w-0 flex-col gap-1.5">
         <p className={cx('text-[12px] font-semibold tracking-[0.2px] whitespace-pre', crumbClass)}>{crumb}</p>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-[24px] font-bold tracking-[-0.6px] text-ink md:text-[30px] xl:whitespace-nowrap">{title}</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-[24px] md:text-[30px] font-bold tracking-[-0.6px] max-xl:whitespace-normal text-ink">{title}</h1>
           {titleExtra}
         </div>
-        {subtitle && <p className="text-[14px] font-medium text-muted xl:whitespace-nowrap">{subtitle}</p>}
+        {subtitle && <p className="text-[14px] font-medium whitespace-nowrap text-muted">{subtitle}</p>}
       </div>
-      <div className="mt-1 flex max-w-full flex-wrap items-center gap-3 xl:shrink-0 xl:flex-nowrap">
+      <div className="mt-1 flex shrink-0 items-center gap-3 max-xl:flex-wrap">
         {badge && <AdminBadge />}
         <BellButton />
         {actions}
