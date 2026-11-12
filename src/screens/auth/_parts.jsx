@@ -138,7 +138,6 @@ export function AuthShell({ children, onSubmit }) {
   const Form = onSubmit ? 'form' : 'div'
   return (
     <div className="flex min-h-screen flex-col bg-white lg:min-w-[1280px] lg:flex-row lg:py-6 lg:pl-6">
-      {/* Phones and tablets: a logo bar instead of the brand panel; the form takes the full width */}
       <div className="flex items-center px-5 pt-6 pb-2 lg:hidden"><img src={logo} alt="BimaYantra" className="h-[34px] w-auto" /></div>
       <div className="hidden lg:block"><BrandPanel /></div>
       <div className="relative flex flex-1 flex-col">
