@@ -294,7 +294,6 @@ export function SearchField({ placeholder, value, onChange, className = 'w-[320p
 }
 
 /* ───────────── Premium ledger (rows 28px apart, divider, total) ───────────── */
-
 export function Ledger({ rows, totalLabel = 'Total payable', total, muted = 'text-muted' }) {
   return (
     <div className="flex flex-col gap-2.5">
