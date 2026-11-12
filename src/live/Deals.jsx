@@ -13,6 +13,7 @@ import { LoadingPanel, ErrorPanel } from './common'
 import { CancelProposalDialog } from './ProposalWizard'
 import { PaymentActions, PaymentStateDialog } from './PaymentStates'
 import { Breakdown } from './QuotationWizard'
+import { useToast } from '../components/LiveToast'
 
 /* ═════════════ 10 · Products library ═════════════ */
 // Lives in ./ProductsLibrary (design 38:3490: variant picker, key-feature tiles, compare tray); re-exported for routes.
@@ -305,10 +306,19 @@ export function LiveQuotationDetail() {
 function ShareDialog({ x, onClose }) {
   const [channel, setChannel] = useState('WHATSAPP')
   const { act, busy, error } = useAct()
-  const save = () => act(() => api.quotations.share(x.id, channel), {
-    invalidates: ['quotation', 'quotations'], quiet: true,
-    onDone: (r) => { const url = r?.data?.url ?? r?.data?.link ?? r?.data?.whatsappUrl; if (url) window.open(url, '_blank', 'noopener'); onClose() },
-  })
+  const { toast } = useToast()
+  // Each channel does its own thing with the result (the link is always returned, so it cannot decide alone):
+  // WhatsApp opens the chat with the customer and the quotation message ready to send
+  const done = async (r) => {
+    const d = r?.data ?? {}
+    if (channel === 'WHATSAPP' && d.whatsappUrl) window.open(d.whatsappUrl, '_blank', 'noopener')
+    else if (channel === 'DOWNLOAD' && d.pdfFileId) window.open(api.files.url(d.pdfFileId), '_blank', 'noopener')
+    else if (channel === 'LINK' && d.link) {
+      try { await navigator.clipboard.writeText(d.link); toast('Link copied. Paste it in a message to the customer.') } catch { window.prompt('Copy this link for the customer:', d.link) }
+    }
+    onClose()
+  }
+  const save = () => act(() => api.quotations.share(x.id, channel), { invalidates: ['quotation', 'quotations'], quiet: true, onDone: done })
   return (
     <ActionDialog title="Share quotation" icon="send" confirm="Share" busy={busy} error={error} onConfirm={save} onClose={onClose}>
       <Field label="Share by" type="select" value={channel} onChange={setChannel} options={[{ value: 'WHATSAPP', label: 'WhatsApp' }, { value: 'EMAIL', label: 'Email' }, { value: 'LINK', label: 'Copy link' }, { value: 'DOWNLOAD', label: 'Download PDF' }]} />
