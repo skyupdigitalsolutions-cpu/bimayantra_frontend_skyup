@@ -10,6 +10,7 @@ import { Header, HeadButton, Panel, PanelHead, SmallButton, StatusChip, DataTabl
 import { api, useQuery, useDebounced, invalidate } from '../api'
 import { fmtDate, fmtDateTime, fmtMoney, istDay } from '../api/format'
 import { ActionDialog, Field, ErrorNote, useAct, label, dmy, isoDay, inputCls } from './kit'
+import { Dropdown } from '../components/pickers'
 import { LoadingPanel, ErrorPanel } from './common'
 import { useToast } from '../components/LiveToast'
 import { matchesQuery, useHeaderSearch } from '../screens/tasks/_filter'
@@ -197,7 +198,7 @@ function Editor({ c }) {
             const removeOpt = (i) => { setOpts(opts.filter((_, j) => j !== i)); setPreview(null) }
             return (
             <>
-              <div><p className="text-[17px] font-bold text-ink">4 \u00b7 Options</p><p className="text-[12px] font-medium text-muted">Pick 2 to 3 products or variants. Insurers with an active agent code only.</p></div>
+              <div><p className="text-[17px] font-bold text-ink">4 · Options</p><p className="text-[12px] font-medium text-muted">Pick 2 to 3 products or variants. Insurers with an active agent code only.</p></div>
               {/* Selected options as rich cards */}
               <div className="flex flex-col gap-3">
                 {opts.map((o, i) => {
@@ -243,12 +244,12 @@ function Editor({ c }) {
               ) : (
                 <div className="flex items-center justify-center gap-2 rounded-[18px] border border-dashed border-[#c3ccd8] py-3.5 opacity-60">
                   <Icon name="plus" size={16} className="text-muted" />
-                  <span className="text-[13px] font-bold text-muted">Add option \u00b7 3 of 3 used</span>
+                  <span className="text-[13px] font-bold text-muted">Add option · 3 of 3 used</span>
                 </div>
               )}
               {prods.data && P.length < 2 && (
                 <div className="flex items-center gap-3 rounded-[16px] border border-[#f1d6a6] bg-[#fdf6ea] px-4 py-3">
-                  <p className="flex-1 text-[13px] font-semibold text-[#8a5a12]">{P.length === 0 ? 'No quotable products in this category.' : 'Only 1 product available \u2014 a comparison needs at least 2.'} Add agent codes for more insurers in My insurers.</p>
+                  <p className="flex-1 text-[13px] font-semibold text-[#8a5a12]">{P.length === 0 ? 'No quotable products in this category.' : 'Only 1 product available — a comparison needs at least 2.'} Add agent codes for more insurers in My insurers.</p>
                   <Link to="/settings/insurers" className="shrink-0 rounded-[12px] border border-line bg-white px-3 py-1.5 text-[12px] font-semibold text-ink hover:bg-panel-2">My insurers</Link>
                 </div>
               )}
@@ -283,7 +284,7 @@ function Editor({ c }) {
                 <div key={`${o.productId}-${oi}`} className="flex flex-col gap-2 rounded-[20px] bg-panel p-4">
                   <div className="flex items-center gap-3">
                     <span className="flex size-[28px] shrink-0 items-center justify-center rounded-full bg-navy text-[11px] font-bold text-white">{oi + 1}</span>
-                    <p className="text-[14px] font-bold text-ink">{p?.insurer} \u00b7 {p?.name ?? o.productId}{varName ? ` \u00b7 ${varName}` : ''}</p>
+                    <p className="text-[14px] font-bold text-ink">{p?.insurer} · {p?.name ?? o.productId}{varName ? ` · ${varName}` : ''}</p>
                   </div>
                   <div className="flex items-end gap-3">
                     <Field label="Net premium (₹)" type="number" value={o.manual?.netPremium ?? ''} onChange={(v) => setOpts(opts.map((x) => (x.productId === o.productId ? { ...x, manual: { ...(x.manual || {}), netPremium: v } } : x)))} />
@@ -367,12 +368,12 @@ function Editor({ c }) {
           </div>
           {opts.length > 0 && (
             <div className="mt-3.5 flex flex-col gap-2 rounded-[20px] bg-white p-4">
-              <p className="text-[10px] font-bold tracking-[0.6px] text-muted">OPTIONS \u00b7 TOTAL INCL. GST</p>
+              <p className="text-[10px] font-bold tracking-[0.6px] text-muted">OPTIONS · TOTAL INCL. GST</p>
               {opts.map((o, oi) => { const p = P.find((x) => x.id === o.productId); const varName = p?.variants?.find((v) => v.id === o.variantId)?.name; const col = (preview?.columns ?? []).find((c) => c.productId === o.productId); return (
                 <div key={`${o.productId}-${oi}`} className="flex items-center gap-2">
-                  <span className="flex-1 text-[12px] font-semibold text-ink-2">{p?.name ?? '?'}{varName ? ` \u00b7 ${varName}` : ''}</span>
+                  <span className="flex-1 text-[12px] font-semibold text-ink-2">{p?.name ?? '?'}{varName ? ` · ${varName}` : ''}</span>
                   {rec.id === o.productId && <span className="flex items-center gap-[3px] rounded-[14px] bg-[#e7f4ee] py-[5px] pr-2.5 pl-1.5 text-[10px] font-bold text-[#127650]"><Icon name="sparkle" size={10} />Recommended</span>}
-                  <span className="text-[13px] font-bold text-ink">{col ? fmtMoney(col.premium) : '\u2014'}</span>
+                  <span className="text-[13px] font-bold text-ink">{col ? fmtMoney(col.premium) : '—'}</span>
                 </div>
               ) })}
             </div>
