@@ -112,7 +112,14 @@ export function LiveAddProduct() {
       setD((s) => ({ ...s, ...Object.fromEntries(['name', 'uin', 'adultMin', 'adultMax', 'childMin', 'childMax', 'pricingMode', 'taxPercent', 'gracePeriodDays'].filter((k) => x[k] != null).map((k) => [k, x[k]])),
         launchDate: x.launchDate ? isoDay(x.launchDate) : s.launchDate, coversChildren: x.coversChildren ?? s.coversChildren,
         siOptions: x.sumInsured?.options?.join(', ') ?? s.siOptions, siMin: x.sumInsured?.min ?? s.siMin, siMax: x.sumInsured?.max ?? s.siMax, policyTerms: x.policyTerms?.join(', ') ?? s.policyTerms }))
-      if (x.features) setFeatures(x.features)
+      if (x.features) {
+        // Merge page numbers from the OCR job rows so the AI indicator shows on each feature
+        const pageMap = {}
+        for (const row of [...(job.rows || []), ...(job.details || []), ...(job.suggestions || [])]) { if (row.key && row.page != null) pageMap[row.key] = row.page }
+        const enriched = {}
+        for (const [k, v] of Object.entries(x.features)) { enriched[k] = { ...v, ...(pageMap[k] != null ? { page: pageMap[k] } : {}) } }
+        setFeatures(enriched)
+      }
       if (x.details) setDetails((cur) => ({ ...cur, ...detailsFromData(form, x.details) }))
       if (r.variants?.length) setVariants(r.variants.map((v) => ({ ...v, sumInsuredMin: v.sumInsuredMin ?? '', sumInsuredMax: v.sumInsuredMax ?? '' })))
       const left = (r.left?.features?.length ?? 0) + (r.left?.details?.length ?? 0)
@@ -345,21 +352,56 @@ export function LiveAddProduct() {
           )}
           {step === 4 && (
             <Panel className="flex flex-col gap-3">
-              <PanelHead title="Variants" subtitle="Silver, Gold, Plus… Each can have its own sum-insured range." right={<SmallButton variant="outline" icon="plus" onClick={() => setVariants([...variants, { name: '', coverType: 'INDIVIDUAL', sumInsuredMin: '', sumInsuredMax: '' }])}>Add variant</SmallButton>} />
+              <PanelHead title="5 &middot; Variants" subtitle="Each variant can differ in cover type, sum insured and ages" right={<>{ocrJobId && <Chip tone="violet" icon="sparkle">Auto-filled from brochure</Chip>}<SmallButton variant="outline" icon="plus" onClick={() => setVariants([...variants, { name: '', coverType: 'INDIVIDUAL', sumInsuredMin: '', sumInsuredMax: '' }])}>Add variant</SmallButton></>} />
+              {ocrJobId && (
+                <div className="flex flex-col gap-2.5 rounded-[18px] bg-[linear-gradient(to_right,#f0ecfb,#e6dffb)] px-4 py-3.5">
+                  <div className="flex items-center gap-3">
+                    <span className="flex size-9 items-center justify-center rounded-full bg-white text-[#5b3fb8]"><Icon name="sparkle" size={17} /></span>
+                    <div className="flex flex-1 flex-col gap-0.5">
+                      <p className="text-[13px] font-bold text-ink">Variants read from the brochure. Check each one.</p>
+                      <p className="text-[12px] font-medium text-[#5b3fb8]">{variants.filter((v) => v.name).length} variant{variants.filter((v) => v.name).length !== 1 ? 's' : ''} found. Add more or remove wrong ones.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
               {variants.map((v, i) => (
-                <div key={i} className="flex items-end gap-3">
-                  <Field label="Name *" value={v.name} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, name: x } : y)))} />
-                  {form?.variantCoverTypes !== false && <Field label="Cover" type="select" value={v.coverType ?? ''} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, coverType: x } : y)))} options={[{ value: 'INDIVIDUAL', label: 'Individual' }, { value: 'FLOATER', label: 'Family floater' }]} />}
-                  <Field label={`${L.sumInsured} from (₹)`} type="number" value={v.sumInsuredMin} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, sumInsuredMin: x } : y)))} />
-                  <Field label="to (₹)" type="number" value={v.sumInsuredMax} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, sumInsuredMax: x } : y)))} />
-                  {variants.length > 1 && <button type="button" aria-label="Remove" className="mb-3 text-muted" onClick={() => setVariants(variants.filter((_, j) => j !== i))}><Icon name="x" size={16} /></button>}
+                <div key={i} className={cx('flex flex-col gap-3 rounded-[22px] p-[18px]', ocrJobId && v.name ? 'border border-[#c9daf8] bg-[#f3f7ff]' : 'bg-panel')}>
+                  <div className="flex items-center gap-3">
+                    {v.name && <span className="rounded-[12px] bg-navy px-3 py-1.5 text-[13px] font-bold text-white">{v.name}</span>}
+                    {ocrJobId && v.name && <span className="flex items-center gap-1 text-[11px] font-semibold text-[#5b3fb8]"><Icon name="sparkle" size={11} />AI suggestion</span>}
+                    <span className="flex-1" />
+                    {variants.length > 1 && <button type="button" aria-label="Remove" className="flex size-7 items-center justify-center rounded-full bg-white text-muted hover:text-[#b4323c]" onClick={() => setVariants(variants.filter((_, j) => j !== i))}><Icon name="x" size={14} /></button>}
+                  </div>
+                  <div className="flex items-end gap-3">
+                    <Field label="Name *" value={v.name} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, name: x } : y)))} />
+                    {form?.variantCoverTypes !== false && <Field label="Cover" type="select" value={v.coverType ?? ''} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, coverType: x } : y)))} options={[{ value: 'INDIVIDUAL', label: 'Individual' }, { value: 'FLOATER', label: 'Family floater' }]} />}
+                    <Field label={`${L.sumInsured} from (\u20b9)`} type="number" value={v.sumInsuredMin} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, sumInsuredMin: x } : y)))} />
+                    <Field label="to (\u20b9)" type="number" value={v.sumInsuredMax} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, sumInsuredMax: x } : y)))} />
+                  </div>
                 </div>
               ))}
+              <button type="button" onClick={() => setVariants([...variants, { name: '', coverType: 'INDIVIDUAL', sumInsuredMin: '', sumInsuredMax: '' }])} className="flex h-[46px] items-center justify-center gap-2 rounded-[20px] border border-dashed border-[#c3ccd8] text-[13px] font-bold text-blue hover:bg-[#f7f9ff]"><Icon name="plus" size={16} />Add variant</button>
             </Panel>
           )}
-          {step === 5 && (
+          {step === 5 && (() => {
+            const filled = Object.values(features).filter((f) => f && (f.notStated || (f.value !== '' && f.value != null))).length
+            const total = feats.length
+            return (
             <Panel className="flex flex-col gap-4">
-              <PanelHead title="Features" subtitle={tpl.data ? `${typeName} template v${tpl.data.template.number}. Leave blank if you don't know; tick "Not stated" when the brochure says nothing.` : tpl.error ? `${typeName}: the feature list could not be loaded.` : 'Loading the template…'} />
+              <PanelHead title="6 &middot; Features" subtitle={tpl.data ? `${typeName} template v${tpl.data.template.number}. Tick "Not stated" when the brochure says nothing.` : tpl.error ? `${typeName}: the feature list could not be loaded.` : 'Loading the template\u2026'} right={ocrJobId && <Chip tone="violet" icon="sparkle">Auto-filled from brochure</Chip>} />
+              {ocrJobId && (
+                <div className="flex flex-col gap-2.5 rounded-[18px] bg-[linear-gradient(to_right,#f0ecfb,#e6dffb)] px-4 py-3.5">
+                  <div className="flex items-center gap-3">
+                    <span className="flex size-9 items-center justify-center rounded-full bg-white text-[#5b3fb8]"><Icon name="sparkle" size={17} /></span>
+                    <div className="flex flex-1 flex-col gap-0.5">
+                      <p className="text-[13px] font-bold text-ink">Features read from the brochure. Check each value.</p>
+                      <p className="text-[12px] font-medium text-[#5b3fb8]">{filled} of {total} filled. Fix anything wrong; tick "Not stated" for missing ones.</p>
+                    </div>
+                    <span className="text-[13px] font-bold text-[#5b3fb8]">{filled}/{total}</span>
+                  </div>
+                  <div className="h-1.5 overflow-clip rounded-[3px] bg-white"><div className="h-full rounded-[3px] bg-[#5b3fb8]" style={{ width: total > 0 ? `${Math.round((filled / total) * 100)}%` : '0%' }} /></div>
+                </div>
+              )}
               {tpl.error && <div className="flex items-center gap-3"><ErrorNote error={tpl.error} /><SmallButton variant="outline" icon="refresh" onClick={tpl.refetch}>Try again</SmallButton></div>}
               {groups.map((g) => (
                 <div key={g} className="flex flex-col gap-2">
@@ -367,13 +409,17 @@ export function LiveAddProduct() {
                   {feats.filter((f) => (f.group || 'Features') === g).map((f) => {
                     const cur = features[f.key] ?? {}
                     const setF = (patch) => setFeatures({ ...features, [f.key]: { ...cur, ...patch } })
+                    const hasAiValue = ocrJobId && cur.page != null
                     return (
-                      <div key={f.key} className="flex items-center gap-3">
-                        <span className="w-[260px] text-[13px] font-semibold text-ink">{f.name}{f.requiredToPublish ? ' *' : ''}</span>
+                      <div key={f.key} className={cx('flex items-center gap-3 rounded-[14px] border px-3 py-2', hasAiValue ? 'border-[#c9daf8] bg-[#f5f9ff]' : cur.notStated ? 'border-[#f1d9a8] bg-[#fff9ef]' : 'border-line bg-white')}>
+                        <span className="w-[240px] shrink-0">
+                          <span className="block text-[13px] font-semibold text-ink">{f.name}{f.requiredToPublish ? ' *' : ''}</span>
+                          {hasAiValue && <span className="flex items-center gap-1 text-[11px] font-semibold text-[#5b3fb8]"><Icon name="sparkle" size={11} />AI &middot; p{cur.page}</span>}
+                        </span>
                         {f.dataType === 'Yes/No'
-                          ? <Dropdown className="flex-1" buttonClassName="h-[42px]" value={cur.value === true ? 'yes' : cur.value === false ? 'no' : ''} disabled={cur.notStated} onChange={(v) => setF({ value: v === '' ? null : v === 'yes' })} options={[['', '—'], ['yes', 'Yes'], ['no', 'No']]} />
-                          : <input value={cur.value ?? ''} disabled={cur.notStated} inputMode={NUMERIC_TYPES.has(f.dataType) ? 'decimal' : undefined} onChange={(e) => setF({ value: e.target.value })} className={cx(inputCls, 'h-[42px] flex-1')} placeholder={f.help ?? UNIT_HINT[f.dataType] ?? ''} />}
-                        <label className="flex items-center gap-1.5 text-[12px] font-semibold text-muted"><input type="checkbox" checked={!!cur.notStated} onChange={(e) => setF({ notStated: e.target.checked, value: e.target.checked ? null : cur.value })} />Not stated</label>
+                          ? <Dropdown className="flex-1" buttonClassName="h-[42px]" value={cur.value === true ? 'yes' : cur.value === false ? 'no' : ''} disabled={cur.notStated} onChange={(v) => setF({ value: v === '' ? null : v === 'yes' })} options={[['', '\u2014'], ['yes', 'Yes'], ['no', 'No']]} />
+                          : <input value={cur.value ?? ''} disabled={cur.notStated} inputMode={NUMERIC_TYPES.has(f.dataType) ? 'decimal' : undefined} onChange={(e) => setF({ value: e.target.value })} className={cx(inputCls, 'h-[42px] flex-1', hasAiValue && 'border-[#c9daf8] bg-white')} placeholder={f.help ?? UNIT_HINT[f.dataType] ?? ''} />}
+                        <label className="flex shrink-0 items-center gap-1.5 text-[12px] font-semibold text-muted"><input type="checkbox" checked={!!cur.notStated} onChange={(e) => setF({ notStated: e.target.checked, value: e.target.checked ? null : cur.value })} className="accent-[#13294b]" />Not stated</label>
                       </div>
                     )
                   })}
@@ -381,7 +427,8 @@ export function LiveAddProduct() {
               ))}
               {tpl.data && !feats.length && <p className="text-[13px] font-medium text-muted">This category has no feature template.</p>}
             </Panel>
-          )}
+            )
+          })()}
           {step === 6 && (
             <Panel className="flex flex-col gap-3">
               <PanelHead title="Review and publish" />
