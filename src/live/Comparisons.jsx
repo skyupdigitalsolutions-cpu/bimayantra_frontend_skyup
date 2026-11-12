@@ -430,7 +430,12 @@ function ChooseDialog({ c, cols, onClose }) {
   const col = cols.find((x) => x.productId === pid)
   return (
     <ActionDialog title="Which product did the customer choose?" confirm="Save choice" busy={busy} error={error} onClose={onClose}
-      onConfirm={() => act(() => api.comparisons.choose(c.id, { version: c.version, productId: pid, variantId: col?.variantId ?? null }), { invalidates: ['comparison', 'comparisons'], onDone: onClose, quiet: true })}>
+      onConfirm={() => act(() => api.comparisons.choose(c.id, {
+        version: c.version, productId: pid,
+        // The variant only when this product is offered more than once; otherwise the product alone identifies the option
+        // (a column carries the product's default variant even when the option was saved without one)
+        ...(cols.filter((x) => x.productId === pid).length > 1 && col?.variantId ? { variantId: col.variantId } : {}),
+      }), { invalidates: ['comparison', 'comparisons'], onDone: onClose, quiet: true })}>
       <Field label="Product" type="select" value={pid} onChange={setPid} options={cols.map((x) => ({ value: x.productId, label: `${x.insurer} · ${x.name} · ${fmtMoney(x.premium)}` }))} />
     </ActionDialog>
   )
