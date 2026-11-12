@@ -284,27 +284,51 @@ export function LiveAddProduct() {
                   <SmallButton variant="outline" disabled={reading} onClick={readAnyway}>Read anyway</SmallButton>
                   <SmallButton variant="ghost" onClick={removeBrochure}>Upload another</SmallButton></div>
               )}
-              {job && ['REVIEW_REQUIRED', 'REVIEWED'].includes(job.status) && (
-                <>
-                  <div className="flex items-center gap-2"><p className="flex-1 text-[13px] font-semibold text-ink">Check each value. Low confidence values are flagged.</p>
-                    <SmallButton variant="outline" onClick={async () => { try { setReadErr(null); setJob((await api.myProducts.readingAcceptHigh(job.id, {})).data) } catch (e) { setReadErr(e) } }}>Accept all above {job.threshold}%</SmallButton></div>
-                  {[...(job.details || []).map((r) => ({ ...r, section: 'DETAIL' })), ...(job.rows || []).map((r) => ({ ...r, section: 'FEATURE' })), ...(job.variants || []).map((r) => ({ ...r, section: 'VARIANT' }))].map((r) => (
-                    <div key={`${r.section}${r.key}`} className={cx('flex items-center gap-3 rounded-[14px] px-3 py-2 text-[13px]', r.flagged ? 'bg-[#fbf1e1]' : 'bg-panel')}>
-                      <span className="w-[200px] font-semibold text-ink">{r.label ?? r.key}</span>
-                      <span className="flex-1 truncate font-medium text-ink">{r.editedValue ?? r.value ?? <span className="text-muted">Not found</span>}</span>
-                      <span className="w-[54px] text-muted">{r.confidence != null ? `${Math.round(r.confidence)}%` : ''}{r.page ? ` p${r.page}` : ''}</span>
-                      {r.decision ? <StatusChip tone="green">{label(r.decision)}</StatusChip> : (
-                        <>
-                          {r.value != null && <SmallButton variant="ghost" onClick={() => decide(r, 'ACCEPT')}>Accept</SmallButton>}
-                          <SmallButton variant="ghost" onClick={() => { const v = window.prompt(`Correct value for ${r.label ?? r.key}`, r.value ?? ''); if (v !== null) decide(r, 'EDIT', v) }}>Fix</SmallButton>
-                          <SmallButton variant="ghost" onClick={() => decide(r, 'NOT_STATED')}>Not stated</SmallButton>
-                        </>
-                      )}
+              {job && ['REVIEW_REQUIRED', 'REVIEWED'].includes(job.status) && (() => {
+                const allRows = [...(job.details || []).map((r) => ({ ...r, section: 'DETAIL' })), ...(job.rows || []).map((r) => ({ ...r, section: 'FEATURE' })), ...(job.variants || []).map((r) => ({ ...r, section: 'VARIANT' }))]
+                const decided = allRows.filter((r) => r.decision)
+                const flagged = allRows.filter((r) => r.flagged && !r.decision)
+                return (
+                  <>
+                    {/* Figma: AI banner with progress */}
+                    <div className="flex flex-col gap-3 rounded-[22px] bg-[#f0ecfb] p-5">
+                      <div className="flex items-center gap-3">
+                        <span className="flex size-12 items-center justify-center rounded-full bg-white text-[#5b3fb8]"><Icon name="sparkle" size={22} /></span>
+                        <div className="flex flex-1 flex-col gap-0.5">
+                          <p className="text-[15px] font-bold text-ink">Brochure read successfully</p>
+                          <p className="text-[12px] font-medium text-[#5b3fb8]">{allRows.length} values found &middot; {decided.length} accepted{flagged.length > 0 ? ` \u00b7 ${flagged.length} need review` : ''}</p>
+                        </div>
+                        <span className="text-[18px] font-bold text-[#5b3fb8]">{allRows.length > 0 ? Math.round((decided.length / allRows.length) * 100) : 100}%</span>
+                      </div>
+                      <div className="h-2 overflow-clip rounded-[4px] bg-white/70">
+                        <div className="h-full rounded-[4px] bg-[#5b3fb8]" style={{ width: allRows.length > 0 ? `${(decided.length / allRows.length) * 100}%` : '100%' }} />
+                      </div>
                     </div>
-                  ))}
-                  <SmallButton variant="navy" icon="check" className="self-start" onClick={useReading}>Use these values</SmallButton>
-                </>
-              )}
+
+                    {/* Compact summary: found values */}
+                    <p className="text-[13px] font-semibold text-ink">Found so far</p>
+                    <div className="flex flex-col gap-1.5">
+                      {allRows.slice(0, 8).map((r) => (
+                        <div key={`${r.section}${r.key}`} className="flex h-[42px] items-center gap-2.5 rounded-[14px] bg-panel px-3.5">
+                          <span className={cx('flex size-[22px] items-center justify-center rounded-full', r.decision ? 'bg-[#e7f4ee] text-[#127650]' : r.flagged ? 'bg-[#fbf1e1] text-[#8a5a12]' : 'bg-[#f0ecfb] text-[#5b3fb8]')}>
+                            <Icon name={r.decision ? 'check' : r.flagged ? 'alert' : 'sparkle'} size={12} />
+                          </span>
+                          <span className="flex-1 text-[12px] font-medium text-muted">{r.label ?? r.key}</span>
+                          <span className="text-[13px] font-bold text-ink">{r.editedValue ?? r.value ?? <span className="text-muted">Not found</span>}</span>
+                        </div>
+                      ))}
+                      {allRows.length > 8 && <p className="text-[12px] font-medium text-muted pl-3.5">+ {allRows.length - 8} more values</p>}
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2.5">
+                      <SmallButton variant="outline" onClick={async () => { try { setReadErr(null); setJob((await api.myProducts.readingAcceptHigh(job.id, {})).data) } catch (e) { setReadErr(e) } }}>Accept all above {job.threshold}%</SmallButton>
+                      <SmallButton variant="navy" icon="check" onClick={useReading}>Use these values</SmallButton>
+                    </div>
+                    <p className="text-[12px] font-medium text-muted">We read the brochure for you. Check every value on the next step before you submit.</p>
+                  </>
+                )
+              })()}
               {!d.brochureFileId && <p className="text-[12px] font-medium text-muted">You can skip this step and type the values.</p>}
             </Panel>
           )}
