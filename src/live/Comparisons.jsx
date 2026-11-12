@@ -12,7 +12,6 @@ import { fmtDate, fmtDateTime, fmtMoney, istDay } from '../api/format'
 import { ActionDialog, Field, ErrorNote, useAct, label, dmy, isoDay, inputCls } from './kit'
 import { LoadingPanel, ErrorPanel } from './common'
 import { useToast } from '../components/LiveToast'
-import { Dropdown } from '../components/pickers'
 import { matchesQuery, useHeaderSearch } from '../screens/tasks/_filter'
 
 const TONE = { DRAFT: 'neutral', READY: 'sky', SHARED: 'violet', PRODUCT_CHOSEN: 'green', EXPIRED: 'amber' }
@@ -108,6 +107,7 @@ function Editor({ c }) {
   const [rec, setRec] = useState({ id: c.recommendedProductId ?? '', reason: c.recommendedReason ?? '' })
   const prods = useQuery(['products', 'type', inp.typeId], () => api.products.list({ typeId: inp.typeId }), { enabled: !!inp.typeId })
   const [preview, setPreview] = useState(null)
+  const [aiLoading, setAiLoading] = useState(false)
   const [ver, setVer] = useState(c.version)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
@@ -197,7 +197,7 @@ function Editor({ c }) {
             const removeOpt = (i) => { setOpts(opts.filter((_, j) => j !== i)); setPreview(null) }
             return (
             <>
-              <div><p className="text-[17px] font-bold text-ink">4 · Options</p><p className="text-[12px] font-medium text-muted">Pick 2 to 3 products or variants. Insurers with an active agent code only.</p></div>
+              <div><p className="text-[17px] font-bold text-ink">4 \u00b7 Options</p><p className="text-[12px] font-medium text-muted">Pick 2 to 3 products or variants. Insurers with an active agent code only.</p></div>
               {/* Selected options as rich cards */}
               <div className="flex flex-col gap-3">
                 {opts.map((o, i) => {
@@ -367,11 +367,12 @@ function Editor({ c }) {
           </div>
           {opts.length > 0 && (
             <div className="mt-3.5 flex flex-col gap-2 rounded-[20px] bg-white p-4">
-              <p className="text-[10px] font-bold tracking-[0.6px] text-muted">OPTIONS</p>
-              {opts.map((o, oi) => { const p = P.find((x) => x.id === o.productId); const varName = p?.variants?.find((v) => v.id === o.variantId)?.name; return (
+              <p className="text-[10px] font-bold tracking-[0.6px] text-muted">OPTIONS \u00b7 TOTAL INCL. GST</p>
+              {opts.map((o, oi) => { const p = P.find((x) => x.id === o.productId); const varName = p?.variants?.find((v) => v.id === o.variantId)?.name; const col = (preview?.columns ?? []).find((c) => c.productId === o.productId); return (
                 <div key={`${o.productId}-${oi}`} className="flex items-center gap-2">
                   <span className="flex-1 text-[12px] font-semibold text-ink-2">{p?.name ?? '?'}{varName ? ` \u00b7 ${varName}` : ''}</span>
-                  {rec.id === o.productId && <span className="rounded-[10px] bg-[#e7f4ee] px-2 py-0.5 text-[10px] font-bold text-[#127650]">Recommended</span>}
+                  {rec.id === o.productId && <span className="flex items-center gap-[3px] rounded-[14px] bg-[#e7f4ee] py-[5px] pr-2.5 pl-1.5 text-[10px] font-bold text-[#127650]"><Icon name="sparkle" size={10} />Recommended</span>}
+                  <span className="text-[13px] font-bold text-ink">{col ? fmtMoney(col.premium) : '\u2014'}</span>
                 </div>
               ) })}
             </div>
