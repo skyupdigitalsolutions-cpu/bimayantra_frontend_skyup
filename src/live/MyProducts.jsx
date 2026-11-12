@@ -350,75 +350,122 @@ export function LiveAddProduct() {
               <Field label="Source link" value={d.sourceLink} onChange={set('sourceLink')} placeholder="https://" />
             </Panel>
           )}
-          {step === 4 && (
-            <Panel className="flex flex-col gap-3">
-              <PanelHead title="5 &middot; Variants" subtitle="Each variant can differ in cover type, sum insured and ages" right={<>{ocrJobId && <Chip tone="violet" icon="sparkle">Auto-filled from brochure</Chip>}<SmallButton variant="outline" icon="plus" onClick={() => setVariants([...variants, { name: '', coverType: 'INDIVIDUAL', sumInsuredMin: '', sumInsuredMax: '' }])}>Add variant</SmallButton></>} />
+          {step === 4 && (() => {
+            const vNames = variants.filter((v) => v.name).map((v) => v.name)
+            return (
+            <Panel className="flex flex-col gap-3.5">
+              <PanelHead title="5 \u00b7 Variants" subtitle="Each variant can differ in cover type, sum insured and ages" right={ocrJobId && <Chip tone="violet" icon="sparkle">Auto-filled from brochure</Chip>} />
               {ocrJobId && (
-                <div className="flex flex-col gap-2.5 rounded-[18px] bg-[linear-gradient(to_right,#f0ecfb,#e6dffb)] px-4 py-3.5">
-                  <div className="flex items-center gap-3">
-                    <span className="flex size-9 items-center justify-center rounded-full bg-white text-[#5b3fb8]"><Icon name="sparkle" size={17} /></span>
-                    <div className="flex flex-1 flex-col gap-0.5">
-                      <p className="text-[13px] font-bold text-ink">Variants read from the brochure. Check each one.</p>
-                      <p className="text-[12px] font-medium text-[#5b3fb8]">{variants.filter((v) => v.name).length} variant{variants.filter((v) => v.name).length !== 1 ? 's' : ''} found. Add more or remove wrong ones.</p>
-                    </div>
+                <div className="flex items-center gap-3 rounded-[18px] bg-[linear-gradient(to_right,#f0ecfb,#e6dffb)] px-4 py-3">
+                  <span className="flex size-10 items-center justify-center rounded-full bg-white text-[#5b3fb8]"><Icon name="sparkle" size={18} /></span>
+                  <div className="flex flex-1 flex-col gap-0.5">
+                    <p className="text-[13px] font-bold text-ink">Read by AI from the brochure. Check each value.</p>
+                    <p className="text-[12px] font-medium text-[#5b3fb8]">Compare with the highlighted page on the right. Fix anything that\u2019s wrong.</p>
                   </div>
+                  <span className="text-[13px] font-bold text-[#5b3fb8]">{vNames.length} of {variants.length} checked</span>
                 </div>
               )}
-              {variants.map((v, i) => (
-                <div key={i} className={cx('flex flex-col gap-3 rounded-[22px] p-[18px]', ocrJobId && v.name ? 'border border-[#c9daf8] bg-[#f3f7ff]' : 'bg-panel')}>
-                  <div className="flex items-center gap-3">
-                    {v.name && <span className="rounded-[12px] bg-navy px-3 py-1.5 text-[13px] font-bold text-white">{v.name}</span>}
-                    {ocrJobId && v.name && <span className="flex items-center gap-1 text-[11px] font-semibold text-[#5b3fb8]"><Icon name="sparkle" size={11} />AI suggestion</span>}
-                    <span className="flex-1" />
-                    {variants.length > 1 && <button type="button" aria-label="Remove" className="flex size-7 items-center justify-center rounded-full bg-white text-muted hover:text-[#b4323c]" onClick={() => setVariants(variants.filter((_, j) => j !== i))}><Icon name="x" size={14} /></button>}
+              {variants.map((v, i) => {
+                const expanded = v._open !== false
+                return (
+                  <div key={i} className={cx('flex flex-col gap-3.5 rounded-[22px] p-[18px]', expanded ? 'border border-[#c9daf8] bg-[#f3f7ff]' : 'bg-panel')}>
+                    <div className="flex h-8 items-center gap-3">
+                      {v.name && <span className="rounded-[12px] bg-navy px-3 py-1.5 text-[13px] font-bold text-white">{v.name}</span>}
+                      <span className="text-[13px] font-semibold text-ink-2">{v.coverType === 'FLOATER' ? 'Family floater' : 'Individual'}</span>
+                      <span className="flex-1" />
+                      <button type="button" className="flex size-8 items-center justify-center rounded-full bg-white text-ink hover:bg-line" onClick={() => setVariants(variants.map((y, j) => (j === i ? { ...y, _open: !expanded } : y)))}><Icon name="edit" size={14} /></button>
+                      {variants.length > 1 && <button type="button" className="flex size-8 items-center justify-center rounded-full bg-white text-muted hover:text-[#b4323c]" onClick={() => setVariants(variants.filter((_, j) => j !== i))}><Icon name="x" size={14} /></button>}
+                    </div>
+                    {!expanded && <p className="text-[12px] font-medium text-muted">{v.sumInsuredMin || v.sumInsuredMax ? `\u20b9${v.sumInsuredMin || '?'} \u2013 \u20b9${v.sumInsuredMax || '?'}` : 'Sum insured, ages and pricing to be added.'}</p>}
+                    {expanded && (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[13px] font-semibold text-ink">Cover type</span>
+                          {['INDIVIDUAL', 'FLOATER'].map((c) => (
+                            <button key={c} type="button" onClick={() => setVariants(variants.map((y, j) => (j === i ? { ...y, coverType: c } : y)))}
+                              className={cx('flex h-[34px] shrink-0 items-center gap-1.5 rounded-[18px] border pr-3.5 text-[13px] font-semibold whitespace-nowrap',
+                                v.coverType === c ? 'border-blue bg-blue-50 pl-2.5 text-blue' : 'border-line bg-white pl-3.5 text-muted')}>
+                              {v.coverType === c && <Icon name="check" size={14} />}{c === 'INDIVIDUAL' ? 'Individual' : 'Family floater'}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="flex gap-3">
+                          <Field label={`${L.sumInsured} from`} type="number" value={v.sumInsuredMin} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, sumInsuredMin: x } : y)))} />
+                          <Field label={`${L.sumInsured} up to`} type="number" value={v.sumInsuredMax} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, sumInsuredMax: x } : y)))} />
+                          <Field label="Entry age" value={v.entryAge ?? ''} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, entryAge: x } : y)))} placeholder="18 \u2013 65" />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[13px] font-semibold text-ink">Pricing</span>
+                          {[['RATE_TABLE', 'Rate table (CSV)'], ['MANUAL_ENTRY', 'Typed from insurer portal']].map(([k, l]) => (
+                            <button key={k} type="button" onClick={() => setVariants(variants.map((y, j) => (j === i ? { ...y, pricingMode: k } : y)))}
+                              className={cx('flex h-[34px] shrink-0 items-center gap-1.5 rounded-[18px] border pr-3.5 text-[13px] font-semibold whitespace-nowrap',
+                                (v.pricingMode ?? d.pricingMode) === k ? 'border-blue bg-blue-50 pl-2.5 text-blue' : 'border-line bg-white pl-3.5 text-muted')}>
+                              {(v.pricingMode ?? d.pricingMode) === k && <Icon name="check" size={14} />}{l}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
-                  <div className="flex items-end gap-3">
-                    <Field label="Name *" value={v.name} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, name: x } : y)))} />
-                    {form?.variantCoverTypes !== false && <Field label="Cover" type="select" value={v.coverType ?? ''} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, coverType: x } : y)))} options={[{ value: 'INDIVIDUAL', label: 'Individual' }, { value: 'FLOATER', label: 'Family floater' }]} />}
-                    <Field label={`${L.sumInsured} from (\u20b9)`} type="number" value={v.sumInsuredMin} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, sumInsuredMin: x } : y)))} />
-                    <Field label="to (\u20b9)" type="number" value={v.sumInsuredMax} onChange={(x) => setVariants(variants.map((y, j) => (j === i ? { ...y, sumInsuredMax: x } : y)))} />
-                  </div>
-                </div>
-              ))}
-              <button type="button" onClick={() => setVariants([...variants, { name: '', coverType: 'INDIVIDUAL', sumInsuredMin: '', sumInsuredMax: '' }])} className="flex h-[46px] items-center justify-center gap-2 rounded-[20px] border border-dashed border-[#c3ccd8] text-[13px] font-bold text-blue hover:bg-[#f7f9ff]"><Icon name="plus" size={16} />Add variant</button>
+                )
+              })}
+              <button type="button" onClick={() => setVariants([...variants, { name: '', coverType: 'INDIVIDUAL', sumInsuredMin: '', sumInsuredMax: '', _open: true }])} className="flex h-[46px] items-center justify-center gap-2 rounded-[20px] border border-dashed border-[#9db8ee] text-[13px] font-bold text-blue hover:bg-[#f7f9ff]"><Icon name="plus" size={16} />Add variant</button>
             </Panel>
-          )}
+            )
+          })()}
           {step === 5 && (() => {
             const filled = Object.values(features).filter((f) => f && (f.notStated || (f.value !== '' && f.value != null))).length
             const total = feats.length
+            const vNames = variants.filter((v) => v.name).map((v) => v.name)
             return (
             <Panel className="flex flex-col gap-4">
-              <PanelHead title="6 &middot; Features" subtitle={tpl.data ? `${typeName} template v${tpl.data.template.number}. Tick "Not stated" when the brochure says nothing.` : tpl.error ? `${typeName}: the feature list could not be loaded.` : 'Loading the template\u2026'} right={ocrJobId && <Chip tone="violet" icon="sparkle">Auto-filled from brochure</Chip>} />
+              <PanelHead title="6 \u00b7 Features" subtitle={`Standard features are included. ${ocrJobId ? 'Tick the AI suggestions this product offers, and add your own.' : 'Fill in or tick "Not stated".'}`} right={ocrJobId && <Chip tone="violet" icon="sparkle">Auto-filled from brochure</Chip>} />
               {ocrJobId && (
-                <div className="flex flex-col gap-2.5 rounded-[18px] bg-[linear-gradient(to_right,#f0ecfb,#e6dffb)] px-4 py-3.5">
-                  <div className="flex items-center gap-3">
-                    <span className="flex size-9 items-center justify-center rounded-full bg-white text-[#5b3fb8]"><Icon name="sparkle" size={17} /></span>
-                    <div className="flex flex-1 flex-col gap-0.5">
-                      <p className="text-[13px] font-bold text-ink">Features read from the brochure. Check each value.</p>
-                      <p className="text-[12px] font-medium text-[#5b3fb8]">{filled} of {total} filled. Fix anything wrong; tick "Not stated" for missing ones.</p>
-                    </div>
-                    <span className="text-[13px] font-bold text-[#5b3fb8]">{filled}/{total}</span>
+                <div className="flex items-center gap-3 rounded-[18px] bg-[linear-gradient(to_right,#f0ecfb,#e6dffb)] px-4 py-3">
+                  <span className="flex size-10 items-center justify-center rounded-full bg-white text-[#5b3fb8]"><Icon name="sparkle" size={18} /></span>
+                  <div className="flex flex-1 flex-col gap-0.5">
+                    <p className="text-[13px] font-bold text-ink">{filled} of {total} ticked</p>
+                    <p className="text-[12px] font-medium text-[#5b3fb8]">Tick a box to add the feature. Fix anything wrong; add your own at the bottom.</p>
                   </div>
-                  <div className="h-1.5 overflow-clip rounded-[3px] bg-white"><div className="h-full rounded-[3px] bg-[#5b3fb8]" style={{ width: total > 0 ? `${Math.round((filled / total) * 100)}%` : '0%' }} /></div>
                 </div>
               )}
               {tpl.error && <div className="flex items-center gap-3"><ErrorNote error={tpl.error} /><SmallButton variant="outline" icon="refresh" onClick={tpl.refetch}>Try again</SmallButton></div>}
+
+              {/* Column header when variants exist */}
+              {vNames.length > 1 && (
+                <div className="flex h-4 gap-3 pr-2.5 pl-3 text-[11px] font-bold tracking-[0.4px] text-muted">
+                  <span className="w-6" />
+                  <span className="w-[232px]">FEATURE</span>
+                  {vNames.map((n) => <span key={n} className="w-[140px]">{n.toUpperCase()}</span>)}
+                </div>
+              )}
+
               {groups.map((g) => (
                 <div key={g} className="flex flex-col gap-2">
                   <p className="text-[12px] font-bold tracking-wide text-muted uppercase">{g}</p>
                   {feats.filter((f) => (f.group || 'Features') === g).map((f) => {
                     const cur = features[f.key] ?? {}
                     const setF = (patch) => setFeatures({ ...features, [f.key]: { ...cur, ...patch } })
-                    const hasAiValue = ocrJobId && cur.page != null
+                    const hasAiValue = ocrJobId && (cur.page != null || (cur.value != null && cur.value !== ''))
+                    const hasSomething = cur.notStated || (cur.value !== '' && cur.value != null)
                     return (
-                      <div key={f.key} className={cx('flex items-center gap-3 rounded-[14px] border px-3 py-2', hasAiValue ? 'border-[#c9daf8] bg-[#f5f9ff]' : cur.notStated ? 'border-[#f1d9a8] bg-[#fff9ef]' : 'border-line bg-white')}>
-                        <span className="w-[240px] shrink-0">
-                          <span className="block text-[13px] font-semibold text-ink">{f.name}{f.requiredToPublish ? ' *' : ''}</span>
-                          {hasAiValue && <span className="flex items-center gap-1 text-[11px] font-semibold text-[#5b3fb8]"><Icon name="sparkle" size={11} />AI &middot; p{cur.page}</span>}
-                        </span>
-                        {f.dataType === 'Yes/No'
-                          ? <Dropdown className="flex-1" buttonClassName="h-[42px]" value={cur.value === true ? 'yes' : cur.value === false ? 'no' : ''} disabled={cur.notStated} onChange={(v) => setF({ value: v === '' ? null : v === 'yes' })} options={[['', '\u2014'], ['yes', 'Yes'], ['no', 'No']]} />
-                          : <input value={cur.value ?? ''} disabled={cur.notStated} inputMode={NUMERIC_TYPES.has(f.dataType) ? 'decimal' : undefined} onChange={(e) => setF({ value: e.target.value })} className={cx(inputCls, 'h-[42px] flex-1', hasAiValue && 'border-[#c9daf8] bg-white')} placeholder={f.help ?? UNIT_HINT[f.dataType] ?? ''} />}
+                      <div key={f.key} className={cx('flex items-center gap-3 rounded-[16px] border py-2.5 pr-2.5 pl-3',
+                        hasAiValue ? 'border-[#c9daf8] bg-[#f5f9ff]' : cur.notStated ? 'border-[#f1d9a8] bg-[#fff9ef]' : 'border-line bg-white')}>
+                        {ocrJobId && <input type="checkbox" checked={hasSomething} onChange={(e) => { if (!e.target.checked) setF({ value: null, notStated: false }); }} className="size-[18px] shrink-0 accent-[#13294b]" />}
+                        <div className="flex w-[232px] shrink-0 flex-col gap-[3px]">
+                          <span className={cx('text-[13px] leading-4 font-bold', hasSomething ? 'text-ink' : 'text-ink-2')}>{f.name}{f.requiredToPublish ? ' *' : ''}</span>
+                          {hasAiValue && (
+                            <span className="flex h-[14px] items-center gap-1 text-[11px] font-semibold text-[#5b3fb8]">
+                              <Icon name="sparkle" size={11} />AI suggestion{cur.page != null ? ` \u00b7 p${cur.page}` : ''}
+                            </span>
+                          )}
+                          {!hasAiValue && !ocrJobId && <span className="text-[11px] font-medium text-muted">{f.dataType}</span>}
+                        </div>
+                        <div className="flex flex-1 items-center gap-2">
+                          {f.dataType === 'Yes/No'
+                            ? <Dropdown className="flex-1" buttonClassName="h-[34px]" value={cur.value === true ? 'yes' : cur.value === false ? 'no' : ''} disabled={cur.notStated} onChange={(v) => setF({ value: v === '' ? null : v === 'yes' })} options={[['', '\u2014'], ['yes', 'Yes'], ['no', 'No']]} />
+                            : <input value={cur.value ?? ''} disabled={cur.notStated} inputMode={NUMERIC_TYPES.has(f.dataType) ? 'decimal' : undefined} onChange={(e) => setF({ value: e.target.value })} className={cx(inputCls, 'h-[34px] flex-1 rounded-[10px] border border-line bg-white px-2.5 text-[13px] font-semibold')} placeholder={f.help ?? UNIT_HINT[f.dataType] ?? ''} />}
+                        </div>
                         <label className="flex shrink-0 items-center gap-1.5 text-[12px] font-semibold text-muted"><input type="checkbox" checked={!!cur.notStated} onChange={(e) => setF({ notStated: e.target.checked, value: e.target.checked ? null : cur.value })} className="accent-[#13294b]" />Not stated</label>
                       </div>
                     )
