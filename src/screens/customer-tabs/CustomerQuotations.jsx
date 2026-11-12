@@ -20,7 +20,7 @@ export default function CustomerQuotations() {
             className={cx('group flex h-[84px] items-center gap-4 rounded-[24px] bg-white px-[22px] py-[18px]', CARD_SHADOW)}
           >
             <IconTile icon={q.icon} bg={q.bg} />
-            <div className="flex min-w-0 flex-1 flex-col gap-[3px] whitespace-nowrap">
+            <div className="flex min-w-0 flex-1 flex-col gap-[3px] max-xl:whitespace-normal">
               <p className="text-[15px] font-bold text-ink">{q.title}</p>
               <p className="text-[12px] font-medium text-muted">{q.sub}</p>
             </div>
