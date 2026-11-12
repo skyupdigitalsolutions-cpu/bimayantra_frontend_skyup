@@ -12,6 +12,7 @@ import { fmtDate, fmtDateTime, fmtMoney, istDay } from '../api/format'
 import { ActionDialog, Field, ErrorNote, useAct, label, dmy, isoDay, inputCls } from './kit'
 import { LoadingPanel, ErrorPanel } from './common'
 import { useToast } from '../components/LiveToast'
+import { Dropdown } from '../components/pickers'
 import { matchesQuery, useHeaderSearch } from '../screens/tasks/_filter'
 
 const TONE = { DRAFT: 'neutral', READY: 'sky', SHARED: 'violet', PRODUCT_CHOSEN: 'green', EXPIRED: 'amber' }
@@ -196,7 +197,7 @@ function Editor({ c }) {
             const removeOpt = (i) => { setOpts(opts.filter((_, j) => j !== i)); setPreview(null) }
             return (
             <>
-              <div><p className="text-[17px] font-bold text-ink">4 \u00b7 Options</p><p className="text-[12px] font-medium text-muted">Pick 2 to 3 products or variants. Insurers with an active agent code only.</p></div>
+              <div><p className="text-[17px] font-bold text-ink">4 · Options</p><p className="text-[12px] font-medium text-muted">Pick 2 to 3 products or variants. Insurers with an active agent code only.</p></div>
               {/* Selected options as rich cards */}
               <div className="flex flex-col gap-3">
                 {opts.map((o, i) => {
