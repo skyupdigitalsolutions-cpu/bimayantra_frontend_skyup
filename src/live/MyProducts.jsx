@@ -120,10 +120,25 @@ export function LiveAddProduct() {
         for (const [k, v] of Object.entries(x.features)) { enriched[k] = { ...v, ...(pageMap[k] != null ? { page: pageMap[k] } : {}) } }
         setFeatures(enriched)
       }
+      // Auto-fill custom/suggested features as add-ons
+      if (x.customFeatures?.length) {
+        // These are stored separately — the frontend can show them in an "Add-ons" section
+        setD((s) => ({ ...s, _customFeatures: x.customFeatures }))
+      }
       if (x.details) setDetails((cur) => ({ ...cur, ...detailsFromData(form, x.details) }))
-      if (r.variants?.length) setVariants(r.variants.map((v) => ({ ...v, sumInsuredMin: v.sumInsuredMin ?? '', sumInsuredMax: v.sumInsuredMax ?? '' })))
-      const left = (r.left?.features?.length ?? 0) + (r.left?.details?.length ?? 0)
-      toast(left ? `Values from the brochure are filled in. ${left} could not be read clearly: type them in and check each step.` : 'Values from the brochure are filled in. Check each step.')
+      // Auto-fill variants with sum insured from product-level extraction
+      const siOpts = x.sumInsured?.options ?? []
+      const siMin = siOpts.length ? String(Math.min(...siOpts)) : ''
+      const siMax = siOpts.length ? String(Math.max(...siOpts)) : ''
+      if (r.variants?.length) {
+        setVariants(r.variants.map((v) => ({
+          ...v,
+          sumInsuredMin: v.sumInsuredMin ?? siMin,
+          sumInsuredMax: v.sumInsuredMax ?? siMax,
+          _open: false, // collapsed by default since they're auto-filled
+        })))
+      }
+      toast('All values from the brochure are filled in. Review each step and fix anything wrong.')
       setStep(3)
     } catch (e) { setReadErr(e) }
   }
@@ -473,6 +488,48 @@ export function LiveAddProduct() {
                 </div>
               ))}
               {tpl.data && !feats.length && <p className="text-[13px] font-medium text-muted">This category has no feature template.</p>}
+
+              {/* Add-ons: AI-suggested features not in the template */}
+              {ocrJobId && (() => {
+                const customs = (d._customFeatures || [])
+                const addOnKeys = customs.map((c) => c.key)
+                const addOnFeatures = addOnKeys.filter((k) => features[k] && !features[k].notStated)
+                if (!customs.length) return null
+                return (
+                  <>
+                    <div className="h-px bg-line" />
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex flex-1 flex-col gap-0.5">
+                        <p className="text-[14px] font-bold text-ink">Add-on features from brochure</p>
+                        <p className="text-[12px] font-medium text-muted">Suggested by AI. Not in the standard template. Untick to remove.</p>
+                      </div>
+                      <span className="text-[13px] font-bold text-[#5b3fb8]">{addOnFeatures.length} of {customs.length} included</span>
+                    </div>
+                    {customs.map((c) => {
+                      const cur = features[c.key] ?? {}
+                      const setF = (patch) => setFeatures({ ...features, [c.key]: { ...cur, ...patch } })
+                      const included = !cur.notStated && cur.value != null && cur.value !== ''
+                      return (
+                        <div key={c.key} className={cx('flex items-center gap-3 rounded-[16px] border py-2.5 pr-2.5 pl-3', included ? 'border-[#c9daf8] bg-[#f5f9ff]' : 'border-line bg-white')}>
+                          <input type="checkbox" checked={included} onChange={(e) => { if (!e.target.checked) setF({ value: null, notStated: true }); else setF({ notStated: false }) }} className="size-[18px] shrink-0 accent-[#13294b]" />
+                          <div className="flex w-[232px] shrink-0 flex-col gap-[3px]">
+                            <span className={cx('text-[13px] leading-4 font-bold', included ? 'text-ink' : 'text-ink-2')}>{c.name}</span>
+                            <span className="flex h-[14px] items-center gap-1 text-[11px] font-semibold text-[#5b3fb8]">
+                              <Icon name="sparkle" size={11} />Add-on{cur.page != null ? ` \u00b7 p${cur.page}` : ''}
+                            </span>
+                          </div>
+                          <div className="flex flex-1 items-center gap-2">
+                            {c.dataType === 'Yes/No'
+                              ? <Dropdown className="flex-1" buttonClassName="h-[34px]" value={cur.value === true ? 'yes' : cur.value === false ? 'no' : ''} onChange={(v) => setF({ value: v === '' ? null : v === 'yes' })} options={[['', '\u2014'], ['yes', 'Yes'], ['no', 'No']]} />
+                              : <input value={cur.value ?? ''} onChange={(e) => setF({ value: e.target.value })} className={cx(inputCls, 'h-[34px] flex-1 rounded-[10px] border border-line bg-white px-2.5 text-[13px] font-semibold')} />}
+                          </div>
+                          <button type="button" className="flex size-7 items-center justify-center rounded-full text-muted hover:text-[#b4323c]" onClick={() => { const f2 = { ...features }; delete f2[c.key]; setFeatures(f2); setD((s) => ({ ...s, _customFeatures: (s._customFeatures || []).filter((x) => x.key !== c.key) })) }}><Icon name="x" size={14} /></button>
+                        </div>
+                      )
+                    })}
+                  </>
+                )
+              })()}
             </Panel>
             )
           })()}
