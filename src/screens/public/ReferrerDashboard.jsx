@@ -9,7 +9,7 @@ export default function ReferrerDashboard() {
   const [copied, setCopied] = useState(false)
   return (
     <ReferrerShell>
-      <header className="flex flex-col items-start gap-3 xl:flex-row xl:justify-between">
+      <header className="flex items-start justify-between max-xl:flex-col max-xl:gap-3">
         <div className="flex flex-col gap-1.5">
           <p className="text-[12px] font-semibold tracking-[0.2px] text-muted">REFERRER</p>
           <h1 className="text-[24px] md:text-[30px] font-bold tracking-[-0.6px] text-ink">My referrals</h1>
