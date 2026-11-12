@@ -188,35 +188,76 @@ function Editor({ c }) {
             </>
           )}
 
-          {/* Step 3: Options — pick 2–3 products (CQ4) */}
-          {step === 3 && (
+          {/* Step 3: Options — pick 2–3 products (CQ4 Figma) */}
+          {step === 3 && (() => {
+            const ICON_BG = ['bg-[#fde8ec]', 'bg-[#fde8c9]', 'bg-[#e9e3fc]']
+            const variantsOf = (pid) => (prods.data || []).flatMap((p) => p.id === pid && p.variants?.length ? p.variants.map((v) => ({ value: v.id, label: v.name })) : [])
+            const addOpt = (p) => { if (opts.length < 3) { setOpts([...opts, { productId: p.id, variantId: p.variants?.[0]?.id ?? null }]); setPreview(null) } }
+            const removeOpt = (i) => { setOpts(opts.filter((_, j) => j !== i)); setPreview(null) }
+            return (
             <>
-              <div><p className="text-[17px] font-bold text-ink">Options</p><p className="text-[12px] font-medium text-muted">Pick 2 to 3 products or variants. Insurers with an active agent code only.</p></div>
+              <div><p className="text-[17px] font-bold text-ink">4 \u00b7 Options</p><p className="text-[12px] font-medium text-muted">Pick 2 to 3 products or variants. Insurers with an active agent code only.</p></div>
+              {/* Selected options as rich cards */}
               <div className="flex flex-col gap-3">
-                {P.map((p) => {
-                  const on = opts.some((o) => o.productId === p.id)
+                {opts.map((o, i) => {
+                  const p = P.find((x) => x.id === o.productId)
+                  const vars = variantsOf(o.productId)
+                  const varName = vars.find((v) => v.value === o.variantId)?.label
                   return (
-                    <button key={p.id} type="button" disabled={!on && opts.length >= 5}
-                      onClick={() => { setOpts(on ? opts.filter((o) => o.productId !== p.id) : [...opts, { productId: p.id }]); setPreview(null) }}
-                      className={cx('flex h-[72px] items-center gap-3.5 rounded-[20px] p-3.5 text-left', on ? 'bg-navy text-white' : 'bg-panel text-ink')}>
-                      {on && <span className="flex size-[30px] shrink-0 items-center justify-center rounded-full bg-white text-navy"><Icon name="check" size={14} /></span>}
-                      {!on && <span className="flex size-[30px] shrink-0 items-center justify-center rounded-full bg-white/50 text-muted"><Icon name="plus" size={14} /></span>}
+                    <div key={`${o.productId}-${i}`} className="flex items-center gap-3.5 rounded-[20px] bg-panel p-3.5">
+                      <span className="flex size-[30px] shrink-0 items-center justify-center rounded-full bg-navy text-[12px] font-bold text-white">{i + 1}</span>
+                      <span className={cx('flex size-11 shrink-0 items-center justify-center rounded-[22px]', ICON_BG[i % 3])}><Icon name="heart" size={20} className="text-ink" /></span>
                       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                        <span className="text-[14px] font-bold">{p.name}</span>
-                        <span className={cx('text-[12px] font-medium', on ? 'text-white/70' : 'text-muted')}>{p.insurer}</span>
+                        <span className="text-[14px] font-bold text-ink">{p?.name ?? '?'}</span>
+                        <span className="text-[12px] font-medium text-muted">{p?.insurer ?? ''}</span>
                       </span>
-                    </button>
+                      {vars.length > 0 && (
+                        <span className="flex h-[38px] items-center gap-2 rounded-[14px] border border-line bg-white px-3">
+                          <Dropdown value={o.variantId ?? ''} onChange={(v) => setOpts(opts.map((x, j) => (j === i ? { ...x, variantId: v } : x)))}
+                            options={vars} buttonClassName="h-[34px] border-0 bg-transparent text-[12px] font-bold text-ink" />
+                        </span>
+                      )}
+                      <button type="button" onClick={() => removeOpt(i)} className="flex size-8 shrink-0 items-center justify-center rounded-[16px] bg-white text-muted shadow-[0px_6px_8px_rgba(19,41,75,0.06)] hover:text-[#b4323c]"><Icon name="x" size={13} /></button>
+                    </div>
                   )
                 })}
               </div>
+              {/* Add option button */}
+              {opts.length < 3 ? (
+                <div className="flex flex-col gap-2">
+                  <p className="text-[13px] font-semibold text-ink">Add an option</p>
+                  <div className="flex flex-col gap-2">
+                    {P.filter((p) => !opts.some((o) => o.productId === p.id && !p.variants?.length)).map((p) => (
+                      <button key={p.id} type="button" onClick={() => addOpt(p)}
+                        className="flex h-[52px] items-center gap-3 rounded-[18px] border border-line bg-white px-3.5 text-left hover:bg-panel-2">
+                        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-panel text-muted"><Icon name="plus" size={14} /></span>
+                        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                          <span className="text-[13px] font-bold text-ink">{p.name}</span>
+                          <span className="text-[11px] font-medium text-muted">{p.insurer}</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2 rounded-[18px] border border-dashed border-[#c3ccd8] py-3.5 opacity-60">
+                  <Icon name="plus" size={16} className="text-muted" />
+                  <span className="text-[13px] font-bold text-muted">Add option \u00b7 3 of 3 used</span>
+                </div>
+              )}
               {prods.data && P.length < 2 && (
                 <div className="flex items-center gap-3 rounded-[16px] border border-[#f1d6a6] bg-[#fdf6ea] px-4 py-3">
-                  <p className="flex-1 text-[13px] font-semibold text-[#8a5a12]">{P.length === 0 ? 'No quotable products in this category.' : 'Only 1 product available — a comparison needs at least 2.'} Add agent codes for more insurers in My insurers.</p>
+                  <p className="flex-1 text-[13px] font-semibold text-[#8a5a12]">{P.length === 0 ? 'No quotable products in this category.' : 'Only 1 product available \u2014 a comparison needs at least 2.'} Add agent codes for more insurers in My insurers.</p>
                   <Link to="/settings/insurers" className="shrink-0 rounded-[12px] border border-line bg-white px-3 py-1.5 text-[12px] font-semibold text-ink hover:bg-panel-2">My insurers</Link>
                 </div>
               )}
+              <div className="flex items-center gap-2.5 rounded-[16px] bg-[#e8f0fd] px-4 py-3">
+                <Icon name="compare" size={16} className="text-blue" />
+                <p className="text-[13px] font-semibold text-blue">Variants of the same product count as separate options.</p>
+              </div>
             </>
-          )}
+            )
+          })()}
 
           {/* Step 4: Details — people, sum insured, term, start (CQ5) */}
           {step === 4 && (
@@ -237,9 +278,12 @@ function Editor({ c }) {
           {step === 5 && (
             <>
               <div><p className="text-[17px] font-bold text-ink">Premiums</p><p className="text-[12px] font-medium text-muted">Enter the base premium from the insurer portal for each option.</p></div>
-              {opts.map((o) => { const p = P.find((x) => x.id === o.productId); return (
-                <div key={o.productId} className="flex flex-col gap-2 rounded-[20px] bg-panel p-4">
-                  <p className="text-[14px] font-bold text-ink">{p?.insurer} · {p?.name ?? o.productId}</p>
+              {opts.map((o, oi) => { const p = P.find((x) => x.id === o.productId); const varName = p?.variants?.find((v) => v.id === o.variantId)?.name; return (
+                <div key={`${o.productId}-${oi}`} className="flex flex-col gap-2 rounded-[20px] bg-panel p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="flex size-[28px] shrink-0 items-center justify-center rounded-full bg-navy text-[11px] font-bold text-white">{oi + 1}</span>
+                    <p className="text-[14px] font-bold text-ink">{p?.insurer} \u00b7 {p?.name ?? o.productId}{varName ? ` \u00b7 ${varName}` : ''}</p>
+                  </div>
                   <div className="flex items-end gap-3">
                     <Field label="Net premium (₹)" type="number" value={o.manual?.netPremium ?? ''} onChange={(v) => setOpts(opts.map((x) => (x.productId === o.productId ? { ...x, manual: { ...(x.manual || {}), netPremium: v } } : x)))} />
                     <Field label="GST (₹)" type="number" value={o.manual?.taxAmount ?? ''} onChange={(v) => setOpts(opts.map((x) => (x.productId === o.productId ? { ...x, manual: { ...(x.manual || {}), taxAmount: v } } : x)))} />
@@ -317,15 +361,15 @@ function Editor({ c }) {
             <SumRow k="Customer" v={customer.data?.name} />
             <SumRow k="Type" v="Comparative" />
             <SumRow k="Insurance" v={typeName} />
-            <SumRow k="Options" v={opts.length ? `${opts.length} products` : null} />
+            <SumRow k="Options" v={opts.length ? `${opts.length} option${opts.length !== 1 ? 's' : ''}` : null} />
             <SumRow k="People and cover" v={inp.people.length ? `${inp.people.length} people${inp.sumInsured ? ` · ${lakh(Number(inp.sumInsured))}` : ''}` : null} />
           </div>
           {opts.length > 0 && (
             <div className="mt-3.5 flex flex-col gap-2 rounded-[20px] bg-white p-4">
               <p className="text-[10px] font-bold tracking-[0.6px] text-muted">OPTIONS</p>
-              {opts.map((o) => { const p = P.find((x) => x.id === o.productId); return (
-                <div key={o.productId} className="flex items-center">
-                  <span className="flex-1 text-[12px] font-semibold text-ink-2">{p?.insurer} · {p?.name ?? '?'}</span>
+              {opts.map((o, oi) => { const p = P.find((x) => x.id === o.productId); const varName = p?.variants?.find((v) => v.id === o.variantId)?.name; return (
+                <div key={`${o.productId}-${oi}`} className="flex items-center gap-2">
+                  <span className="flex-1 text-[12px] font-semibold text-ink-2">{p?.name ?? '?'}{varName ? ` \u00b7 ${varName}` : ''}</span>
                   {rec.id === o.productId && <span className="rounded-[10px] bg-[#e7f4ee] px-2 py-0.5 text-[10px] font-bold text-[#127650]">Recommended</span>}
                 </div>
               ) })}
