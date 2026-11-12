@@ -307,18 +307,21 @@ function ShareDialog({ x, onClose }) {
   const [channel, setChannel] = useState('WHATSAPP')
   const { act, busy, error } = useAct()
   const { toast } = useToast()
-  // Each channel does its own thing with the result (the link is always returned, so it cannot decide alone):
-  // WhatsApp opens the chat with the customer and the quotation message ready to send
-  const done = async (r) => {
+  // Open a blank window INSIDE the click handler (before any await) so browsers don't block it as a popup.
+  // After the API responds, navigate that window to the target URL.
+  const save = async () => {
+    const popup = (channel === 'WHATSAPP' || channel === 'DOWNLOAD') ? window.open('about:blank', '_blank') : null
+    const r = await act(() => api.quotations.share(x.id, channel), { invalidates: ['quotation', 'quotations'], quiet: true })
     const d = r?.data ?? {}
-    if (channel === 'WHATSAPP' && d.whatsappUrl) window.open(d.whatsappUrl, '_blank', 'noopener')
-    else if (channel === 'DOWNLOAD' && d.pdfFileId) window.open(api.files.url(d.pdfFileId), '_blank', 'noopener')
+    if (channel === 'WHATSAPP' && d.whatsappUrl) { if (popup) popup.location.href = d.whatsappUrl; else window.open(d.whatsappUrl, '_blank') }
+    else if (channel === 'DOWNLOAD' && d.pdfFileId) { if (popup) popup.location.href = api.files.url(d.pdfFileId); else window.open(api.files.url(d.pdfFileId), '_blank') }
     else if (channel === 'LINK' && d.link) {
       try { await navigator.clipboard.writeText(d.link); toast('Link copied. Paste it in a message to the customer.') } catch { window.prompt('Copy this link for the customer:', d.link) }
     }
-    onClose()
+    else if (channel === 'EMAIL') { /* email is queued server-side, toast comes from act() */ }
+    if (popup && !d.whatsappUrl && !d.pdfFileId) popup.close()
+    if (r) onClose()
   }
-  const save = () => act(() => api.quotations.share(x.id, channel), { invalidates: ['quotation', 'quotations'], quiet: true, onDone: done })
   return (
     <ActionDialog title="Share quotation" icon="send" confirm="Share" busy={busy} error={error} onConfirm={save} onClose={onClose}>
       <Field label="Share by" type="select" value={channel} onChange={setChannel} options={[{ value: 'WHATSAPP', label: 'WhatsApp' }, { value: 'EMAIL', label: 'Email' }, { value: 'LINK', label: 'Copy link' }, { value: 'DOWNLOAD', label: 'Download PDF' }]} />
