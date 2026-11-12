@@ -92,7 +92,7 @@ export function OtpInput({ length = 6, value, onChange, error = false, autoFocus
   }
 
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-2 sm:gap-3">
       {value.map((d, i) => (
         <input
           key={i}
@@ -123,7 +123,7 @@ export function OtpInput({ length = 6, value, onChange, error = false, autoFocus
             fill(i, e.clipboardData.getData('text'))
           }}
           className={cx(
-            'h-[68px] w-[62px] rounded-[18px] bg-white text-center text-[24px] font-bold text-ink caret-blue outline-none',
+            'h-[56px] w-[44px] rounded-[16px] bg-white text-center text-[22px] font-bold text-ink caret-blue outline-none sm:h-[68px] sm:w-[62px] sm:rounded-[18px] sm:text-[24px]',
             error ? 'border-[1.5px] border-[#b4323c] bg-[#fff7f7] text-[#b4323c] caret-[#b4323c]' : focus === i ? 'border-2 border-blue shadow-[0px_0px_0px_4px_rgba(31,95,214,0.18)]' : 'border-[1.5px] border-line',
           )}
         />
@@ -137,13 +137,15 @@ export function OtpInput({ length = 6, value, onChange, error = false, autoFocus
 export function AuthShell({ children, onSubmit }) {
   const Form = onSubmit ? 'form' : 'div'
   return (
-    <div className="flex min-h-screen min-w-[1280px] bg-white py-6 pl-6">
-      <BrandPanel />
-      <div className="relative flex-1">
-        <Form onSubmit={onSubmit} className="absolute top-[156px] left-[146px] flex w-[440px] flex-col items-start">
+    <div className="flex min-h-screen flex-col bg-white lg:min-w-[1280px] lg:flex-row lg:py-6 lg:pl-6">
+      {/* Phones and tablets: a logo bar instead of the brand panel; the form takes the full width */}
+      <div className="flex items-center px-5 pt-6 pb-2 lg:hidden"><img src={logo} alt="BimaYantra" className="h-[34px] w-auto" /></div>
+      <div className="hidden lg:block"><BrandPanel /></div>
+      <div className="relative flex flex-1 flex-col">
+        <Form onSubmit={onSubmit} className="mx-auto flex w-full max-w-[440px] flex-col items-start px-5 pt-8 pb-10 lg:absolute lg:top-[156px] lg:left-[146px] lg:mx-0 lg:w-[440px] lg:p-0">
           {children}
         </Form>
-        <p className="absolute top-[932px] left-[146px] text-[12px] font-medium text-muted">Terms · Privacy · Disclaimer</p>
+        <p className="mt-auto px-5 pb-6 text-[12px] font-medium text-muted lg:absolute lg:top-[932px] lg:left-[146px] lg:mt-0 lg:p-0">Terms · Privacy · Disclaimer</p>
       </div>
     </div>
   )

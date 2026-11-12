@@ -20,8 +20,8 @@ export const CARD_SHADOW = 'shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]'
 function HeaderActions({ live }) {
   useHeaderSearch() // Ctrl/Cmd+K focuses the pill on every profile tab
   return (
-    <div className="flex shrink-0 items-center gap-3">
-      <label className="flex h-[50px] w-[240px] items-center gap-2.5 rounded-[25px] bg-white pr-2 pl-[18px] shadow-[0px_6px_18px_-8px_rgba(19,41,75,0.1)]">
+    <div className="flex flex-wrap items-center gap-3 xl:shrink-0 xl:flex-nowrap">
+      <label className="hidden h-[50px] w-[240px] items-center gap-2.5 rounded-[25px] bg-white pr-2 pl-[18px] shadow-[0px_6px_18px_-8px_rgba(19,41,75,0.1)] md:flex">
         <Icon name="search" size={18} className="text-muted" />
         <input
           placeholder="Search anything"
@@ -53,7 +53,7 @@ function ProfileHero({ live }) {
   // Keep tiles 1–2 from the view model; the 3rd tile is always "Renewal in / {N} days" per Figma.
   const minis = live ? [P2.minis[0], P2.minis[1], renewalMini()] : P2.minis
   return (
-    <div className="mt-[13px] flex h-[120px] items-center gap-[22px] rounded-[32px] bg-linear-to-r from-[#fbd3dc] to-[#f6b3c3] px-[30px] py-[22px] shadow-[0px_18px_36px_-12px_rgba(232,137,156,0.3)]">
+    <div className="mt-[13px] flex flex-wrap items-center gap-4 rounded-[32px] bg-linear-to-r from-[#fbd3dc] to-[#f6b3c3] px-5 py-5 shadow-[0px_18px_36px_-12px_rgba(232,137,156,0.3)] md:gap-[22px] md:px-[30px] md:py-[22px] xl:h-[120px] xl:flex-nowrap">
       <span className="flex size-[76px] shrink-0 items-center justify-center rounded-full border-4 border-white bg-white text-[24px] font-bold text-navy">
         {P2.initials}
       </span>
@@ -111,16 +111,16 @@ export function ProfileShell({ tab, crumb, routes = {}, counts = {}, panelClass 
   }))
   return (
     <AppLayout active="customers" panelClass={panelClass}>
-      <header className="flex items-start justify-between gap-6">
-        <div className="flex flex-col gap-1.5 whitespace-nowrap">
-          <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre text-muted uppercase">{`POLICY HOLDERS  /  ${(live?.name ?? 'Kavya Hegde').toUpperCase()}  /  ${crumb}`}</p>
+      <header className="flex flex-col items-start gap-3 xl:flex-row xl:justify-between xl:gap-6">
+        <div className="flex min-w-0 flex-col gap-1.5 xl:whitespace-nowrap">
+          <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre-wrap xl:whitespace-pre text-muted uppercase">{`POLICY HOLDERS  /  ${(live?.name ?? 'Kavya Hegde').toUpperCase()}  /  ${crumb}`}</p>
           <div className="flex items-center gap-3">
-            <h1 className="text-[30px] font-bold tracking-[-0.6px] text-ink">{live?.name ?? P.name}</h1>
+            <h1 className="text-[24px] md:text-[30px] font-bold tracking-[-0.6px] text-ink">{live?.name ?? P.name}</h1>
             {!live || live.active ? <SChip tone="green" icon="check">Active</SChip> : <SChip tone="gray" icon="x">Inactive</SChip>}
           </div>
           <p className="text-[14px] font-medium text-muted">{live?.meta ?? P.meta}</p>
         </div>
-        <div className="mt-1">
+        <div className="mt-1 max-w-full">
           <HeaderActions live={live} />
         </div>
       </header>

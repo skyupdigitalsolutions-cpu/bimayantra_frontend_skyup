@@ -205,7 +205,7 @@ export function LiveKyc() {
       {k && (
         <SCard>
           <SHead title="Review status" subtitle={`${k.submittedAt ? `Submitted ${fmtDate(k.submittedAt)}` : 'Not submitted yet'} · target 2 working days`} />
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5 xl:flex-nowrap">
             <Step done={submitted} title="Submitted" sub={k.submittedAt ? fmtDate(k.submittedAt, { year: false }) : '—'} icon="check" />
             <Conn on={submitted} />
             <Step done={verified} current={locked} title="Under review" sub="SkyUp" icon="clock" num="2" />

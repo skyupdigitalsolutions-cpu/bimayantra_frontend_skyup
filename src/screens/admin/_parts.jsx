@@ -136,13 +136,39 @@ export function AdminRail({ active }) {
 }
 
 /** Page frame for every SkyUp Admin screen (same geometry as AppLayout). */
+/** Phones: logo and the admin menu as one row that scrolls sideways (the rail is for tablets and desktops). */
+function AdminMobileBar({ active }) {
+  return (
+    <header className="sticky top-0 z-30 flex flex-col gap-3 bg-white px-4 pt-4 pb-3 shadow-[0px_6px_16px_-10px_rgba(19,41,75,0.15)]">
+      <Link to="/admin" aria-label="SkyUp Admin home" className="flex items-center gap-2">
+        <img src={logo} alt="BimaYantra" className="h-[28px] w-auto" />
+      </Link>
+      <nav className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <ul className="flex gap-2">
+          {ADMIN_NAV.map((n) => {
+            const on = n.key === active
+            return (
+              <li key={n.key} className="shrink-0">
+                <NavLink to={n.to} aria-label={n.label} className={cx('flex h-9 items-center gap-1.5 rounded-[18px] px-3 text-[12px] font-semibold', on ? 'bg-[#2a1f5c] text-white' : 'bg-panel text-ink')}>
+                  <Icon name={n.icon} size={16} />{n.label}
+                </NavLink>
+              </li>
+            )
+          })}
+        </ul>
+      </nav>
+    </header>
+  )
+}
+
 export function AdminLayout({ active, children, panelClass = '', overlay }) {
   return (
-    <div className="flex min-h-screen min-w-[1280px] gap-7 bg-white py-6 pr-6 pl-7">
-      <div className="sticky top-7 h-fit self-start">
+    <div className="flex min-h-screen flex-col bg-white md:flex-row md:gap-5 md:py-5 md:pr-5 md:pl-5 xl:min-w-[1280px] xl:gap-7 xl:py-6 xl:pr-6 xl:pl-7">
+      <div className="md:hidden"><AdminMobileBar active={active} /></div>
+      <div className="sticky top-7 hidden h-fit self-start md:block">
         <AdminRail active={active} />
       </div>
-      <main className={cx('relative min-h-[976px] min-w-0 flex-1 rounded-[40px] bg-panel px-10 pt-9 pb-10', panelClass)}>{children}</main>
+      <main className={cx('relative min-w-0 flex-1 bg-panel px-4 pt-4 pb-10 md:rounded-[32px] md:p-6 xl:min-h-[976px] xl:rounded-[40px] xl:px-10 xl:pt-9 xl:pb-10', panelClass)}>{children}</main>
       {overlay}
     </div>
   )
@@ -174,16 +200,16 @@ export function AdminBadge() {
 /** Violet breadcrumb · 30px title · muted subtitle + admin badge, bell, actions */
 export function AdminHeader({ crumb = 'SKYUP ADMIN', crumbClass = 'text-violet', title, titleExtra, subtitle, actions, badge = true }) {
   return (
-    <header className="flex items-start justify-between gap-6">
+    <header className="flex flex-col items-start gap-3 xl:flex-row xl:justify-between xl:gap-6">
       <div className="flex min-w-0 flex-col gap-1.5">
         <p className={cx('text-[12px] font-semibold tracking-[0.2px] whitespace-pre', crumbClass)}>{crumb}</p>
-        <div className="flex items-center gap-3">
-          <h1 className="text-[30px] font-bold tracking-[-0.6px] whitespace-nowrap text-ink">{title}</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-[24px] font-bold tracking-[-0.6px] text-ink md:text-[30px] xl:whitespace-nowrap">{title}</h1>
           {titleExtra}
         </div>
-        {subtitle && <p className="text-[14px] font-medium whitespace-nowrap text-muted">{subtitle}</p>}
+        {subtitle && <p className="text-[14px] font-medium text-muted xl:whitespace-nowrap">{subtitle}</p>}
       </div>
-      <div className="mt-1 flex shrink-0 items-center gap-3">
+      <div className="mt-1 flex max-w-full flex-wrap items-center gap-3 xl:shrink-0 xl:flex-nowrap">
         {badge && <AdminBadge />}
         <BellButton />
         {actions}

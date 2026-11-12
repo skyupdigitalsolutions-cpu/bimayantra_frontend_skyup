@@ -61,7 +61,7 @@ export function Drawer({ title, subtitle, onClose, footer, children }) {
       <div data-overlay="scrim" className={cx(PANEL_SCRIM, 'z-40 bg-[rgba(14,31,59,0.4)]')} onClick={onClose} />
       <aside role="dialog" data-overlay="drawer" className={cx(DRAWER_BOX, 'z-50 flex w-[520px] flex-col gap-[18px] rounded-[32px] bg-white px-7 pt-7 pb-6 shadow-[0px_30px_60px_-10px_rgba(19,41,75,0.3)]')}>
         <div className="flex items-center gap-3">
-          <div className="flex min-w-0 flex-1 flex-col gap-[3px] whitespace-nowrap">
+          <div className="flex min-w-0 flex-1 flex-col gap-[3px] xl:whitespace-nowrap">
             <p className="text-[20px] font-bold tracking-[-0.2px] text-ink">{title}</p>
             <p className="text-[12px] font-medium text-muted">{subtitle}</p>
           </div>

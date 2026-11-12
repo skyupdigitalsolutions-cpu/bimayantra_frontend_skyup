@@ -102,7 +102,7 @@ function ChannelRow({ k, t, v, set, fe, waOn, templates, templatesLoading, disab
   const def = k === 'whatsapp' ? t.defaults?.whatsapp : t.defaults?.email
   return (
     <div className="flex flex-col gap-3 rounded-[20px] bg-panel p-4">
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 xl:flex-nowrap">
         <span className="flex items-center gap-2 text-[14px] font-bold text-ink"><Icon name={ch.icon} size={17} className="text-muted" />{ch.label}</span>
         <div role="radiogroup" aria-label={`${ch.label} for ${t.label}`} className="ml-auto flex gap-1 rounded-[18px] bg-white p-1">
           {modes.map((m) => (

@@ -66,3 +66,93 @@
 @utility bg-pink-hero { background-image: linear-gradient(to bottom, #fbd3dc, #f6b3c3); }
 @utility bg-rail { background-image: linear-gradient(to bottom, #1a3460, #0e1f3b); }
 @utility bg-violet-cta { background-image: linear-gradient(to right, #e9e3fc, #dcd2fb); }
+
+/* ───────────── Phones and tablets (below 1280px) ─────────────
+   The screens were drawn for a 1280px+ desktop frame with fixed-width columns. Below 1280px:
+   - a fixed width of 300px or more becomes the full width of its container (the desktop size is untouched),
+   - a row holding such a column wraps, so the columns stack,
+   - wide content (tables, pill bars, comparison grids) scrolls sideways inside its own box instead of the page.
+   Classes with a breakpoint prefix (md:w-[…]) are not matched: screens built responsive keep their own rules. */
+@media (max-width: 1279.98px) {
+  .w-\[300px\],
+  .w-\[302px\],
+  .w-\[304px\],
+  .w-\[312px\],
+  .w-\[320px\],
+  .w-\[322px\],
+  .w-\[330px\],
+  .w-\[340px\],
+  .w-\[344px\],
+  .w-\[349px\],
+  .w-\[352px\],
+  .w-\[360px\],
+  .w-\[368px\],
+  .w-\[370px\],
+  .w-\[380px\],
+  .w-\[386px\],
+  .w-\[400px\],
+  .w-\[408px\],
+  .w-\[413px\],
+  .w-\[416px\],
+  .w-\[420px\],
+  .w-\[430px\],
+  .w-\[440px\],
+  .w-\[442px\],
+  .w-\[458px\],
+  .w-\[470px\],
+  .w-\[475px\],
+  .w-\[480px\],
+  .w-\[484px\],
+  .w-\[500px\],
+  .w-\[512px\],
+  .w-\[520px\],
+  .w-\[540px\],
+  .w-\[560px\],
+  .w-\[580px\],
+  .w-\[587px\],
+  .w-\[600px\],
+  .w-\[602px\],
+  .w-\[640px\],
+  .w-\[660px\],
+  .w-\[671px\],
+  .w-\[700px\],
+  .w-\[714px\],
+  .w-\[720px\],
+  .w-\[753px\],
+  .w-\[756px\],
+  .w-\[760px\],
+  .w-\[780px\],
+  .w-\[800px\],
+  .w-\[840px\],
+  .w-\[846px\],
+  .w-\[900px\],
+  .w-\[1180px\],
+  .w-\[1200px\],
+  .w-\[1440px\] { width: 100%; max-width: 100%; }
+  .min-w-\[300px\],
+  .min-w-\[320px\],
+  .min-w-\[520px\],
+  .min-w-\[1280px\] { min-width: 0; }
+  .flex:not(.flex-col):has(> .w-\[300px\], > .w-\[302px\], > .w-\[304px\], > .w-\[312px\], > .w-\[320px\], > .w-\[322px\], > .w-\[330px\], > .w-\[340px\], > .w-\[344px\], > .w-\[349px\], > .w-\[352px\], > .w-\[360px\], > .w-\[368px\], > .w-\[370px\], > .w-\[380px\], > .w-\[386px\], > .w-\[400px\], > .w-\[408px\], > .w-\[413px\], > .w-\[416px\], > .w-\[420px\], > .w-\[430px\], > .w-\[440px\], > .w-\[442px\], > .w-\[458px\], > .w-\[470px\], > .w-\[475px\], > .w-\[480px\], > .w-\[484px\], > .w-\[500px\], > .w-\[512px\], > .w-\[520px\], > .w-\[540px\], > .w-\[560px\], > .w-\[580px\], > .w-\[587px\], > .w-\[600px\], > .w-\[602px\], > .w-\[640px\], > .w-\[660px\], > .w-\[671px\], > .w-\[700px\], > .w-\[714px\], > .w-\[720px\], > .w-\[753px\], > .w-\[756px\], > .w-\[760px\], > .w-\[780px\], > .w-\[800px\], > .w-\[840px\], > .w-\[846px\], > .w-\[900px\], > .w-\[1180px\], > .w-\[1200px\], > .w-\[1440px\]) { flex-wrap: wrap; }
+  .w-max { max-width: 100%; min-width: 0; flex-shrink: 1; overflow-x: auto; scrollbar-width: none; }
+  .w-max::-webkit-scrollbar { display: none; }
+  :where(div, section):has(> table) { max-width: 100%; overflow-x: auto; }
+  img, video { max-width: 100%; }
+  /* Div-based tables (rows marked min-w-max) scroll inside their rounded card */
+  .overflow-hidden:has(> .min-w-max), .overflow-hidden:has(> * > .min-w-max) { overflow-x: auto; min-width: 0; max-width: 100%; }
+  /* Stat tiles (fixed 280px) wrap onto more rows */
+  .flex:not(.flex-col):has(> .rounded-\[26px\].p-\[22px\], > .w-\[280px\].flex-col) { flex-wrap: wrap; }
+}
+@media (max-width: 767.98px) {
+  /* Phones: dense grids drop to two columns */
+  .grid-cols-3, .grid-cols-4, .grid-cols-5, .grid-cols-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* Cards side by side (plan cards, setting tiles) stack when two no longer fit */
+  .flex:not(.flex-col):has(> .flex-1[class*="rounded-["]) { flex-wrap: wrap; }
+  .flex:not(.flex-col) > .flex-1[class*="rounded-["] { min-width: min(100%, 240px); }
+  /* Label / value rows: fixed label columns narrow, and values wrap instead of running past the edge */
+  .w-\[200px\].shrink-0, .w-\[220px\].shrink-0, .w-\[240px\].shrink-0, .w-\[260px\].shrink-0 { width: 38%; }
+  .flex-1 { min-width: 0; }
+  p.flex-1, span.flex-1 { overflow-wrap: anywhere; }
+  /* Stat tiles: two to a row */
+  .w-\[280px\].flex-col { width: calc(50% - 12px); }
+}

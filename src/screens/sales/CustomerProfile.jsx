@@ -46,19 +46,19 @@ export default function CustomerProfile({ data }) {
       />
 
       {/* Profile hero */}
-      <div className="mt-[13px] flex h-[144px] items-center gap-6 rounded-[32px] bg-linear-to-r from-[#fbd3dc] to-[#f6b3c3] px-8 py-[26px] shadow-[0px_18px_36px_-12px_rgba(232,137,156,0.3)]">
+      <div className="mt-[13px] flex flex-wrap items-center gap-4 rounded-[32px] bg-linear-to-r from-[#fbd3dc] to-[#f6b3c3] px-5 py-5 shadow-[0px_18px_36px_-12px_rgba(232,137,156,0.3)] md:gap-6 md:px-8 md:py-[26px] xl:h-[144px] xl:flex-nowrap">
         <span className="flex size-[92px] shrink-0 items-center justify-center rounded-full border-4 border-white bg-white text-[29px] font-bold text-navy">
           {C.initials}
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <p className="text-[24px] font-bold tracking-[-0.2px] text-ink">{C.name}</p>
           <p className="text-[13px] font-medium text-rose-ink">{C.tagline}</p>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {data ? <SChip tone={data.consentChip.tone} icon={data.consentChip.icon}>{data.consentChip.label}</SChip> : <SChip tone="green" icon="check">WhatsApp consent</SChip>}
             {(data ? data.sourceChip : 'Referred by Shanthi Rao') && <SChip tone="gray" icon="link">{data ? data.sourceChip : 'Referred by Shanthi Rao'}</SChip>}
           </div>
         </div>
-        <div className="flex gap-6">
+        <div className="flex flex-wrap gap-6 xl:flex-nowrap">
           {C.minis.map(([k, v]) => (
             <div key={k} className="flex h-[70px] flex-col gap-0.5 rounded-[20px] bg-white/80 px-5 py-3.5">
               <p className="text-[12px] font-semibold whitespace-nowrap text-rose-ink">{k}</p>

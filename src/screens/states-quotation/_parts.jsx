@@ -28,16 +28,16 @@ function Search() {
 
 export function Header({ chip, actions, breadcrumb = 'QUOTATIONS  /  QT-202610-00012  R2', title = Q.id, subtitle = Q.meta }) {
   return (
-    <header className="flex items-start justify-between">
-      <div className="flex w-0 flex-1 flex-col gap-1.5 whitespace-nowrap">
-        <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre text-muted">{breadcrumb}</p>
+    <header className="flex flex-col items-start gap-3 xl:flex-row xl:justify-between">
+      <div className="flex w-full min-w-0 flex-col gap-1.5 xl:w-0 xl:flex-1 xl:whitespace-nowrap">
+        <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre-wrap xl:whitespace-pre text-muted">{breadcrumb}</p>
         <div className="flex items-center gap-3">
-          <h1 className="text-[30px] font-bold tracking-[-0.6px] text-ink">{title}</h1>
+          <h1 className="text-[24px] md:text-[30px] font-bold tracking-[-0.6px] text-ink">{title}</h1>
           {chip}
         </div>
         <p className="text-[14px] font-medium text-muted">{subtitle}</p>
       </div>
-      <div className="mt-1 flex shrink-0 items-center gap-3">
+      <div className="mt-1 flex max-w-full flex-wrap items-center gap-3 xl:shrink-0 xl:flex-nowrap">
         <Search />
         <button type="button" aria-label="Notifications" className="flex size-11 items-center justify-center rounded-full bg-white text-ink shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)] hover:bg-tile">
           <Icon name="bell" size={18.5} />

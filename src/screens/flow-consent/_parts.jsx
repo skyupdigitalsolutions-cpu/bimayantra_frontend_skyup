@@ -13,8 +13,8 @@ import { useHeaderSearch } from '../customer-tabs/_search'
 export function HeaderActions() {
   useHeaderSearch() // Ctrl/Cmd+K focuses the header search pill
   return (
-    <div className="mt-1 flex shrink-0 items-center gap-3">
-      <label className="flex h-[50px] w-[240px] items-center gap-2.5 rounded-[25px] bg-white pr-2 pl-[18px] shadow-[0px_6px_18px_-8px_rgba(19,41,75,0.1)]">
+    <div className="mt-1 flex max-w-full flex-wrap items-center gap-3 xl:shrink-0 xl:flex-nowrap">
+      <label className="hidden h-[50px] w-[240px] items-center gap-2.5 rounded-[25px] bg-white pr-2 pl-[18px] shadow-[0px_6px_18px_-8px_rgba(19,41,75,0.1)] md:flex">
         <Icon name="search" size={18} className="text-muted" />
         <input placeholder="Search anything" className="min-w-0 flex-1 bg-transparent text-[13px] font-medium text-ink outline-none placeholder:text-faint" />
         <kbd className="rounded-[10px] bg-chip px-2 py-1 font-sans text-[11px] font-semibold text-muted">Ctrl K</kbd>
@@ -42,11 +42,11 @@ export function ActiveChip({ children = 'Active' }) {
 
 export function PageHeading({ crumb, title = holder.name, chip = <ActiveChip />, meta = holder.meta, actions = <HeaderActions /> }) {
   return (
-    <header className="flex items-start justify-between">
+    <header className="flex flex-col items-start gap-3 xl:flex-row xl:justify-between">
       <div className="flex flex-col gap-1.5">
-        <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre text-muted">{crumb}</p>
+        <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre-wrap xl:whitespace-pre text-muted">{crumb}</p>
         <div className="flex items-center gap-3">
-          <h1 className="text-[30px] font-bold tracking-[-0.6px] text-ink">{title}</h1>
+          <h1 className="text-[24px] md:text-[30px] font-bold tracking-[-0.6px] text-ink">{title}</h1>
           {chip}
         </div>
         <p className="text-[14px] font-medium text-muted">{meta}</p>

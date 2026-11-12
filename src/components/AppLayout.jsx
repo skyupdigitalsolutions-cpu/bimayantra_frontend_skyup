@@ -13,14 +13,14 @@ import SubscriptionBanner from './SubscriptionBanner'
  *   panelClass — extra classes for the panel (e.g. "px-10")
  *   sidebar    — override the whole rail (admin / referrer shells)
  *
- * Responsive mode (opt-in, Figma R1–R5) — `responsive`:
+ * Responsive mode (Figma R1–R5) — on for every screen (`responsive={false}` keeps the fixed desktop frame):
  *   ≥1280 (xl)   identical to the desktop frame above (sticky 100px rail)
  *   768–1279     72px sticky icon rail (R1), panel r32 / padding 24
  *   <768         white app bar + fixed bottom tab bar (R2/R4), no rail
  *   mobileTitle / mobileBack / mobileTab (bottom-bar key, null hides it) / lockScroll (overlay open)
  *   mobileSearch — false hides the app bar's search button (the dashboard has no search)
  */
-export default function AppLayout({ active, aside, children, panelClass = '', sidebar, responsive, mobileTitle, mobileBack, mobileTab, lockScroll, mobileSearch = true }) {
+export default function AppLayout({ active, aside, children, panelClass = '', sidebar, responsive = true, mobileTitle, mobileBack, mobileTab, lockScroll, mobileSearch = true }) {
   if (!responsive) {
     return (
       <div className="flex min-h-screen min-w-[1280px] gap-7 bg-white py-6 pr-6 pl-7">

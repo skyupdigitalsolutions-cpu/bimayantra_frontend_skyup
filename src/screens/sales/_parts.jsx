@@ -239,7 +239,7 @@ export function TableCard({ className = '', children }) {
 /** cols: [{label, w}] (w = tailwind width class) */
 export function THead({ cols, gap = 'gap-5', className = '' }) {
   return (
-    <div className={cx('flex border-b border-line bg-[#fafbfd] px-6 py-4', gap, className)}>
+    <div className={cx('flex min-w-max border-b border-line bg-[#fafbfd] px-6 py-4', gap, className)}>
       {cols.map((c, i) => (
         <p key={i} className={cx('shrink-0 text-[12px] font-semibold whitespace-nowrap text-muted', c.w, c.className)}>{c.label}</p>
       ))}
@@ -248,7 +248,7 @@ export function THead({ cols, gap = 'gap-5', className = '' }) {
 }
 
 export function TRow({ to, onClick, gap = 'gap-5', className = '', children }) {
-  const cls = cx('group flex items-center border-b border-line px-6 py-4 transition last:border-0 hover:bg-[#f7f9ff]', gap, className)
+  const cls = cx('group flex min-w-max items-center border-b border-line px-6 py-4 transition last:border-0 hover:bg-[#f7f9ff]', gap, className)
   if (to) return <Link to={to} className={cls}>{children}</Link>
   return <div className={cls} onClick={onClick}>{children}</div>
 }

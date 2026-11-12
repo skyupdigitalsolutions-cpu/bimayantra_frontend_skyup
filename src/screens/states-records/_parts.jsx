@@ -30,7 +30,7 @@ export function MessageRow({ m, to, cancelTo }) {
       <span className={cx('flex size-12 shrink-0 items-center justify-center rounded-[24px]', k.bg)}>
         <Icon name={k.icon} size={22} className="text-ink" />
       </span>
-      <div className="flex min-w-0 flex-1 flex-col gap-[3px] whitespace-nowrap">
+      <div className="flex min-w-0 flex-1 flex-col gap-[3px] xl:whitespace-nowrap">
         <p className="text-[14px] font-bold text-ink">{m.title}</p>
         <p className="text-[12px] font-medium text-muted">{m.when}</p>
         {m.note && (

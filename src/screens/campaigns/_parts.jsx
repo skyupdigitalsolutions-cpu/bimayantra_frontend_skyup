@@ -74,11 +74,11 @@ export function Bell() {
 /** Page heading (crumb / title + chip / subtitle) on the left, bell + actions on the right. */
 export function PageHead({ crumb, title, chip, sub, actions, aside }) {
   return (
-    <header className="flex items-start justify-between gap-6">
+    <header className="flex flex-col items-start gap-3 xl:flex-row xl:justify-between xl:gap-6">
       <div className="flex flex-col gap-1.5">
-        <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre text-muted">{crumb}</p>
+        <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre-wrap xl:whitespace-pre text-muted">{crumb}</p>
         <div className="flex h-[38px] items-center gap-3">
-          <h1 className="text-[30px] font-bold tracking-[-0.6px] whitespace-nowrap text-ink">{title}</h1>
+          <h1 className="text-[24px] md:text-[30px] font-bold tracking-[-0.6px] xl:whitespace-nowrap text-ink">{title}</h1>
           {chip}
         </div>
         <p className="text-[14px] font-medium whitespace-nowrap text-muted">{sub}</p>

@@ -56,20 +56,21 @@ export function IconButton({ icon, size = 44, iconSize = 18, badge, className = 
  */
 export function PageHeader({ breadcrumb, title, titleExtra, subtitle, actions, hideSearch, searchClass, className = '' }) {
   return (
-    <header className={cx('flex items-start justify-between gap-6', className)}>
-      <div className="flex flex-col gap-1.5">
+    <header className={cx('flex flex-col items-start gap-3 xl:flex-row xl:justify-between xl:gap-6', className)}>
+      <div className="flex min-w-0 flex-col gap-1.5">
         {breadcrumb && (
-          <p className="text-[12px] font-semibold tracking-[0.24px] whitespace-pre text-muted uppercase">{breadcrumb}</p>
+          <p className="text-[12px] font-semibold tracking-[0.24px] whitespace-pre-wrap xl:whitespace-pre text-muted uppercase">{breadcrumb}</p>
         )}
-        <div className="flex items-center gap-3">
-          <h1 className="text-[30px] font-bold tracking-[-0.6px] text-ink">{title}</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-[24px] font-bold tracking-[-0.6px] text-ink md:text-[30px]">{title}</h1>
           {titleExtra}
         </div>
         {subtitle && <p className="text-[14px] font-medium text-muted">{subtitle}</p>}
       </div>
-      <div className="mt-1 flex shrink-0 items-center gap-3">
-        {!hideSearch && <SearchPill className={searchClass} />}
-        {!hideSearch && <IconButton icon="bell" />}
+      <div className="mt-1 flex max-w-full flex-wrap items-center gap-3 xl:shrink-0 xl:flex-nowrap">
+        {/* Phones: search and the bell are in the top app bar */}
+        {!hideSearch && <span className="hidden md:contents"><SearchPill className={searchClass} /></span>}
+        {!hideSearch && <span className="hidden md:contents"><IconButton icon="bell" /></span>}
         {actions}
       </div>
     </header>
@@ -363,7 +364,7 @@ export function Modal({ open = true, onClose, width = 560, className = '', child
  */
 export function Stepper({ steps, current, className = '' }) {
   return (
-    <div className={cx('flex items-start rounded-[28px] bg-white px-5 py-[18px] drop-shadow-[0px_8px_12px_rgba(19,41,75,0.05)]', className)}>
+    <div className={cx('flex items-start rounded-[28px] bg-white px-5 py-[18px] max-xl:overflow-x-auto drop-shadow-[0px_8px_12px_rgba(19,41,75,0.05)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden', className)}>
       {steps.map((s, i) => {
         const done = i < current
         const on = i === current
@@ -383,7 +384,7 @@ export function Stepper({ steps, current, className = '' }) {
               <span className={cx('text-center text-[11px] whitespace-nowrap', on || done ? 'font-semibold text-ink' : 'font-medium text-muted')}>{s}</span>
             </div>
             {i < steps.length - 1 && (
-              <span className={cx('mt-[15px] h-[2px] flex-1 rounded-full', done ? 'bg-navy' : 'bg-line')} />
+              <span className={cx('mt-[15px] h-[2px] min-w-[12px] flex-1 rounded-full', done ? 'bg-navy' : 'bg-line')} />
             )}
           </div>
         )

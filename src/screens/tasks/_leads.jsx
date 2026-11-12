@@ -14,9 +14,9 @@ export const CARD = `rounded-[28px] bg-white p-6 ${SH_CARD}`
 export function PageHeading({ crumb, title, extra, sub }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre text-muted">{crumb}</p>
+      <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre-wrap xl:whitespace-pre text-muted">{crumb}</p>
       <div className="flex items-center gap-3">
-        <h1 className="text-[30px] font-bold tracking-[-0.6px] text-ink">{title}</h1>
+        <h1 className="text-[24px] md:text-[30px] font-bold tracking-[-0.6px] text-ink">{title}</h1>
         {extra}
       </div>
       <p className="text-[14px] font-medium text-muted">{sub}</p>

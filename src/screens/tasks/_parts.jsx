@@ -89,7 +89,7 @@ export function Check({ checked, onChange, className = '' }) {
 /** Priority segmented control (High / Medium / Low) */
 export function PriorityTabs({ value, onChange }) {
   return (
-    <div className={cx('flex w-fit gap-1 rounded-[26px] bg-white p-[5px]', SH_SOFT)}>
+    <div className={cx('flex w-fit max-w-full gap-1 rounded-[26px] bg-white p-[5px] max-xl:overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden', SH_SOFT)}>
       {['High', 'Medium', 'Low'].map((p) => (
         <button
           key={p}
@@ -113,7 +113,7 @@ function DashHeader() {
     <>
       <header className="flex items-center gap-2.5 md:col-span-2 xl:row-start-1 xl:mb-2.5 xl:gap-3">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5 md:gap-1 xl:gap-1.5">
-          <h1 className="text-[20px] font-bold tracking-[-0.2px] text-ink md:text-[24px] xl:text-[30px] xl:tracking-[-0.6px]">{greeting.title}</h1>
+          <h1 className="text-[20px] font-bold tracking-[-0.2px] text-ink md:text-[24px] xl:text-[24px] md:text-[30px] xl:tracking-[-0.6px]">{greeting.title}</h1>
           <p className="text-[12px] font-medium text-[#b4323c] md:text-[13px] md:text-muted xl:text-[14px]">
             <span className="md:hidden">{greeting.subMobile}</span>
             <span className="hidden md:inline xl:hidden">{greeting.subTablet}</span>

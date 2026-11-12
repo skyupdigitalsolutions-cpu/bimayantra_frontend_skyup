@@ -21,10 +21,10 @@ export default function Published() {
 
   return (
     <AppLayout active="products">
-      <header className="flex items-start justify-between">
+      <header className="flex flex-col items-start gap-3 xl:flex-row xl:justify-between">
         <div className="flex flex-col gap-1.5">
-          <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre text-muted">PRODUCTS  /  MY PRODUCTS</p>
-          <h1 className="text-[30px] font-bold tracking-[-0.6px] text-ink">Products</h1>
+          <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre-wrap xl:whitespace-pre text-muted">PRODUCTS  /  MY PRODUCTS</p>
+          <h1 className="text-[24px] md:text-[30px] font-bold tracking-[-0.6px] text-ink">Products</h1>
           <p className="text-[14px] font-medium text-muted">Your own products are visible only in your account.</p>
         </div>
         <div className="mt-1 flex items-center gap-3">

@@ -13,7 +13,7 @@ const SH = 'shadow-[0px_6px_18px_-8px_rgba(19,41,75,0.1)]'
 function QuickActions() {
   return (
     <section className="mt-5 -mr-1 w-[416px] shrink-0">
-      <h1 className="text-[30px] font-bold tracking-[-0.6px] text-ink">What do you need?</h1>
+      <h1 className="text-[24px] md:text-[30px] font-bold tracking-[-0.6px] text-ink">What do you need?</h1>
       <p className="mt-1.5 text-[14px] font-medium text-muted">Start any task in one tap</p>
       <div className="mt-[26px] flex flex-wrap gap-x-4 gap-y-3.5">
         {dashQuick.map((q) => (

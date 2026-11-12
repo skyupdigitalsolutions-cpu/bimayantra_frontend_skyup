@@ -87,7 +87,7 @@ export function StatTile({ bg, icon, label, value, note, className = '' }) {
 /** Segmented tabs in a white pill (p5 gap4 r26); tab px16 py9 r21; count chip */
 export function SegTabs({ items, value, onChange, className = '' }) {
   return (
-    <div className={cx('inline-flex shrink-0 items-start gap-1 rounded-[26px] bg-white p-[5px] shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)]', className)}>
+    <div className={cx('inline-flex max-w-full min-w-0 items-start gap-1 rounded-[26px] max-xl:overflow-x-auto bg-white p-[5px] shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)] [scrollbar-width:none] xl:shrink-0 [&::-webkit-scrollbar]:hidden', className)}>
       {items.map((t) => {
         const on = t.key === value
         // t.dim: an option with nothing in it (e.g. a category with no products) stays clickable but looks quieter
@@ -112,7 +112,7 @@ export function SegTabs({ items, value, onChange, className = '' }) {
 export function DataTable({ columns, rows, rowTo, highlight, empty = 'Nothing here yet.', emptyTitle, onClear, className = '' }) {
   return (
     <div className={cx('overflow-hidden rounded-[28px] bg-white shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.05)]', className)}>
-      <div className="flex gap-5 bg-[#fafbfd] px-6 py-4">
+      <div className="flex min-w-max gap-5 bg-[#fafbfd] px-6 py-4">
         {columns.map((c) => (
           <div key={c.key} className={cx('shrink-0 text-[12px] font-semibold whitespace-nowrap text-muted', c.className)} style={{ width: c.width }}>
             {c.label}
@@ -129,7 +129,7 @@ export function DataTable({ columns, rows, rowTo, highlight, empty = 'Nothing he
             {c.render ? c.render(r, hot) : r[c.key]}
           </div>
         ))
-        const cls = cx('flex items-center gap-5 border-t border-line px-6 py-4 transition', hot ? 'bg-[#f7f9ff]' : 'hover:bg-[#f7f9ff]')
+        const cls = cx('flex min-w-max items-center gap-5 border-t border-line px-6 py-4 transition', hot ? 'bg-[#f7f9ff]' : 'hover:bg-[#f7f9ff]')
         const to = rowTo?.(r)
         return to ? <Link key={r.id ?? i} to={to} className={cls}>{content}</Link> : <div key={r.id ?? i} className={cls}>{content}</div>
       })}
@@ -183,7 +183,7 @@ export function Panel({ className = '', children, ...rest }) {
 export function PanelHead({ title, subtitle, right, className = '', titleClass = 'text-ink', subClass = 'text-muted' }) {
   return (
     <div className={cx('flex items-center gap-3', className)}>
-      <div className="flex min-w-0 flex-1 flex-col gap-[3px] whitespace-nowrap">
+      <div className="flex min-w-0 flex-1 flex-col gap-[3px] xl:whitespace-nowrap">
         <p className={cx('text-[17px] font-bold', titleClass)}>{title}</p>
         {subtitle && <p className={cx('text-[12px] font-medium', subClass)}>{subtitle}</p>}
       </div>
@@ -238,21 +238,22 @@ export function BackButton({ to = '/', label = 'Back', className = '' }) {
  */
 export function Header({ breadcrumb, title, titleExtra, subtitle, actions, before, search = true, back }) {
   return (
-    <header className="relative flex min-h-[83px] items-start gap-4">
+    <header className="relative flex min-h-[83px] flex-wrap items-start gap-4 xl:flex-nowrap">
       {back && <BackButton to={back} className="mt-[22px]" />}
-      <div className="flex flex-col gap-1.5">
-        <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre text-muted uppercase">{breadcrumb}</p>
-        <div className="flex items-center gap-3">
-          <h1 className="text-[30px] font-bold tracking-[-0.6px] whitespace-nowrap text-ink">{title}</h1>
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5 xl:flex-none">
+        <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre-wrap xl:whitespace-pre text-muted uppercase">{breadcrumb}</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-[24px] font-bold tracking-[-0.6px] text-ink md:text-[30px] xl:whitespace-nowrap">{title}</h1>
           {titleExtra}
         </div>
-        <p className="text-[14px] font-medium whitespace-nowrap text-muted">{subtitle}</p>
+        <p className="text-[14px] font-medium text-muted xl:whitespace-nowrap">{subtitle}</p>
       </div>
       {/* Actions are pinned right and may overlap a long title, exactly as in the Figma frames */}
-      <div className="absolute top-1 right-0 flex items-center gap-3">
-        {search && <Search />}
+      {/* Desktop: pinned right; smaller screens: a wrapping row under the title (search and bell are in the app bar on phones) */}
+      <div className="flex w-full flex-wrap items-center gap-3 xl:absolute xl:top-1 xl:right-0 xl:w-auto xl:flex-nowrap">
+        {search && <span className="hidden md:contents"><Search /></span>}
         {before}
-        <Bell />
+        <span className="hidden md:contents"><Bell /></span>
         {actions}
       </div>
     </header>

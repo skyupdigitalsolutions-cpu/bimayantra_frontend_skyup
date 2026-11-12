@@ -25,11 +25,11 @@ export default function SuggestCorrection() {
   const vLabel = VARIANTS.find((v) => v.key === variant)?.label
   return (
     <AppLayout active="products">
-      <header className="flex items-start justify-between">
+      <header className="flex flex-col items-start gap-3 xl:flex-row xl:justify-between">
         <div className="flex flex-col gap-1.5">
-          <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre text-muted">PRODUCTS  /  CAREFIRST FAMILY</p>
+          <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre-wrap xl:whitespace-pre text-muted">PRODUCTS  /  CAREFIRST FAMILY</p>
           <div className="flex items-center gap-3">
-            <h1 className="text-[30px] font-bold tracking-[-0.6px] text-ink">CareFirst Family</h1>
+            <h1 className="text-[24px] md:text-[30px] font-bold tracking-[-0.6px] text-ink">CareFirst Family</h1>
             <Pill tone="green" icon="check">Verified by SkyUp</Pill>
           </div>
           <p className="text-[14px] font-medium text-muted">Niva Bupa · UIN NBHHLIP00001V012526 · Health</p>

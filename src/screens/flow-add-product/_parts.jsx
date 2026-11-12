@@ -137,7 +137,7 @@ export function Stepper({ current }) {
   steps.forEach((label, i) => {
     const n = i + 1
     const state = n < current ? 'done' : n === current ? 'current' : 'todo'
-    if (i > 0) items.push(<span key={`c${i}`} className={cx('h-0.5 flex-1 rounded-[1px]', n <= current ? 'bg-navy' : 'bg-line')} />)
+    if (i > 0) items.push(<span key={`c${i}`} className={cx('h-0.5 min-w-[16px] flex-1 rounded-[1px]', n <= current ? 'bg-navy' : 'bg-line')} />)
     items.push(
       <div key={label} className="flex flex-1 flex-col items-center gap-2">
         <span
@@ -155,8 +155,8 @@ export function Stepper({ current }) {
     )
   })
   return (
-    <div className={cx('mt-[21px] rounded-[28px] bg-white px-7 py-5', SHADOW_CARD)}>
-      <div className="flex h-[57px] items-center">{items}</div>
+    <div className={cx('mt-[21px] rounded-[28px] bg-white px-7 py-5 max-xl:overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden', SHADOW_CARD)}>
+      <div className="flex h-[57px] min-w-max items-center xl:min-w-0">{items}</div>
     </div>
   )
 }
@@ -165,11 +165,11 @@ export function Stepper({ current }) {
 export function Shell({ step, subtitle, headChip, aside, overlay, children, extra, tightBottom }) {
   return (
     <AppLayout active="products">
-      <header className="flex items-start justify-between">
+      <header className="flex flex-col items-start gap-3 xl:flex-row xl:justify-between">
         <div className="flex flex-col gap-1.5">
-          <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre text-muted">PRODUCTS  /  ADD MY PRODUCT</p>
+          <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre-wrap xl:whitespace-pre text-muted">PRODUCTS  /  ADD MY PRODUCT</p>
           <div className="flex items-center gap-3">
-            <h1 className="text-[30px] font-bold tracking-[-0.6px] text-ink">Add my product</h1>
+            <h1 className="text-[24px] md:text-[30px] font-bold tracking-[-0.6px] text-ink">Add my product</h1>
             {headChip ?? <Chip tone="green" icon="check">Draft saved</Chip>}
           </div>
           <p className="text-[14px] font-medium text-muted">{subtitle}</p>
@@ -211,7 +211,7 @@ export function StepFooter({ back, backLabel = 'Back', mid = 'draft', next }) {
   return (
     <>
       <Divider />
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 xl:flex-nowrap">
         <Btn variant="outline" to={back}>{backLabel}</Btn>
         {mid === 'draft' ? (
           <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted">
