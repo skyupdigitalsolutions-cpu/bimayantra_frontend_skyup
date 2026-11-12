@@ -21,8 +21,8 @@ const SH_SOFT = 'shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)]'
 
 function HeaderActions({ action }) {
   return (
-    <div className="mt-1 flex max-w-full flex-wrap items-center gap-3 xl:shrink-0 xl:flex-nowrap">
-      <label className="hidden h-[50px] w-[240px] items-center gap-2.5 rounded-[25px] bg-white pr-2 pl-[18px] shadow-[0px_6px_18px_-8px_rgba(19,41,75,0.1)] md:flex">
+    <div className="mt-1 flex shrink-0 items-center gap-3 max-xl:flex-wrap">
+      <label className="flex h-[50px] w-[240px] items-center gap-2.5 rounded-[25px] bg-white pr-2 pl-[18px] shadow-[0px_6px_18px_-8px_rgba(19,41,75,0.1)]">
         <Icon name="search" size={18} className="text-muted" />
         <input
           placeholder="Search anything"
@@ -40,9 +40,9 @@ function HeaderActions({ action }) {
 
 export function PageHead({ crumb, title, chip, subtitle, action }) {
   return (
-    <header className="flex flex-col items-start gap-3 xl:flex-row xl:justify-between xl:gap-6">
+    <header className="flex items-start justify-between gap-6 max-xl:flex-col max-xl:gap-3">
       <div className="flex flex-col gap-1.5">
-        <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre-wrap xl:whitespace-pre text-muted">{crumb}</p>
+        <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre max-xl:whitespace-pre-wrap text-muted">{crumb}</p>
         <div className="flex h-[38px] items-center gap-3">
           <h1 className="text-[24px] md:text-[30px] font-bold tracking-[-0.6px] text-ink">{title}</h1>
           {chip}
