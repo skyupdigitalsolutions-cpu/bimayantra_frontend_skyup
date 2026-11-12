@@ -56,9 +56,9 @@ export default function BrochureReadingFailed() {
   const navigate = useNavigate()
   return (
     <AppLayout active="products">
-      <header className="flex flex-col items-start gap-3 xl:flex-row xl:justify-between">
+      <header className="flex items-start justify-between max-xl:flex-col max-xl:gap-3">
         <div className="flex flex-col gap-1.5">
-          <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre-wrap xl:whitespace-pre text-muted">PRODUCTS  /  ADD MY PRODUCT</p>
+          <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre max-xl:whitespace-pre-wrap text-muted">PRODUCTS  /  ADD MY PRODUCT</p>
           <div className="flex items-center gap-3">
             <h1 className="text-[24px] md:text-[30px] font-bold tracking-[-0.6px] text-ink">Add my product</h1>
             <SChip tone="red" icon="x">Reading failed</SChip>
