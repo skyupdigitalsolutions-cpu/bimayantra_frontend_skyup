@@ -67,9 +67,14 @@ export function LiveAddProduct() {
   const [job, setJob] = useState(null)
   const [reading, setReading] = useState(false)
   const [readErr, setReadErr] = useState(null)
+  // Another insurer's brochure (WRONG_COMPANY, OCR-10) is not attached to the product; its message stays on screen
+  const receiveJob = (j) => {
+    setJob(j)
+    if (j?.status === 'WRONG_COMPANY') set('brochureFileId')(null)
+  }
   useEffect(() => {
     if (!job || !['QUEUED', 'RUNNING', 'PENDING', 'PROCESSING'].includes(job.status)) return undefined
-    const t = setTimeout(async () => { try { setJob((await api.myProducts.reading(job.id)).data) } catch (e) { setReadErr(e) } }, 2500)
+    const t = setTimeout(async () => { try { receiveJob((await api.myProducts.reading(job.id)).data) } catch (e) { setReadErr(e) } }, 2500)
     return () => clearTimeout(t)
   }, [job])
   const [brochureName, setBrochureName] = useState('')
@@ -80,7 +85,8 @@ export function LiveAddProduct() {
       const fileId = (await api.files.upload(file, 'BROCHURE')).data.id
       set('brochureFileId')(fileId)
       setBrochureName(file.name)
-      if (canRead) setJob((await api.myProducts.startReading({ typeId, fileId })).data)
+      // insurerId: the company chosen in step 2; a brochure from another insurer is refused (WRONG_COMPANY, OCR-10)
+      if (canRead) setJob((await api.myProducts.startReading({ typeId, fileId, insurerId: insurerId || undefined })).data)
     } catch (e) {
       if (e?.messageId === 'OCR-07') return // reading switched off: attached, values typed by hand
       setReadErr(e)
@@ -89,9 +95,10 @@ export function LiveAddProduct() {
   // The brochure looks like another category (OCR-09) but the advisor is sure: read the same file anyway
   const readAnyway = async () => {
     setReading(true); setReadErr(null)
-    try { setJob((await api.myProducts.startReading({ typeId, fileId: d.brochureFileId, ignoreCategoryCheck: true })).data) } catch (e) { setReadErr(e) } finally { setReading(false) }
+    try { setJob((await api.myProducts.startReading({ typeId, fileId: d.brochureFileId, insurerId: insurerId || undefined, ignoreCategoryCheck: true })).data) } catch (e) { setReadErr(e) } finally { setReading(false) }
   }
   const removeBrochure = () => { set('brochureFileId')(null); setBrochureName(''); setJob(null); setReadErr(null); setOcrJobId(null) }
+  const chooseAnotherCompany = () => { removeBrochure(); setStep(1) }
   const readingNow = reading || (!!job && ['QUEUED', 'RUNNING', 'PENDING', 'PROCESSING'].includes(job.status))
   const readyToUse = !!job && ['REVIEW_REQUIRED', 'REVIEWED'].includes(job.status) && !ocrJobId
   const decide = async (row, decision, value) => {
@@ -282,6 +289,11 @@ export function LiveAddProduct() {
               {job?.status === 'WRONG_CATEGORY' && (
                 <div className="flex items-center gap-3 rounded-[16px] bg-[#fbebec] px-4 py-3 text-[13px] font-semibold text-[#b4323c]"><Icon name="alert" size={16} /><span className="flex-1">{job.message ?? 'This brochure does not look like this category.'}</span>
                   <SmallButton variant="outline" disabled={reading} onClick={readAnyway}>Read anyway</SmallButton>
+                  <SmallButton variant="ghost" onClick={removeBrochure}>Upload another</SmallButton></div>
+              )}
+              {job?.status === 'WRONG_COMPANY' && (
+                <div className="flex items-center gap-3 rounded-[16px] bg-[#fbebec] px-4 py-3 text-[13px] font-semibold text-[#b4323c]"><Icon name="alert" size={16} /><span className="flex-1">{job.message ?? 'This brochure is from another company than the one you chose.'}</span>
+                  <SmallButton variant="outline" onClick={chooseAnotherCompany}>Choose another company</SmallButton>
                   <SmallButton variant="ghost" onClick={removeBrochure}>Upload another</SmallButton></div>
               )}
               {job && ['REVIEW_REQUIRED', 'REVIEWED'].includes(job.status) && (() => {
