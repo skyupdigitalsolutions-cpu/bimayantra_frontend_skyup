@@ -402,10 +402,22 @@ function Generated({ c }) {
 function ShareDialog({ c, onClose }) {
   const [channel, setChannel] = useState('WHATSAPP')
   const { act, busy, error } = useAct()
+  const { toast } = useToast()
+  // Each channel does its own thing with the share result (the link is always returned, so it cannot decide alone)
+  const done = async (r) => {
+    const x = r?.data ?? {}
+    if (channel === 'WHATSAPP' && x.whatsappUrl) window.open(x.whatsappUrl, '_blank', 'noopener')
+    else if (channel === 'DOWNLOAD' && x.pdfFileId) window.open(api.files.url(x.pdfFileId), '_blank', 'noopener')
+    else if (channel === 'LINK' && x.link) {
+      try { await navigator.clipboard.writeText(x.link); toast('Link copied. Paste it in a message to the customer.') } catch { window.prompt('Copy this link for the customer:', x.link) }
+    }
+    onClose()
+  }
   return (
     <ActionDialog title="Share comparison" icon="send" confirm="Share" busy={busy} error={error} onClose={onClose}
-      onConfirm={() => act(() => api.comparisons.share(c.id, { channel }), { invalidates: ['comparison', 'comparisons'], quiet: true, onDone: (r) => { const url = r?.data?.url ?? r?.data?.link ?? r?.data?.whatsappUrl; if (url) window.open(url, '_blank', 'noopener'); onClose() } })}>
-      <Field label="Share by" type="select" value={channel} onChange={setChannel} options={[{ value: 'WHATSAPP', label: 'WhatsApp' }, { value: 'EMAIL', label: 'Email' }, { value: 'LINK', label: 'Copy link' }, { value: 'DOWNLOAD', label: 'Download PDF' }]} />
+      onConfirm={() => act(() => api.comparisons.share(c.id, { channel }), { invalidates: ['comparison', 'comparisons'], quiet: true, onDone: done })}>
+      {/* Email is not offered: comparisons are not sent by email yet (the share would only be recorded) */}
+      <Field label="Share by" type="select" value={channel} onChange={setChannel} options={[{ value: 'WHATSAPP', label: 'WhatsApp' }, { value: 'LINK', label: 'Copy link' }, { value: 'DOWNLOAD', label: 'Download PDF' }]} />
       {['PRF-03', 'PRF-13'].includes(error?.messageId) && (
         <Link to="/settings" className="self-start rounded-[12px] border border-line bg-white px-3 py-1.5 text-[13px] font-semibold text-ink hover:bg-panel-2">Open My profile</Link>
       )}
