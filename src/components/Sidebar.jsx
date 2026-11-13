@@ -61,7 +61,7 @@ export function TabletRail({ active, items = NAV, home = '/' }) {
 export function MobileAppBar({ title, back, actions = true, search = true }) {
   const btn = 'flex size-9 shrink-0 items-center justify-center rounded-full bg-white shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)]'
   return (
-    <header className="sticky top-0 z-30 flex h-[100px] shrink-0 items-center gap-2.5 bg-white px-4 pt-[52px] pb-3">
+    <header className="sticky top-0 z-30 flex min-h-[60px] shrink-0 items-center gap-2.5 bg-white px-4 pt-[max(12px,env(safe-area-inset-top))] pb-3 shadow-[0px_4px_16px_-10px_rgba(19,41,75,0.12)]">
       {back ? (
         <Link to={back} aria-label="Back" className={btn}>
           <Icon name="arrow" size={15.1} className="[&_path]:[vector-effect:non-scaling-stroke] rotate-180 text-ink" />
@@ -93,11 +93,11 @@ export const MOBILE_TABS = [
 /** R2/R4 · fixed bottom tab bar. */
 export function MobileTabBar({ active }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 flex h-[81px] bg-white px-2 pt-2.5 pb-[26px] shadow-[0px_-4px_20px_-6px_rgba(19,41,75,0.1)]">
+    <nav className="fixed inset-x-0 bottom-0 z-30 flex bg-white px-1 pt-2.5 pb-[max(10px,env(safe-area-inset-bottom))] shadow-[0px_-4px_20px_-6px_rgba(19,41,75,0.1)]">
       {MOBILE_TABS.map((t) => {
         const on = t.key === active
         return (
-          <Link key={t.key} to={t.to} className="flex flex-1 flex-col items-center gap-1">
+          <Link key={t.key} to={t.to} className="flex min-w-0 flex-1 flex-col items-center gap-1">
             <span className={`flex h-7 w-12 items-center justify-center rounded-[14px] ${on ? 'bg-[#e8f0fd]' : ''}`}>
               <Icon name={t.icon} size={20} className={`[&_path]:[vector-effect:non-scaling-stroke] ${on ? 'text-[#1f5fd6]' : 'text-[#7a8699]'}`} />
             </span>

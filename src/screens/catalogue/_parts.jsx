@@ -14,7 +14,7 @@ const HEAD = {
   disabled: 'bg-[#eef1f5] text-faint',
 }
 export function HeadButton({ variant = 'pink', icon, to, className = '', children, ...rest }) {
-  const cls = cx('inline-flex h-[46px] shrink-0 items-center gap-2 rounded-[24px] pr-5 pl-4 text-[14px] font-semibold whitespace-nowrap transition', HEAD[variant], className)
+  const cls = cx('inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[18px] pr-3.5 pl-3 text-[13px] font-semibold whitespace-nowrap transition md:h-[46px] md:gap-2 md:rounded-[24px] md:pr-5 md:pl-4 md:text-[14px]', HEAD[variant], className)
   const inner = (
     <>
       {icon && <Icon name={icon} size={18} />}
@@ -87,7 +87,7 @@ export function StatTile({ bg, icon, label, value, note, className = '' }) {
 /** Segmented tabs in a white pill (p5 gap4 r26); tab px16 py9 r21; count chip */
 export function SegTabs({ items, value, onChange, className = '' }) {
   return (
-    <div className={cx('inline-flex shrink-0 items-start gap-1 rounded-[26px] bg-white p-[5px] shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)]', className)}>
+    <div className={cx('inline-flex shrink-0 items-start gap-1 overflow-x-auto rounded-[26px] bg-white p-[5px] shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden', className)}>
       {items.map((t) => {
         const on = t.key === value
         // t.dim: an option with nothing in it (e.g. a category with no products) stays clickable but looks quieter
@@ -238,22 +238,24 @@ export function BackButton({ to = '/', label = 'Back', className = '' }) {
  */
 export function Header({ breadcrumb, title, titleExtra, subtitle, actions, before, search = true, back }) {
   return (
-    <header className="relative flex min-h-[83px] items-start gap-4">
+    <header className="relative flex min-h-[56px] flex-col gap-2 xl:min-h-[83px]">
       {back && <BackButton to={back} className="mt-[22px]" />}
-      <div className="flex flex-col gap-1.5">
-        <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre max-xl:whitespace-pre-wrap text-muted uppercase">{breadcrumb}</p>
-        <div className="flex items-center gap-3">
-          <h1 className="text-[24px] md:text-[30px] font-bold tracking-[-0.6px] max-xl:whitespace-normal text-ink">{title}</h1>
-          {titleExtra}
+      <div className="flex items-start gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-1 md:gap-1.5">
+          <p className="hidden text-[12px] font-semibold tracking-[0.2px] whitespace-pre text-muted uppercase md:block max-xl:whitespace-pre-wrap">{breadcrumb}</p>
+          <div className="flex items-center gap-3">
+            <h1 className="text-[22px] font-bold tracking-[-0.4px] text-ink md:text-[30px] md:tracking-[-0.6px] max-xl:whitespace-normal">{title}</h1>
+            {titleExtra}
+          </div>
+          <p className="text-[13px] font-medium text-muted md:text-[14px] md:whitespace-nowrap">{subtitle}</p>
         </div>
-        <p className="text-[14px] font-medium whitespace-nowrap text-muted">{subtitle}</p>
-      </div>
-      {/* Actions are pinned right and may overlap a long title, exactly as in the Figma frames */}
-      <div className="absolute top-1 right-0 flex items-center gap-3">
-        {search && <Search />}
-        {before}
-        <Bell />
-        {actions}
+        {/* Actions: search + bell hidden on phone (app bar has them); CTA always visible */}
+        <div className="flex shrink-0 items-center gap-2 md:gap-3">
+          {search && <span className="hidden md:block"><Search /></span>}
+          {before}
+          <span className="hidden md:block"><Bell /></span>
+          {actions}
+        </div>
       </div>
     </header>
   )

@@ -69,92 +69,101 @@
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Mobile & tablet responsive rules (below 1280px)
-   Everything inside this @media block. Desktop (≥1280px) is untouched.
+   Everything inside these @media blocks. Desktop (≥1280px) is untouched.
+
+   These are broad catch-all rules for pages that have not been made responsive yet.
+   A page or dialog that has its own responsive classes marks its root with data-rsp,
+   and every catch-all rule below skips that element and everything inside it, so the
+   page's own Tailwind breakpoints decide its layout. Done so far: dashboard, new/edit
+   lead form, every dialog (Modal) and the task drawer.
    ═══════════════════════════════════════════════════════════════════════════ */
 @media (max-width: 1279.98px) {
   /* ── Fixed-width columns become full-width and stack ── */
-  .w-\[280px\],
-  .w-\[287px\],
-  .w-\[290px\],
-  .w-\[294px\],
-  .w-\[300px\],
-  .w-\[302px\],
-  .w-\[304px\],
-  .w-\[312px\],
-  .w-\[320px\],
-  .w-\[322px\],
-  .w-\[330px\],
-  .w-\[340px\],
-  .w-\[344px\],
-  .w-\[349px\],
-  .w-\[352px\],
-  .w-\[360px\],
-  .w-\[368px\],
-  .w-\[370px\],
-  .w-\[380px\],
-  .w-\[386px\],
-  .w-\[400px\],
-  .w-\[408px\],
-  .w-\[413px\],
-  .w-\[416px\],
-  .w-\[420px\],
-  .w-\[430px\],
-  .w-\[440px\],
-  .w-\[442px\],
-  .w-\[458px\],
-  .w-\[470px\],
-  .w-\[475px\],
-  .w-\[480px\],
-  .w-\[484px\],
-  .w-\[500px\],
-  .w-\[512px\],
-  .w-\[520px\],
-  .w-\[540px\],
-  .w-\[560px\],
-  .w-\[580px\],
-  .w-\[587px\],
-  .w-\[600px\],
-  .w-\[602px\],
-  .w-\[640px\],
-  .w-\[660px\],
-  .w-\[671px\],
-  .w-\[700px\],
-  .w-\[714px\],
-  .w-\[720px\],
-  .w-\[753px\],
-  .w-\[756px\],
-  .w-\[760px\],
-  .w-\[780px\],
-  .w-\[800px\],
-  .w-\[840px\],
-  .w-\[846px\],
-  .w-\[900px\],
-  .w-\[1180px\],
-  .w-\[1200px\],
-  .w-\[1440px\] {
+  :is(
+    .w-\[280px\],
+    .w-\[287px\],
+    .w-\[290px\],
+    .w-\[294px\],
+    .w-\[300px\],
+    .w-\[302px\],
+    .w-\[304px\],
+    .w-\[312px\],
+    .w-\[320px\],
+    .w-\[322px\],
+    .w-\[330px\],
+    .w-\[340px\],
+    .w-\[344px\],
+    .w-\[349px\],
+    .w-\[352px\],
+    .w-\[360px\],
+    .w-\[368px\],
+    .w-\[370px\],
+    .w-\[380px\],
+    .w-\[386px\],
+    .w-\[400px\],
+    .w-\[408px\],
+    .w-\[413px\],
+    .w-\[416px\],
+    .w-\[420px\],
+    .w-\[430px\],
+    .w-\[440px\],
+    .w-\[442px\],
+    .w-\[458px\],
+    .w-\[470px\],
+    .w-\[475px\],
+    .w-\[480px\],
+    .w-\[484px\],
+    .w-\[500px\],
+    .w-\[512px\],
+    .w-\[520px\],
+    .w-\[540px\],
+    .w-\[560px\],
+    .w-\[580px\],
+    .w-\[587px\],
+    .w-\[600px\],
+    .w-\[602px\],
+    .w-\[640px\],
+    .w-\[660px\],
+    .w-\[671px\],
+    .w-\[700px\],
+    .w-\[714px\],
+    .w-\[720px\],
+    .w-\[753px\],
+    .w-\[756px\],
+    .w-\[760px\],
+    .w-\[780px\],
+    .w-\[800px\],
+    .w-\[840px\],
+    .w-\[846px\],
+    .w-\[900px\],
+    .w-\[1180px\],
+    .w-\[1200px\],
+    .w-\[1440px\]
+  ):not([data-rsp], [data-rsp] *) {
     width: 100% !important;
     max-width: 100% !important;
   }
-  .min-w-\[1280px\], .min-w-\[1440px\] { min-width: 0 !important; }
+  :is(.min-w-\[1280px\], .min-w-\[1440px\]):not([data-rsp], [data-rsp] *) { min-width: 0 !important; }
 
   /* Rows of fixed-width columns: wrap so they stack vertically */
-  .flex:not(.flex-col) > [class*="w-["][class*="px]"] { flex-shrink: 1; }
+  .flex:not(.flex-col) > [class*="w-["][class*="px]"]:not([data-rsp], [data-rsp] *) { flex-shrink: 1; }
 
   /* Side-by-side panels (main content + aside preview card) stack */
-  .flex.items-start.gap-5,
-  .flex.items-start.gap-6 {
+  :is(.flex.items-start.gap-5, .flex.items-start.gap-6):not([data-rsp], [data-rsp] *) {
     flex-wrap: wrap;
   }
 
   /* Tables (div-based): scroll horizontally inside their card */
-  .overflow-hidden { overflow-x: auto; }
-  .min-w-max { min-width: max-content; }
+  .overflow-hidden:not([data-rsp], [data-rsp] *) { overflow-x: auto; }
+  .min-w-max:not([data-rsp], [data-rsp] *) { min-width: max-content; }
 
-  /* Images and media stay inside their container */
-  img, video, svg { max-width: 100%; height: auto; }
+  /* Images and media stay inside their container. An image with its own height class (logos in the
+     app bar / rail) keeps it: this rule is unlayered, so it would otherwise beat Tailwind's h-* utility. */
+  img, video, svg { max-width: 100%; }
+  img:not([class*="h-"]), video, svg { height: auto; }
 
   /* Cards: remove fixed heights that break when content wraps */
-  [class*="h-["][class*="px]"]:not(input):not(button):not(label):not(nav):not(header):not(span) {
+  [class*="h-["][class*="px]"]:not(input):not(button):not(label):not(nav):not(header):not(span):not(img):not([data-rsp], [data-rsp] *) {
     height: auto;
     min-height: auto;
   }
@@ -163,41 +172,107 @@
 /* ── Phones (below 768px): tighter layout ── */
 @media (max-width: 767.98px) {
   /* Dense grids: 2 columns max */
-  .grid-cols-3, .grid-cols-4, .grid-cols-5, .grid-cols-6 {
+  :is(.grid-cols-3, .grid-cols-4, .grid-cols-5, .grid-cols-6):not([data-rsp], [data-rsp] *) {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
   /* 2-column form grids: stack to 1 column */
-  .grid-cols-2 {
+  .grid-cols-2:not([data-rsp], [data-rsp] *) {
     grid-template-columns: 1fr !important;
   }
 
   /* Label + value rows: label narrows, value wraps */
-  [class*="w-[200px]"][class*="shrink-0"],
-  [class*="w-[220px]"][class*="shrink-0"],
-  [class*="w-[240px]"][class*="shrink-0"],
-  [class*="w-[260px]"][class*="shrink-0"] {
+  :is(
+    [class*="w-[200px]"][class*="shrink-0"],
+    [class*="w-[220px]"][class*="shrink-0"],
+    [class*="w-[240px]"][class*="shrink-0"],
+    [class*="w-[260px]"][class*="shrink-0"]
+  ):not([data-rsp], [data-rsp] *) {
     width: 40% !important;
     flex-shrink: 1 !important;
   }
 
   /* Stat / summary tiles (280px fixed): 2 per row */
-  .flex:not(.flex-col) > [class*="w-[280px]"] {
+  .flex:not(.flex-col) > [class*="w-[280px]"]:not([data-rsp], [data-rsp] *) {
     width: calc(50% - 8px) !important;
     flex-shrink: 0;
   }
 
   /* Flex-1 items: allow text to wrap */
   .flex-1 { min-width: 0; }
-  p.flex-1, span.flex-1 { overflow-wrap: anywhere; word-break: break-word; }
+  :is(p.flex-1, span.flex-1):not([data-rsp], [data-rsp] *) { overflow-wrap: anywhere; word-break: break-word; }
 
   /* Side-by-side cards: full width */
-  .flex:not(.flex-col) > .flex-1[class*="rounded-["] {
+  .flex:not(.flex-col) > .flex-1[class*="rounded-["]:not([data-rsp], [data-rsp] *) {
     min-width: 100% !important;
   }
 
   /* Smaller padding on panels */
-  [class*="px-10"] { padding-left: 1rem !important; padding-right: 1rem !important; }
-  [class*="px-8"] { padding-left: 1rem !important; padding-right: 1rem !important; }
-  [class*="px-7"] { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
-  [class*="px-6"]:not(nav):not(header) { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+  [class*="px-10"]:not([data-rsp], [data-rsp] *) { padding-left: 1rem !important; padding-right: 1rem !important; }
+  [class*="px-8"]:not([data-rsp], [data-rsp] *) { padding-left: 1rem !important; padding-right: 1rem !important; }
+  [class*="px-7"]:not([data-rsp], [data-rsp] *) { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+  [class*="px-6"]:not(nav):not(header):not([data-rsp], [data-rsp] *) { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Opted-in (data-rsp) helpers — phones only
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 767.98px) {
+  /* Long words / numbers never push a responsive page sideways */
+  [data-rsp] :is(p, h1, h2, h3) { overflow-wrap: anywhere; }
+  /* 16px inputs stop iOS Safari from zooming the page when a field is focused */
+  [data-rsp] :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select) { font-size: 16px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Dialog / bottom-sheet / drawer overrides — phones only
+   These beat the JS-set inline styles (useFitTop) via !important.
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 767.98px) {
+  /* Viewport-positioned dialogs (lead-state Dialog, useFitTop): slide to bottom */
+  [data-overlay="dialog"][style*="top"] {
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    transform: none !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-top-left-radius: 28px;
+    border-top-right-radius: 28px;
+    padding: 20px !important;
+    padding-bottom: max(20px, env(safe-area-inset-bottom)) !important;
+    max-height: 92dvh !important;
+  }
+  /* Fields inside dialogs/drawers: side-by-side → stacked */
+  [data-overlay] .flex:not(.flex-col):has(> .flex-1.flex-col + .flex-1.flex-col) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  [data-overlay] .grid-cols-2 { grid-template-columns: minmax(0, 1fr); }
+  /* Fixed-position drawers: bottom sheet */
+  [data-overlay="drawer"][style*="top"] {
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-top-left-radius: 28px;
+    border-top-right-radius: 28px;
+    max-height: 92dvh !important;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+    padding-bottom: max(20px, env(safe-area-inset-bottom)) !important;
+  }
+  /* Toast at bottom of screen on phone */
+  [data-overlay="toast"] {
+    left: 16px !important;
+    right: 16px !important;
+    bottom: 96px !important;
+    width: auto !important;
+  }
 }

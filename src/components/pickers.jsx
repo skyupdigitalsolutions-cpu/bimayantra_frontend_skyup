@@ -23,8 +23,10 @@ function useAnchored(open, anchorRef, layerRef, { minWidth = 0, gap = 6 } = {}) 
     const w = Math.max(r.width, minWidth)
     const below = window.innerHeight - r.bottom
     const up = below < h + gap + 8 && r.top > below
+    // Keep the layer on screen using its real width (a calendar is wider than a narrow phone field)
+    const lw = Math.max(w, layer ? layer.offsetWidth : 0)
     let left = r.left
-    if (left + w > window.innerWidth - 8) left = Math.max(8, window.innerWidth - 8 - w)
+    if (left + lw > window.innerWidth - 8) left = Math.max(8, window.innerWidth - 8 - lw)
     setPos({ left, width: w, top: up ? Math.max(8, r.top - h - gap) : r.bottom + gap, up })
   }, [anchorRef, layerRef, minWidth, gap])
   useLayoutEffect(() => { if (open) place() }, [open, place])
@@ -48,9 +50,9 @@ function useOutside(open, refs, onOutside) {
 }
 function Layer({ pos, layerRef, children, className = '', label }) {
   return createPortal(
-    <div ref={layerRef} role="presentation" aria-label={label} onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}
+    <div ref={layerRef} data-rsp role="presentation" aria-label={label} onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}
       className={cx('fixed z-[300] rounded-[16px] border border-[#e6e9f0] bg-white shadow-[0px_20px_44px_-12px_rgba(19,41,75,0.3)]', !pos && 'invisible', className)}
-      style={pos ? { top: pos.top, left: pos.left, minWidth: pos.width } : { top: 0, left: 0 }}>
+      style={pos ? { top: pos.top, left: pos.left, minWidth: Math.min(pos.width, window.innerWidth - 16), maxWidth: 'calc(100vw - 16px)' } : { top: 0, left: 0 }}>
       {children}
     </div>,
     document.body,

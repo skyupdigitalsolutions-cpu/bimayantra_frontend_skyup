@@ -4,9 +4,9 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 
 /** Workspace-panel scrim footprint (sidebar stays undimmed) */
-export const PANEL_SCRIM = 'fixed top-6 right-6 bottom-6 left-[156px] rounded-[40px]'
+export const PANEL_SCRIM = 'fixed top-6 right-6 bottom-6 left-[156px] rounded-[40px] max-xl:inset-0 max-xl:rounded-none'
 /** Right drawer footprint: 24px panel gutter + 24px drawer inset; content scrolls inside */
-export const DRAWER_BOX = 'fixed top-12 right-12 bottom-12 overflow-y-auto overscroll-contain'
+export const DRAWER_BOX = 'fixed top-12 right-12 bottom-12 overflow-y-auto overscroll-contain max-xl:top-4 max-xl:right-4 max-xl:bottom-4 max-xl:max-w-[calc(100vw-32px)] max-md:inset-x-0 max-md:top-auto max-md:bottom-0 max-md:max-h-[92dvh] max-md:w-full max-md:max-w-none max-md:rounded-b-none max-md:rounded-t-[28px] max-md:px-5 max-md:pb-[max(20px,env(safe-area-inset-bottom))]'
 /** Panel left edge in the viewport — add to a Figma x measured from the panel */
 export const PANEL_X = 156
 
@@ -49,7 +49,7 @@ export function useFitTop(figmaTop) {
   return ref
 }
 
-export const DIALOG_MAX = 'max-h-[calc(100vh-48px)] overflow-y-auto overscroll-contain'
+export const DIALOG_MAX = 'max-h-[calc(100vh-48px)] overflow-y-auto overscroll-contain max-md:max-h-[92dvh]'
 
 /** Drawer footer that stays pinned to the drawer bottom when the drawer content scrolls (px-7 / pb-6 drawers) */
-export const DRAWER_FOOT = 'sticky bottom-0 z-10 -mx-7 -mt-3 shrink-0 bg-white px-7 pt-3 shadow-[0_24px_0_0_#fff]'
+export const DRAWER_FOOT = 'sticky bottom-0 z-10 -mx-7 -mt-3 shrink-0 bg-white px-7 pt-3 shadow-[0_24px_0_0_#fff] max-md:-mx-5 max-md:px-5'

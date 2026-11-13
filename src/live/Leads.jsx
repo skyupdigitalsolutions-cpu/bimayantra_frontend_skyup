@@ -88,10 +88,10 @@ export function LiveLeadsBoard() {
 
   if (pipes.error || leads.error) return <ErrorPanel active="leads" error={pipes.error || leads.error} />
   return (
-    <AppLayout active="leads" panelClass="pb-7!">
+    <AppLayout active="leads" responsive mobileTitle="Leads" panelClass="pb-7!">
       <PageHeader title="Leads" subtitle="Click a card to update it here, or drag it to an allowed stage."
-        actions={<><ViewToggle /><PillButton variant="pink" icon="plus" to="/leads/new">New lead</PillButton></>} />
-      <div className="mt-[30px] flex gap-2.5">
+        actions={<><span className="hidden md:block"><ViewToggle /></span><PillButton variant="pink" icon="plus" to="/leads/new" className="max-md:h-9 max-md:rounded-[18px] max-md:pr-3.5 max-md:pl-3 max-md:text-[13px]">New lead</PillButton></>} />
+      <div className="mt-[30px] flex gap-2.5 max-xl:overflow-x-auto max-xl:[scrollbar-width:none] max-xl:[&::-webkit-scrollbar]:hidden max-md:mt-4 max-md:gap-2">
         {tabs.map((p) => {
           const on = p.key === pipeId
           return (
@@ -105,10 +105,10 @@ export function LiveLeadsBoard() {
       </div>
       <div className="mt-[19px]">
         {q.trim() && shown.length === 0 && (
-          <NoMatches className="mb-4 w-fit min-w-[520px] rounded-[24px] bg-white shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)]" sub={`No leads match “${q.trim()}”.`} onClear={clearQ} />
+          <NoMatches className="mb-4 w-fit max-w-full rounded-[24px] md:min-w-[520px] bg-white shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)]" sub={`No leads match “${q.trim()}”.`} onClear={clearQ} />
         )}
         {leads.loading && !leads.data && <p className="mb-4 text-[13px] font-medium text-muted">Loading leads…</p>}
-        <div className="flex gap-5 overflow-x-auto pb-2">
+        <div className="flex gap-3 overflow-x-auto pb-2 md:gap-5">
           {leadStages.map((s) => (
             <Column key={s.key} stage={s} items={shown.filter((l) => l.stage === s.key)} dragId={dragId} setDragId={setDragId} onDrop={move} pipelineId={pipeId} onOpen={(l) => setQuick({ id: l.id })} />
           ))}
@@ -123,7 +123,7 @@ function Column({ stage, items, dragId, setDragId, onDrop, pipelineId, onOpen })
   const [over, setOver] = useState(false)
   return (
     <div onDragOver={(e) => { e.preventDefault(); setOver(true) }} onDragLeave={() => setOver(false)} onDrop={(e) => { e.preventDefault(); setOver(false); onDrop(stage.key) }}
-      className={cx('flex min-h-[760px] w-[280px] shrink-0 flex-col items-center gap-3 rounded-[28px] p-3.5 transition', over && 'ring-2 ring-inset')}
+      className={cx('flex min-h-[400px] w-[240px] shrink-0 flex-col items-center gap-2.5 rounded-[24px] p-3 transition md:min-h-[760px] md:w-[280px] md:gap-3 md:rounded-[28px] md:p-3.5', over && 'ring-2 ring-inset')}
       style={{ background: stage.bg, '--tw-ring-color': stage.dash }}>
       <div className="flex w-full items-center gap-2 px-1.5 py-1">
         <span className="size-2.5 rounded-full" style={{ background: stage.ink }} />
@@ -299,59 +299,60 @@ function LeadFormInner({ lead, presetPipeline }) {
 
   return (
     <AppLayout active="leads">
+      <div data-rsp className="contents">
       <div className="flex items-start justify-between gap-4">
         <PageHeading crumb={lead ? `LEADS  /  ${lead.name.toUpperCase()}  /  EDIT` : 'LEADS  /  NEW LEAD'} title={lead ? `Edit ${lead.name}` : 'New lead'} sub={lead ? `${lead.number} · changes are saved to the lead history` : 'Name, mobile and source are enough to start.'} />
       </div>
-      <div className="mt-[21px] flex flex-col gap-5 xl:flex-row">
+      <div className="mt-4 flex flex-col gap-4 md:mt-[21px] md:gap-5 xl:flex-row">
         <div className="flex min-w-0 flex-col gap-4 xl:w-[760px]">
           {(generalError || warnings) && (
-            <div className={cx('flex items-center gap-2.5 rounded-[16px] px-3.5 py-3', warnings ? 'bg-[#fbf1e1] text-[#8a5a12]' : 'border border-[#f2c4c8] bg-[#fff7f7] text-[#b4323c]')}>
-              <Icon name="alert" size={18} />
-              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <div className={cx('flex flex-wrap items-center gap-2.5 rounded-[16px] px-3.5 py-3 md:flex-nowrap', warnings ? 'bg-[#fbf1e1] text-[#8a5a12]' : 'border border-[#f2c4c8] bg-[#fff7f7] text-[#b4323c]')}>
+              <Icon name="alert" size={18} className="shrink-0" />
+              <div className="flex min-w-0 flex-1 basis-[calc(100%-28px)] flex-col gap-0.5 md:basis-0">
                 {(warnings ?? [{ message: generalError }]).map((w, i) => <p key={i} className="text-[13px] font-bold">{w.message}</p>)}
               </div>
-              {warnings && <button type="button" onClick={saveAnyway} className="flex h-9 shrink-0 items-center rounded-[18px] border border-line bg-white px-3.5 text-[13px] font-semibold text-ink hover:bg-tile">Save anyway</button>}
+              {warnings && <button type="button" onClick={saveAnyway} className="ml-7 flex h-9 shrink-0 items-center rounded-[18px] border md:ml-0 border-line bg-white px-3.5 text-[13px] font-semibold text-ink hover:bg-tile">Save anyway</button>}
             </div>
           )}
-          <section className={cx(CARD, 'flex flex-col gap-3.5')}>
+          <section className={cx(CARD, 'flex flex-col gap-3.5 max-md:rounded-[24px] max-md:p-4')}>
             <div className="flex items-center gap-3">
               <div className="flex flex-1 flex-col gap-[3px]"><p className="text-[17px] font-bold text-ink">Contact</p><p className="text-[12px] font-medium text-muted">We check for duplicates as you type</p></div>
               <Chip className="bg-blue-50 text-blue">{pipeName} pipeline</Chip>
             </div>
-            <div className="flex gap-3.5">
+            <div className="flex flex-col gap-3.5 md:flex-row">
               <F label="Lead name *"><div className={cx(box, errBox(fe.name))}><input value={f.name} onChange={(e) => set('name')(e.target.value)} onBlur={checkDup} maxLength={100} className={inp} autoFocus /></div>{err(fe.name)}</F>
               <F label="Pipeline *"><SelectBox value={f.pipelineId} onChange={set('pipelineId')} options={(pipes.data || []).map((p) => ({ value: p.id, label: p.name }))} />{err(fe.pipelineId)}</F>
             </div>
-            <div className="flex gap-3.5">
+            <div className="flex flex-col gap-3.5 md:flex-row">
               <F label="Primary mobile *"><div className={cx(box, errBox(fe.mobile))}><span className="text-muted">+91</span><input value={f.mobile} onChange={(e) => set('mobile')(typeMobile(e.target.value))} onBlur={checkDup} inputMode="numeric" autoComplete="tel-national" maxLength={11} placeholder="98765 43210" className={inp} /></div>{err(fe.mobile)}</F>
               <F label="Alternate mobile"><div className={cx(box, errBox(fe.altMobile))}><span className="text-muted">+91</span><input value={f.altMobile} onChange={(e) => set('altMobile')(typeMobile(e.target.value))} placeholder="Optional" inputMode="numeric" maxLength={11} className={inp} /></div>{err(fe.altMobile)}</F>
               <F label="Email"><div className={cx(box, errBox(fe.email))}><Icon name="mail" size={18} className="text-muted" /><input type="email" value={f.email} onChange={(e) => set('email')(e.target.value.trimStart())} placeholder="name@example.com" className={inp} /></div>{err(fe.email)}</F>
             </div>
             {dup && (
-              <div className={cx('flex items-center gap-2.5 rounded-[16px] px-3.5 py-3', dup.exact ? 'bg-[#fbebec] text-[#b4323c]' : 'bg-[#fbf1e1] text-[#8a5a12]')}>
-                <Icon name="alert" size={18} />
-                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <div className={cx('flex flex-wrap items-center gap-2.5 rounded-[16px] px-3.5 py-3 md:flex-nowrap', dup.exact ? 'bg-[#fbebec] text-[#b4323c]' : 'bg-[#fbf1e1] text-[#8a5a12]')}>
+                <Icon name="alert" size={18} className="shrink-0" />
+                <div className="flex min-w-0 flex-1 basis-[calc(100%-28px)] flex-col gap-0.5 md:basis-0">
                   {dup.exact && <p className="text-[13px] font-bold">{dup.exact.name} ({dup.exact.number}) is already an open lead with this mobile.</p>}
                   {dup.sameMobile.map((d) => <p key={d.id} className="text-[13px] font-bold">Lead {d.name} ({d.number}) uses this mobile.</p>)}
                   {dup.customers.map((d) => <p key={d.id} className="text-[13px] font-bold">{d.name} ({d.number}) already uses this mobile.</p>)}
                   {!dup.exact && <p className="text-[12px] font-medium">Families often share a phone. Save anyway if this is a different person.</p>}
                 </div>
-                {dup.exact ? <Link to={`/leads/${dup.exact.id}`} className="flex h-9 shrink-0 items-center rounded-[18px] border border-line bg-white px-3.5 text-[13px] font-semibold text-ink hover:bg-tile">Open lead</Link>
-                  : dup.customers[0] && <Link to={`/customers/${dup.customers[0].id}`} className="flex h-9 shrink-0 items-center rounded-[18px] border border-line bg-white px-3.5 text-[13px] font-semibold text-ink hover:bg-tile">Open customer</Link>}
+                {dup.exact ? <Link to={`/leads/${dup.exact.id}`} className="ml-7 flex h-9 shrink-0 items-center rounded-[18px] md:ml-0 border border-line bg-white px-3.5 text-[13px] font-semibold text-ink hover:bg-tile">Open lead</Link>
+                  : dup.customers[0] && <Link to={`/customers/${dup.customers[0].id}`} className="ml-7 flex h-9 shrink-0 items-center rounded-[18px] md:ml-0 border border-line bg-white px-3.5 text-[13px] font-semibold text-ink hover:bg-tile">Open customer</Link>}
               </div>
             )}
           </section>
 
-          <section className={cx(CARD, 'flex flex-col gap-3.5')}>
+          <section className={cx(CARD, 'flex flex-col gap-3.5 max-md:rounded-[24px] max-md:p-4')}>
             <p className="text-[17px] font-bold text-ink">Source and interest</p>
-            <div className="flex gap-3.5">
+            <div className="flex flex-col gap-3.5 md:flex-row">
               <div className="relative flex min-w-0 flex-1 flex-col gap-2">
                 <span className="text-[13px] font-semibold text-ink">Lead source *</span>
                 <button type="button" onClick={() => setOpen((o) => !o)} className={cx(box, open && 'border-2 border-blue', errBox(fe.source), 'text-left')}>
                   <span className="flex-1 truncate">{sourceLabel}</span><Icon name="chev-down" size={18} className="text-muted" />
                 </button>
                 {err(fe.source)}
-                {open && <SourceMenu mode="select" selected={f.source} onPick={(k) => { if (offered.size && !offered.has(KEY_TO_CODE[k])) return; set('source')(k); setOpen(false) }} className="absolute top-[82px] left-0" />}
+                {open && <SourceMenu mode="select" selected={f.source} onPick={(k) => { if (offered.size && !offered.has(KEY_TO_CODE[k])) return; set('source')(k); setOpen(false) }} className="absolute top-[82px] left-0 max-md:right-0 max-md:w-auto" />}
               </div>
               {needs.needs === 'REFERRER' && (
                 <F label="Referrer *">
@@ -395,7 +396,7 @@ function LeadFormInner({ lead, presetPipeline }) {
                 })}
               </div>
             </div>
-            <div className="flex items-start gap-3.5">
+            <div className="flex flex-col gap-3.5 md:flex-row md:items-start">
               <F label="Next follow-up" hint="Creates a follow-up task."><DatePicker value={f.date} onChange={set('date')} min={istDay()} invalid={!!fe.nextFollowUpAt} placeholder="No follow-up" />{err(fe.nextFollowUpAt)}</F>
               <F label="Time"><SelectBox value={f.time} onChange={set('time')} options={TIMES.map((t) => ({ value: t, label: t12(t) }))} /></F>
             </div>
@@ -403,19 +404,20 @@ function LeadFormInner({ lead, presetPipeline }) {
           </section>
         </div>
         <div className="flex flex-col gap-5 xl:w-[400px]">
-          <section className={cx('flex flex-col gap-2.5 rounded-[28px] bg-linear-to-r from-[#e9e3fc] to-[#dcd2fb] p-6', SH_CARD)}>
+          <section className={cx('flex flex-col gap-2.5 rounded-[24px] bg-linear-to-r from-[#e9e3fc] to-[#dcd2fb] p-4 md:rounded-[28px] md:p-6', SH_CARD)}>
             <p className="text-[16px] font-bold text-ink">{lead ? 'Editing' : 'After you save'}</p>
             <p className="text-[13px] leading-5 font-medium text-slate">{lead ? 'Status is changed from the lead page, not here. Moving the follow-up date moves its task.' : 'The lead is created as New. A follow-up date creates a task. Convert it to a customer when it is ready.'}</p>
           </section>
         </div>
       </div>
-      <div className="mt-6 flex h-[70px] items-center gap-3 rounded-[30px] bg-white py-3 pr-3 pl-6 shadow-[0px_18px_40px_-14px_rgba(19,41,75,0.1)]">
-        <button type="button" onClick={() => navigate(-1)} className="flex h-[46px] items-center rounded-[24px] border border-line bg-white px-5 text-[14px] font-semibold text-ink hover:bg-tile">Cancel</button>
-        <span className="flex-1" />
-        {!lead && <button type="button" disabled={save.busy} onClick={() => submit(true)} className="flex h-[46px] items-center rounded-[24px] border border-line bg-white px-5 text-[14px] font-semibold text-ink hover:bg-tile">Save and add another</button>}
-        <button type="button" disabled={save.busy} onClick={() => submit(false)} className={cx('flex h-[46px] items-center gap-2 rounded-[24px] bg-navy pr-5 pl-4 text-[14px] font-semibold text-white disabled:opacity-60', SH_NAVY)}>
+      <div className="mt-5 flex flex-wrap items-center gap-2 rounded-[24px] bg-white p-3 shadow-[0px_18px_40px_-14px_rgba(19,41,75,0.1)] md:mt-6 md:h-[70px] md:flex-nowrap md:gap-3 md:rounded-[30px] md:py-3 md:pr-3 md:pl-6">
+        <button type="button" onClick={() => navigate(-1)} className="order-2 flex h-[46px] shrink-0 items-center justify-center rounded-[24px] border border-line bg-white px-5 text-[14px] font-semibold text-ink hover:bg-tile md:order-none">Cancel</button>
+        <span className="hidden flex-1 md:order-none md:block" />
+        {!lead && <button type="button" disabled={save.busy} onClick={() => submit(true)} className="order-3 flex h-[46px] min-w-0 flex-1 items-center justify-center rounded-[24px] border border-line bg-white px-4 text-[14px] font-semibold whitespace-nowrap text-ink hover:bg-tile md:order-none md:flex-none md:px-5">Save and add another</button>}
+        <button type="button" disabled={save.busy} onClick={() => submit(false)} className={cx('flex h-[46px] items-center justify-center gap-2 rounded-[24px] bg-navy pr-5 pl-4 text-[14px] font-semibold text-white disabled:opacity-60 md:order-none md:flex-none md:justify-start', lead ? 'order-3 flex-1' : 'order-1 basis-full', SH_NAVY)}>
           <Icon name="check" size={18} />{save.busy ? 'Saving…' : lead ? 'Save changes' : 'Save lead'}
         </button>
+      </div>
       </div>
     </AppLayout>
   )

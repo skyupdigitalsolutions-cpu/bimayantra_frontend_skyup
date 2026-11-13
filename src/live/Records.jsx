@@ -47,14 +47,15 @@ export function LiveAllTasks() {
     done: <StatusChip tone="green" icon="check">Done</StatusChip>, cancelled: <StatusChip tone="neutral" icon="x">Cancelled</StatusChip>,
   }
   return (
-    <AppLayout active="dashboard">
+    <AppLayout active="dashboard" responsive mobileTitle="Tasks">
       <Header breadcrumb={'DASHBOARD  /  TASKS'} title="Tasks" subtitle="Everything you need to do, across leads and policy holders."
         actions={<HeadButton icon="plus" onClick={() => setDrawer({})}>Add task</HeadButton>} />
-      <div className="mt-[13px] flex items-center gap-3">
+      <div className="mt-[13px] flex items-center gap-3 overflow-x-auto [scrollbar-width:none] [mt-3 flex flex-col gap-2.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mt-[13px] md:flex-row md:items-center md:gap-3::-webkit-scrollbar]:hidden max-md:mt-3 max-md:flex-col max-md:items-stretch max-md:gap-2.5">
         <SegTabs items={STATUS_TABS.map(([key, label]) => ({ key, label, count: key === 'OPEN' ? openCount : (counts[key] ?? 0) }))} value={tab} onChange={setTab} />
         <SegTabs items={TYPE_TABS.map(([key, label]) => ({ key, label }))} value={type} onChange={setType} />
       </div>
-      <div className={cx('mt-5 w-[1180px] overflow-hidden rounded-[28px] bg-white', SH8)}>
+      {/* ── Desktop / tablet table ── */}
+      <div className={cx('mt-5 hidden w-full overflow-x-auto rounded-[28px] bg-white md:block xl:w-[1180px]', SH8)}>
         <div className="flex gap-4 bg-[#fafbfd] px-6 py-3.5">
           {COLS.map(([l, w]) => <p key={w + l} className="shrink-0 text-[12px] font-semibold text-muted" style={{ width: w }}>{l}</p>)}
         </div>
@@ -91,6 +92,37 @@ export function LiveAllTasks() {
         {loading && !rows.length && <p className="border-t border-line px-6 py-5 text-[13px] font-medium text-muted">Loading tasks…</p>}
         {!loading && rows.length === 0 && (
           <NoMatches className="border-t border-line" text={q.trim() ? 'No matches' : 'Nothing here'} sub={q.trim() ? 'No tasks fit this search.' : 'No tasks in this tab.'} onClear={q.trim() ? clearQ : undefined} />
+        )}
+      </div>
+      {/* ── Mobile card list ── */}
+      <div className="mt-3 flex flex-col gap-2.5 md:hidden">
+        {rows.map((t) => {
+          const st = statusOf(t)
+          return (
+            <div key={t.id} className="flex items-start gap-2.5 rounded-[16px] border border-line bg-white p-3">
+              <span className={cx('flex size-8 shrink-0 items-center justify-center rounded-full text-ink', t.iconBg)}><Icon name={t.icon} size={14} /></span>
+              <div className="flex min-w-0 flex-1 flex-col gap-1 pt-px">
+                <button type="button" onClick={() => setView(t)} className={cx('text-left text-[13px] leading-[18px] font-bold', st === 'done' || st === 'cancelled' ? 'text-muted line-through' : 'text-ink')}>{t.title}</button>
+                {t.whoKind !== 'No record' && <Link to={t.to} className="text-[12px] font-semibold text-blue">{t.who} · {t.whoKind}</Link>}
+                <div className="flex items-center gap-1.5">
+                  <Icon name="calendar" size={12} className="text-muted" />
+                  <span className={cx('text-[11px] font-semibold', st === 'overdue' ? 'text-[#b4323c]' : 'text-ink-2')}>{t.when}</span>
+                  {CHIP[st]}
+                </div>
+                <div className="mt-1 flex gap-1.5">
+                  {(st === 'open' || st === 'overdue') && (
+                    <button type="button" onClick={() => setDrawer({ task: t.raw })} className="inline-flex h-7 items-center gap-1 rounded-full border border-line bg-white px-2.5 text-[11px] font-semibold text-ink"><Icon name="edit" size={11} />Edit</button>
+                  )}
+                  <button type="button" onClick={() => setView(t)} className="inline-flex h-7 items-center gap-1 rounded-full border border-line bg-white px-2.5 text-[11px] font-semibold text-ink"><Icon name="eye" size={11} />View</button>
+                  {st !== 'cancelled' && <MarkDoneButton size="sm" done={st === 'done'} busy={busyId === t.id} onClick={() => toggle(t)} />}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+        {loading && !rows.length && <p className="px-4 py-5 text-[13px] font-medium text-muted">Loading tasks…</p>}
+        {!loading && rows.length === 0 && (
+          <NoMatches className="rounded-[16px] border border-line px-4 py-4" text={q.trim() ? 'No matches' : 'Nothing here'} sub={q.trim() ? 'No tasks fit this search.' : 'No tasks in this tab.'} onClear={q.trim() ? clearQ : undefined} />
         )}
       </div>
       {drawer && <TaskDrawer task={drawer.task} onClose={() => setDrawer(null)} />}

@@ -56,20 +56,20 @@ export function IconButton({ icon, size = 44, iconSize = 18, badge, className = 
  */
 export function PageHeader({ breadcrumb, title, titleExtra, subtitle, actions, hideSearch, searchClass, className = '' }) {
   return (
-    <header className={cx('flex items-start justify-between gap-6', className)}>
-      <div className="flex flex-col gap-1.5">
+    <header className={cx('flex items-start gap-3 md:justify-between md:gap-6', className)}>
+      <div className="flex min-w-0 flex-1 flex-col gap-1 md:flex-none md:gap-1.5">
         {breadcrumb && (
-          <p className="text-[12px] font-semibold tracking-[0.24px] whitespace-pre max-xl:whitespace-pre-wrap text-muted uppercase">{breadcrumb}</p>
+          <p className="hidden text-[12px] font-semibold tracking-[0.24px] whitespace-pre text-muted uppercase md:block max-xl:whitespace-pre-wrap">{breadcrumb}</p>
         )}
         <div className="flex items-center gap-3">
-          <h1 className="text-[24px] md:text-[30px] font-bold tracking-[-0.6px] text-ink">{title}</h1>
+          <h1 className="text-[22px] font-bold tracking-[-0.4px] text-ink md:text-[30px] md:tracking-[-0.6px]">{title}</h1>
           {titleExtra}
         </div>
-        {subtitle && <p className="text-[14px] font-medium text-muted">{subtitle}</p>}
+        {subtitle && <p className="text-[13px] font-medium text-muted max-md:hidden md:text-[14px]">{subtitle}</p>}
       </div>
-      <div className="mt-1 flex shrink-0 items-center gap-3 max-xl:flex-wrap">
-        {!hideSearch && <SearchPill className={searchClass} />}
-        {!hideSearch && <IconButton icon="bell" />}
+      <div className="mt-1 flex items-center gap-2 md:gap-3 max-xl:flex-wrap">
+        {!hideSearch && <span className="hidden md:block"><SearchPill className={searchClass} /></span>}
+        {!hideSearch && <span className="hidden md:block"><IconButton icon="bell" /></span>}
         {actions}
       </div>
     </header>
@@ -343,9 +343,11 @@ export function Notice({ tone = 'blue', icon = 'lock', className = '', children 
 export function Modal({ open = true, onClose, width = 560, className = '', children }) {
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(19,41,75,0.35)] p-6" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(19,41,75,0.35)] p-6 max-md:items-end max-md:p-0" onClick={onClose}>
       <div
-        className={cx('max-h-[90vh] overflow-auto rounded-[32px] bg-white p-7 shadow-[0px_30px_60px_-12px_rgba(19,41,75,0.35)]', className)}
+        data-rsp
+        data-overlay="dialog"
+        className={cx('max-h-[90vh] max-w-full overflow-auto overscroll-contain rounded-[32px] bg-white p-7 shadow-[0px_30px_60px_-12px_rgba(19,41,75,0.35)] max-md:max-h-[92dvh] max-md:w-full! max-md:rounded-b-none max-md:rounded-t-[28px] max-md:p-5 max-md:pb-[max(20px,env(safe-area-inset-bottom))]', className)}
         style={{ width }}
         onClick={(e) => e.stopPropagation()}
       >

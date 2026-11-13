@@ -23,7 +23,8 @@ export function Dialog({ top, className = '', children }) {
       ref={ref}
       role="dialog"
       data-overlay="dialog"
-      className={cx('fixed left-[516px] z-40 flex w-[540px] flex-col gap-4 rounded-[30px] bg-white p-[30px] shadow-[0px_30px_60px_-10px_rgba(19,41,75,0.3)]', DIALOG_MAX, className)}
+      data-rsp
+      className={cx('fixed left-[516px] z-40 flex w-[540px] flex-col gap-4 rounded-[30px] bg-white p-[30px] shadow-[0px_30px_60px_-10px_rgba(19,41,75,0.3)] max-xl:left-1/2 max-xl:max-w-[calc(100vw-32px)] max-xl:-translate-x-1/2 max-md:inset-x-0 max-md:bottom-0 max-md:w-full max-md:max-w-none max-md:translate-x-0 max-md:rounded-b-none max-md:rounded-t-[28px] max-md:p-5 max-md:pb-[max(20px,env(safe-area-inset-bottom))]', DIALOG_MAX, className)}
       style={{ top: top + 24 }}
     >
       {children}
@@ -34,7 +35,7 @@ export function Dialog({ top, className = '', children }) {
 /** Right drawer (500×928 @ 736,24, r32). */
 export function Drawer({ children }) {
   return (
-    <div role="dialog" data-overlay="drawer" className={cx(DRAWER_BOX, 'z-40 flex w-[500px] flex-col gap-4 rounded-[32px] bg-white px-7 pt-7 pb-6 shadow-[0px_30px_60px_-10px_rgba(19,41,75,0.3)]')}>
+    <div role="dialog" data-overlay="drawer" data-rsp className={cx(DRAWER_BOX, 'z-40 flex w-[500px] flex-col gap-4 rounded-[32px] bg-white px-7 pt-7 pb-6 shadow-[0px_30px_60px_-10px_rgba(19,41,75,0.3)]')}>
       {children}
     </div>
   )

@@ -143,7 +143,7 @@ function DashHeader() {
 
 function QuickTile({ a, v }) {
   const S = {
-    m: { tile: 'h-[82px] min-w-0 flex-1 gap-1.5 rounded-[18px] px-1.5', circle: 'size-9', icon: 16, text: 'text-[11px]' },
+    m: { tile: 'min-w-0 gap-1 rounded-[14px] px-1 py-2.5', circle: 'size-9', icon: 16, text: 'text-[10px] leading-tight' },
     t: { tile: 'h-[93px] w-[124px] shrink-0 gap-2 rounded-[20px] px-3.5', circle: 'size-10', icon: 18, text: 'text-[12px]' },
     d: { tile: 'h-[97px] min-w-0 flex-1 gap-2 rounded-[20px] px-1.5', circle: 'size-11', icon: 19, text: 'text-[12px]' },
   }[v]
@@ -159,17 +159,19 @@ function QuickTile({ a, v }) {
       <span className={cx('flex items-center justify-center rounded-full', S.circle, a.active ? 'bg-navy text-white' : 'bg-panel text-ink')}>
         <Icon name={a.icon} size={S.icon} />
       </span>
-      <span className={cx('text-center font-semibold whitespace-nowrap text-ink', S.text)}>{a.label}</span>
+      <span className={cx('text-center font-semibold text-ink', v === 'm' ? 'w-full overflow-hidden text-ellipsis' : 'whitespace-nowrap', S.text)}>{a.label}</span>
     </Link>
   )
 }
 
 function QuickActions() {
+  const live = useLive()
+  const all = live ? quickActions : quickActions // always the full set
   return (
     <div className="md:col-span-2 xl:row-start-2">
-      <div className="flex gap-2 md:hidden">{quickActionsMobile.map((a) => <QuickTile key={a.label} a={a} v="m" />)}</div>
+      <div className="grid grid-cols-5 gap-1.5 md:hidden">{all.map((a) => <QuickTile key={a.label} a={a} v="m" />)}</div>
       <div className="hidden gap-2.5 overflow-x-auto [scrollbar-width:none] md:flex xl:hidden">{quickActionsTablet.map((a) => <QuickTile key={a.label} a={a} v="t" />)}</div>
-      <div className="hidden gap-2.5 xl:flex">{quickActions.map((a) => <QuickTile key={a.label} a={a} v="d" />)}</div>
+      <div className="hidden gap-2.5 xl:flex">{all.map((a) => <QuickTile key={a.label} a={a} v="d" />)}</div>
     </div>
   )
 }
@@ -202,13 +204,13 @@ function LeadsGlance() {
         sub={<Sub><span className="xl:hidden">{total} leads</span><span className="hidden xl:inline">{total} leads in all pipelines · tap a status to open the filtered list</span></Sub>}
         right={<MoreLink to="/leads/list" desktop="View all leads" />}
       />
-      <div className="flex flex-wrap gap-2 md:gap-2.5 xl:flex-nowrap xl:items-start xl:gap-3">
+      <div className="grid grid-cols-3 gap-2 md:flex md:flex-wrap md:gap-2.5 xl:flex-nowrap xl:items-start xl:gap-3">
         {leadStatuses.map((s) => (
           <Link
             key={s.key}
             to={s.key === 'total' ? '/leads/list' : `/leads/list?status=${s.key}`}
             className={cx(
-              'flex w-[100px] flex-col gap-0.5 rounded-[14px] p-2.5 transition hover:brightness-[0.98] md:w-[145px] md:gap-1 md:rounded-[18px] md:p-3 xl:w-auto xl:min-w-0 xl:flex-1 xl:gap-2 xl:rounded-[22px] xl:p-4',
+              'flex min-w-0 flex-col gap-0.5 rounded-[14px] p-2.5 transition hover:brightness-[0.98] md:w-[145px] md:gap-1 md:rounded-[18px] md:p-3 xl:w-auto xl:min-w-0 xl:flex-1 xl:gap-2 xl:rounded-[22px] xl:p-4',
               s.dark ? 'bg-rail' : s.bg,
               s.hideMobile && 'hidden md:flex',
             )}
@@ -320,12 +322,12 @@ function TaskRow({ t, done, onToggle, popover, onReschedule, onEdit, onPick, onC
   return (
     <div
       className={cx(
-        'relative flex items-center gap-3 rounded-[18px] py-3 pr-3 pl-3.5',
-        t.fresh ? 'h-[79px] border-2 border-[#9cd8bd] bg-[#f5fbf8]' : cx('h-[77px] border border-line', done ? 'bg-[#f7fbf9]' : 'bg-white'),
+        'relative flex flex-wrap items-center gap-x-3 gap-y-2.5 rounded-[18px] py-3 pr-3 pl-3.5 xl:flex-nowrap xl:gap-3',
+        t.fresh ? 'border-2 border-[#9cd8bd] bg-[#f5fbf8] xl:h-[79px]' : cx('border border-line xl:h-[77px]', done ? 'bg-[#f7fbf9]' : 'bg-white'),
       )}
     >
       <span className={cx('flex size-9 shrink-0 items-center justify-center rounded-full text-ink', t.iconBg)}><Icon name={t.icon} size={16} /></span>
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+      <div className="flex min-w-0 flex-1 basis-[calc(100%-48px)] flex-col gap-1.5 xl:basis-0">
         <div className="flex min-w-0 items-center gap-2">
           {onView
             ? <button type="button" onClick={() => onView(t)} className={cx('min-w-0 truncate text-left text-[14px] font-bold hover:underline', done ? 'text-muted line-through' : 'text-ink')}>{t.title}</button>
@@ -342,7 +344,7 @@ function TaskRow({ t, done, onToggle, popover, onReschedule, onEdit, onPick, onC
           </span>
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-1.5">
+      <div className="ml-12 flex shrink-0 items-center gap-1.5 xl:ml-0">
         {!done && (onEdit ? <ActionBtn icon="edit" onClick={() => onEdit(t)} label="Edit task" /> : <ActionBtn icon="edit" to="/tasks" label="Edit task" />)}
         {!done && <ActionBtn icon="calendar" onClick={onReschedule} label="Reschedule" />}
         {onView ? <ViewMorePill onClick={() => onView(t)} /> : <ActionBtn icon="arrow" to={t.to} label="Open" />}
@@ -501,7 +503,7 @@ function LiveTasksSection({ live }) {
           const on = t.key === tab
           return (
             <button key={t.key} type="button" onClick={() => pick(t.key)}
-              className={cx('flex h-[29px] shrink-0 items-center gap-1.5 rounded-[16px] px-2.5 text-[12px] font-semibold md:h-8 md:gap-2 md:rounded-[18px] md:px-3.5 md:text-[13px]', on ? 'bg-navy text-white' : 'bg-panel text-slate md:bg-transparent')}>
+              className={cx('flex h-[29px] shrink-0 items-center justify-center gap-1 rounded-[16px] px-2 text-[12px] font-semibold max-md:flex-1 md:h-8 md:gap-2 md:rounded-[18px] md:px-3.5 md:text-[13px]', on ? 'bg-navy text-white' : 'bg-panel text-slate md:bg-transparent')}>
               <span className="md:hidden">{t.short}</span>
               <span className="hidden md:inline">{t.label}</span>
               <span className={cx('text-[11px] font-bold md:rounded-[9px] md:px-2 md:py-px', on ? 'text-white md:bg-white/20' : t.red ? 'text-[#b4323c] md:bg-[#fbebec]' : 'text-muted md:bg-white')}>{t.count}</span>
@@ -993,7 +995,7 @@ export function DashboardScreen({ drawer, tasks, reschedule, toast, closeTo, liv
   return (
     <DashLive.Provider value={live ?? null}>
     <AppLayout active="dashboard" responsive mobileTitle="Home" mobileSearch={false} lockScroll={!!drawer}>
-      <div className="grid grid-cols-1 gap-y-3.5 md:grid-cols-2 md:gap-x-3.5 md:gap-y-[18px] xl:grid-cols-[minmax(0,1fr)_400px] xl:gap-5">
+      <div data-rsp className="grid grid-cols-1 gap-y-3.5 md:grid-cols-2 md:gap-x-3.5 md:gap-y-[18px] xl:grid-cols-[minmax(0,1fr)_400px] xl:gap-5">
         <DashHeader />
         <QuickActions />
         <LeadsGlance />
