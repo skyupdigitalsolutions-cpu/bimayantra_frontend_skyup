@@ -19,16 +19,16 @@ export default function QuotationInsurer() {
               aria-checked={on}
               aria-disabled={x.expired}
               onClick={() => !x.expired && setSel(x.key)}
-              className={cx('flex w-full items-center gap-3.5 p-3.5', choice(on, x.expired), x.expired ? 'opacity-60' : 'cursor-pointer')}
+              className={cx('flex w-full items-center gap-3.5 p-3.5 max-md:flex-wrap max-md:gap-2.5 max-md:p-3', choice(on, x.expired), x.expired ? 'opacity-60' : 'cursor-pointer')}
             >
               <Radio on={on} />
               <RowAvatar initials={x.initials} tone={x.tone} className="border-0 text-ink" />
               <span className="flex min-w-px flex-1 flex-col gap-0.5">
-                <span className="text-[14px] font-bold text-ink">{x.name}</span>
-                <span className={cx('text-[12px] font-medium', x.expired ? 'text-[#8a5a12]' : 'text-muted')}>{x.meta}</span>
+                <span className="text-[14px] font-bold text-ink max-md:text-[13px]">{x.name}</span>
+                <span className={cx('text-[12px] font-medium max-md:text-[11px]', x.expired ? 'text-[#8a5a12]' : 'text-muted')}>{x.meta}</span>
               </span>
               {x.expired && (
-                <Link to="/x/s04-settings-my-insurers" className="inline-flex h-9 shrink-0 items-center rounded-[18px] border border-line bg-white px-3.5 text-[13px] font-semibold text-ink hover:bg-tile">
+                <Link to="/x/s04-settings-my-insurers" className="inline-flex h-9 shrink-0 items-center rounded-[18px] border border-line bg-white px-3.5 text-[13px] font-semibold text-ink hover:bg-tile max-md:ml-auto max-md:h-8 max-md:text-[12px]">
                   Update code
                 </Link>
               )}

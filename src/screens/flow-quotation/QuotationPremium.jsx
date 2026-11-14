@@ -46,7 +46,7 @@ export default function QuotationPremium() {
           </span>
         </div>
         {override && (
-          <div className="flex gap-3.5">
+          <div className="flex gap-3.5 max-md:flex-col max-md:gap-3">
             <Field label="Premium to use before tax *" className="gap-2">
               <MoneyInput value={amount} onChange={setAmount} focused />
             </Field>
@@ -67,7 +67,7 @@ export default function QuotationPremium() {
             </span>
           </div>
           {items.map((b) => (
-            <div key={b.key} className="flex h-[60px] items-center gap-3 rounded-[16px] bg-panel px-3.5">
+            <div key={b.key} className="flex h-[60px] items-center gap-3 rounded-[16px] bg-panel px-3.5 max-md:h-auto max-md:flex-wrap max-md:gap-2 max-md:py-3 max-md:px-3 max-md:rounded-[14px]">
               <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-pink-100">
                 <Icon name="sparkle" size={16} className="text-[#b4325a]" />
               </span>

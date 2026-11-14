@@ -276,3 +276,10 @@
     width: auto !important;
   }
 }
+/* SegTabs inline-flex pill container: constrain to viewport on phones */
+@media (max-width: 767.98px) {
+  .inline-flex[class*="rounded-[26px]"][class*="shadow-"] {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}

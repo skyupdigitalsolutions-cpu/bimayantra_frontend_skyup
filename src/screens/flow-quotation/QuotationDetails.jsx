@@ -28,7 +28,7 @@ export default function QuotationDetails() {
       >
         <div className="flex flex-col gap-2.5">
           <span className="text-[13px] font-semibold text-ink">People to cover *</span>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3 max-md:flex-col">
             {people.map((p) => {
               const sel = on[p.key]
               return (
@@ -38,8 +38,8 @@ export default function QuotationDetails() {
                   disabled={p.noDob}
                   onClick={() => setOn((s) => ({ ...s, [p.key]: !s[p.key] }))}
                   className={cx(
-                    'flex w-[344px] items-center gap-3 rounded-[20px] py-3.5 pr-4 pl-3.5 text-left',
-                    sel ? 'h-[75px] border-[1.5px] border-blue bg-[#f3f7ff]' : 'h-[74px] border border-line bg-white',
+                    'flex w-[344px] items-center gap-3 rounded-[20px] py-3.5 pr-4 pl-3.5 text-left max-md:w-full max-md:rounded-[16px] max-md:py-3 max-md:pr-3 max-md:pl-3',
+                    sel ? 'h-[75px] border-[1.5px] border-blue bg-[#f3f7ff] max-md:h-auto' : 'h-[74px] border border-line bg-white max-md:h-auto',
                     p.noDob && 'cursor-not-allowed',
                   )}
                 >
@@ -59,7 +59,7 @@ export default function QuotationDetails() {
             All {count} are within the age limits: adults 18–65, children 0–25.
           </Note>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 max-md:flex-col max-md:gap-3">
           <Field label="Sum insured *" className="gap-2">
             <PlainSelect value={sum} onChange={setSum} options={sumInsuredOptions} />
           </Field>

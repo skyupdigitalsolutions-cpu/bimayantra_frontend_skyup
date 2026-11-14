@@ -148,33 +148,52 @@ export function LiveQuotations() {
   ]
   if (list.error && !list.data) return <ErrorPanel active="quotations" error={list.error} />
   return (
-    <AppLayout active="quotations">
+    <AppLayout active="quotations" responsive mobileTitle="Quotations">
       <Header breadcrumb={'SALES  /  QUOTATIONS'} title="Quotations" subtitle="Every quotation and its revisions. Share, accept, then take payment."
-        actions={<><HeadButton variant="white" icon="compare" to="/comparisons">Comparisons</HeadButton><HeadButton icon="plus" to="/quotations/new">New quotation</HeadButton></>} />
+        actions={<><HeadButton variant="white" icon="compare" to="/comparisons" className="max-md:hidden">Comparisons</HeadButton><HeadButton icon="plus" to="/quotations/new">New quotation</HeadButton></>} />
       {/* Figma 07L stat cards */}
-      <div className="mt-[13px] flex gap-5">
+      <div data-rsp className="mt-[13px] flex gap-5 max-md:mt-3 max-md:grid max-md:grid-cols-2 max-md:gap-2.5">
         {[
           { icon: 'quote', label: 'All quotations', value: Object.values(counts).reduce((a, b) => a + b, 0), bg: '#eef1f5' },
           { icon: 'check', label: 'Accepted', value: counts.ACCEPTED ?? 0, bg: '#e7f4ee' },
           { icon: 'send', label: 'Shared', value: counts.SHARED ?? 0, bg: '#e8f0fd' },
           { icon: 'clock', label: 'Ready', value: counts.READY ?? 0, bg: '#f0ecfb' },
         ].map((s) => (
-          <div key={s.label} className="flex h-[117px] w-[280px] flex-col gap-1.5 rounded-[24px] p-5" style={{ background: s.bg }}>
-            <div className="flex items-center gap-2.5"><span className="flex size-9 items-center justify-center rounded-full bg-white/70 text-ink"><Icon name={s.icon} size={18} /></span><p className="text-[13px] font-semibold whitespace-nowrap text-ink-2">{s.label}</p></div>
-            <p className="text-[28px] font-bold tracking-[-0.6px] text-ink">{s.value}</p>
+          <div key={s.label} className="flex h-[117px] w-[280px] flex-col gap-1.5 rounded-[24px] p-5 max-md:h-auto max-md:w-full max-md:gap-1 max-md:rounded-[20px] max-md:p-3.5" style={{ background: s.bg }}>
+            <div className="flex items-center gap-2.5 max-md:gap-2"><span className="flex size-9 items-center justify-center rounded-full bg-white/70 text-ink max-md:size-8"><Icon name={s.icon} size={18} /></span><p className="text-[13px] font-semibold whitespace-nowrap text-ink-2 max-md:text-[11px] max-md:whitespace-normal">{s.label}</p></div>
+            <p className="text-[28px] font-bold tracking-[-0.6px] text-ink max-md:text-[22px] max-md:tracking-[-0.4px]">{s.value}</p>
           </div>
         ))}
       </div>
       <SegTabs className="mt-[13px]" items={Q_TABS.map(([key, l]) => ({ key, label: l, count: key === 'all' ? Object.values(counts).reduce((a, b) => a + b, 0) : counts[key] ?? 0 }))} value={tab} onChange={(k) => { setTab(k); setPage(1) }} />
-      <DataTable className="mt-7 w-[1180px]" columns={columns} rows={rows} rowTo={(r) => `/quotations/${r.id}`}
+      <DataTable className="mt-7 w-[1180px] max-md:hidden" columns={columns} rows={rows} rowTo={(r) => `/quotations/${r.id}`}
         empty={list.loading ? 'Loading…' : hq.trim() ? `No quotations match “${hq.trim()}”.` : 'No quotations here yet.'} onClear={hq.trim() ? clearQ : undefined} />
       {(meta.pages ?? 1) > 1 && (
-        <div className="mt-4 flex w-[1180px] items-center justify-end gap-2 text-[13px] font-medium text-muted">
+        <div className="mt-4 flex w-[1180px] items-center justify-end gap-2 max-md:hidden text-[13px] font-medium text-muted">
           Page {page} of {meta.pages}
           <SmallButton variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</SmallButton>
           <SmallButton variant="outline" disabled={page >= meta.pages} onClick={() => setPage((p) => p + 1)}>Next</SmallButton>
         </div>
       )}
+      {/* Mobile card list */}
+      <div className="mt-3 flex flex-col gap-2 md:hidden">
+        {rows.map((r) => (
+          <Link key={r.id} to={`/quotations/${r.id}`} className="flex items-center gap-3 rounded-[16px] border border-line bg-white p-3">
+            <span className={`flex size-9 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-white ${avatarClass(r.cname)}`}>{initials(r.cname)}</span>
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <p className="truncate text-[14px] font-bold text-ink">{r.number ?? 'Draft'}</p>
+              <p className="truncate text-[12px] font-medium text-muted">{r.cname}{r.insurerName ? ` \u00b7 ${r.insurerName}` : ''}</p>
+              <div className="flex items-center gap-2">
+                <span className="text-[12px] font-semibold text-ink">{fmtMoney(r.premium)}</span>
+                <StatusChip tone={Q_TONE[r.status]}>{label(r.status)}</StatusChip>
+              </div>
+            </div>
+            <RowChevron />
+          </Link>
+        ))}
+        {list.loading && !rows.length && <p className="px-4 py-5 text-[13px] font-medium text-muted">Loading\u2026</p>}
+        {!list.loading && rows.length === 0 && <p className="px-4 py-4 text-center text-[13px] font-medium text-muted">{hq.trim() ? 'No matches.' : 'No quotations yet.'}</p>}
+      </div>
     </AppLayout>
   )
 }
@@ -208,7 +227,7 @@ export function LiveQuotationDetail() {
   const canPay = ['SHARED', 'ACCEPTED', 'EXPIRED'].includes(x.status) && !paid
   const canLink = ['READY', 'SHARED', 'ACCEPTED'].includes(x.status) && !paid
   return (
-    <AppLayout active="quotations">
+    <AppLayout active="quotations" responsive mobileTitle="Quotation">
       <Header back="/quotations" breadcrumb={`SALES  /  QUOTATIONS  /  ${x.number ?? 'DRAFT'}`} title={`${x.number ?? 'Draft quotation'}${rev ? ` R${rev.revision}` : ''}`}
         titleExtra={<StatusChip tone={Q_TONE[x.status]}>{label(x.status)}</StatusChip>} subtitle={[s.customer?.name, s.insurer?.name, s.product?.name].filter(Boolean).join(' · ') || 'Not generated yet'}
         actions={<>
@@ -218,20 +237,20 @@ export function LiveQuotationDetail() {
           {canPay && <HeadButton icon="card" onClick={() => setDlg('pay')}>Record payment</HeadButton>}
           {x.status === 'ACCEPTED' && paid && <HeadButton icon="arrow" onClick={() => act(() => api.proposals.create({ quotationId: x.id }), { invalidates: ['proposals'], onDone: (r) => r?.data?.id && navigate(`/proposals/${r.data.id}/edit`) })}>Start proposal</HeadButton>}
         </>} />
-      <div className="mt-[37px] flex items-start gap-5">
-        <div className="flex w-[760px] shrink-0 flex-col gap-5">
+      <div className="mt-4 flex flex-col gap-4 md:mt-[37px] md:flex-row md:items-start md:gap-5">
+        <div className="flex min-w-0 flex-col gap-4 md:w-[760px] md:shrink-0 md:gap-5">
           {/* Quotation KV card - Figma 08 */}
           <Panel className="flex flex-col gap-3">
             <PanelHead title="Quotation" subtitle="Everything printed on the PDF" right={rev?.pdfFileId && <SmallButton variant="ghost" icon="folder" onClick={() => window.open(api.files.url(rev.pdfFileId), '_blank')}>PDF</SmallButton>} />
             <div className="flex flex-wrap gap-x-5 gap-y-[18px]">
               {[['Customer', s.customer?.name], ['Insurer', s.insurer?.name], ['Product', s.product?.name], ['Variant', s.variant?.name], ['Sum insured', s.sumInsured ? fmtMoney(s.sumInsured) : null], ['Policy term', s.policyTerm ? `${s.policyTerm} year${s.policyTerm > 1 ? 's' : ''}` : null], ['Start date', s.startDate], ['People', (s.people || []).map((m) => m.name).join(', ')]].filter(([, v]) => v).map(([k, v]) => (
-                <div key={k} className="flex w-[220px] flex-col gap-0.5"><p className="text-[12px] font-medium text-muted">{k}</p><p className="text-[14px] font-bold text-ink">{v}</p></div>
+                <div key={k} className="flex w-full flex-col gap-0.5 md:w-[220px]"><p className="text-[12px] font-medium text-muted">{k}</p><p className="text-[14px] font-bold text-ink">{v}</p></div>
               ))}
             </div>
           </Panel>
           {/* Premium ledger card */}
           <Panel className="flex flex-col gap-3">
-            <PanelHead title="Premium" subtitle={s.calculationDate ? `Calculated ${s.calculationDate}` : ''} right={<p className="text-[24px] font-bold text-ink">{fmtMoney(b.final ?? rev?.final, { decimals: 2 })}</p>} />
+            <PanelHead title="Premium" subtitle={s.calculationDate ? `Calculated ${s.calculationDate}` : ''} right={<p className="text-[18px] font-bold text-ink md:text-[24px]">{fmtMoney(b.final ?? rev?.final, { decimals: 2 })}</p>} />
             {b.final != null && <Breakdown b={b} />}
             {!rev && <p className="text-[13px] font-medium text-muted">This quotation has not been generated yet.</p>}
           </Panel>
@@ -244,9 +263,9 @@ export function LiveQuotationDetail() {
           <Panel className="flex flex-col gap-3">
             <PanelHead title="Revisions" />
             {(x.revisions || []).slice().reverse().map((r) => (
-              <div key={r.revision} className="flex items-center gap-3 text-[13px]">
-                <span className="w-10 font-bold text-ink">R{r.revision}</span>
-                <span className="flex-1 font-medium text-muted">{fmtDateTime(r.generatedAt)}{r.sharedAt ? ` · shared ${fmtDate(r.sharedAt, { year: false })}` : ''}{r.viewed ? ` · viewed ${r.viewed}×` : ''}</span>
+              <div key={r.revision} className="flex flex-wrap items-center gap-2 text-[12px] md:flex-nowrap md:gap-3 md:text-[13px]">
+                <span className="w-8 shrink-0 font-bold text-ink md:w-10">R{r.revision}</span>
+                <span className="min-w-0 flex-1 basis-[calc(100%-40px)] font-medium text-muted md:basis-0">{fmtDateTime(r.generatedAt)}{r.sharedAt ? ` · shared ${fmtDate(r.sharedAt, { year: false })}` : ''}{r.viewed ? ` · viewed ${r.viewed}×` : ''}</span>
                 <span className="font-semibold text-ink">{fmtMoney(r.final, { decimals: 2 })}</span>
                 <StatusChip tone={Q_TONE[r.status] ?? 'neutral'}>{label(r.status)}</StatusChip>
                 {r.pdfFileId && <SmallButton variant="ghost" icon="folder" onClick={() => window.open(api.files.url(r.pdfFileId), '_blank')}>PDF</SmallButton>}
@@ -268,7 +287,7 @@ export function LiveQuotationDetail() {
             ))}
           </Panel>
         </div>
-        <div className="flex w-[400px] flex-col gap-5">
+        <div className="flex w-full flex-col gap-4 md:w-[400px] md:gap-5">
           {s.customer && (
             <Panel className="flex flex-col gap-3">
               <PanelHead title="Customer" />

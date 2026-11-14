@@ -15,7 +15,7 @@ export default function QuotationReview() {
         subtitle="Every check runs again before the PDF is made."
         next={{ label: 'Generate quotation', to: GENERATED_PATH, icon: 'sparkle' }}
       >
-        <div className="grid grid-cols-[220px_220px_220px] gap-x-5 gap-y-3.5 [&>div]:h-[37px]">
+        <div className="grid grid-cols-[220px_220px_220px] gap-x-5 gap-y-3.5 [&>div]:h-[37px] max-md:grid-cols-2 max-md:gap-x-3 max-md:gap-y-3 max-md:[&>div]:h-auto">
           {reviewKV.map(([k, v]) => (
             <div key={k} className="flex flex-col gap-1">
               <span className="text-[12px] font-medium text-muted">{k}</span>

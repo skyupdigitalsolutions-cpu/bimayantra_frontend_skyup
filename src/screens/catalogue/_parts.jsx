@@ -71,15 +71,15 @@ export function StatusChip({ tone = 'green', icon, className = '', children }) {
 /** Coloured stat tile (r26, p22, 280 wide): icon circle + label, big value, note */
 export function StatTile({ bg, icon, label, value, note, className = '' }) {
   return (
-    <div className={cx('flex w-[280px] shrink-0 flex-col gap-1.5 rounded-[26px] p-[22px]', bg, className)}>
-      <div className="flex items-center gap-2.5">
-        <span className="flex size-10 items-center justify-center rounded-[20px] bg-white/70">
+    <div className={cx('flex w-[280px] shrink-0 flex-col gap-1.5 rounded-[26px] p-[22px] max-md:w-full max-md:gap-1 max-md:rounded-[20px] max-md:p-3.5', bg, className)}>
+      <div className="flex items-center gap-2.5 max-md:gap-2">
+        <span className="flex size-10 items-center justify-center rounded-[20px] bg-white/70 max-md:size-8 max-md:rounded-[16px]">
           <Icon name={icon} size={20} className="text-ink" />
         </span>
-        <p className="text-[13px] font-semibold whitespace-nowrap text-ink-2">{label}</p>
+        <p className="text-[13px] font-semibold whitespace-nowrap text-ink-2 max-md:text-[11px] max-md:whitespace-normal">{label}</p>
       </div>
-      <p className="text-[30px] font-bold tracking-[-0.6px] text-ink">{value}</p>
-      <p className="text-[12px] font-medium whitespace-nowrap text-slate">{note}</p>
+      <p className="text-[30px] font-bold tracking-[-0.6px] text-ink max-md:text-[22px] max-md:tracking-[-0.4px]">{value}</p>
+      <p className="text-[12px] font-medium whitespace-nowrap text-slate max-md:text-[10px] max-md:whitespace-normal">{note}</p>
     </div>
   )
 }
@@ -239,18 +239,18 @@ export function BackButton({ to = '/', label = 'Back', className = '' }) {
 export function Header({ breadcrumb, title, titleExtra, subtitle, actions, before, search = true, back }) {
   return (
     <header className="relative flex min-h-[56px] flex-col gap-2 xl:min-h-[83px]">
-      {back && <BackButton to={back} className="mt-[22px]" />}
-      <div className="flex items-start gap-3">
+      {back && <BackButton to={back} className="max-md:mt-0 mt-[22px]" />}
+      <div className="flex flex-col gap-2 md:flex-row md:items-start md:gap-3">
         <div className="flex min-w-0 flex-1 flex-col gap-1 md:gap-1.5">
           <p className="hidden text-[12px] font-semibold tracking-[0.2px] whitespace-pre text-muted uppercase md:block max-xl:whitespace-pre-wrap">{breadcrumb}</p>
-          <div className="flex items-center gap-3">
-            <h1 className="text-[22px] font-bold tracking-[-0.4px] text-ink md:text-[30px] md:tracking-[-0.6px] max-xl:whitespace-normal">{title}</h1>
+          <div className="flex items-center gap-2 md:gap-3">
+            <h1 className="text-[20px] font-bold tracking-[-0.3px] text-ink md:text-[30px] md:tracking-[-0.6px] max-xl:whitespace-normal">{title}</h1>
             {titleExtra}
           </div>
-          <p className="text-[13px] font-medium text-muted md:text-[14px] md:whitespace-nowrap">{subtitle}</p>
+          <p className="text-[12px] font-medium text-muted md:text-[14px] md:whitespace-nowrap">{subtitle}</p>
         </div>
-        {/* Actions: search + bell hidden on phone (app bar has them); CTA always visible */}
-        <div className="flex shrink-0 items-center gap-2 md:gap-3">
+        {/* Actions: search + bell hidden on phone; buttons wrap below title on phone */}
+        <div className="flex flex-wrap items-center gap-2 md:shrink-0 md:flex-nowrap md:gap-3">
           {search && <span className="hidden md:block"><Search /></span>}
           {before}
           <span className="hidden md:block"><Bell /></span>

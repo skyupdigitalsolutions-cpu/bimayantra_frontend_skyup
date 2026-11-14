@@ -235,7 +235,7 @@ export function InfoBox({ label, value, className = '' }) {
   return (
     <div className={cx('flex min-w-0 flex-1 flex-col gap-1 rounded-[14px] bg-panel-2 px-3 py-2.5', className)}>
       <p className="text-[11px] font-medium text-blue">{label}</p>
-      <p className="text-[13px] font-semibold whitespace-nowrap text-ink">{value}</p>
+      <p className="text-[13px] font-semibold text-ink max-md:text-[11px] max-md:leading-tight">{value}</p>
     </div>
   )
 }
@@ -365,13 +365,13 @@ export function Modal({ open = true, onClose, width = 560, className = '', child
  */
 export function Stepper({ steps, current, className = '' }) {
   return (
-    <div className={cx('flex items-start rounded-[28px] bg-white px-5 py-[18px] drop-shadow-[0px_8px_12px_rgba(19,41,75,0.05)] max-xl:overflow-x-auto max-xl:[scrollbar-width:none] max-xl:[&::-webkit-scrollbar]:hidden', className)}>
+    <div className={cx('flex items-start rounded-[28px] bg-white px-5 py-[18px] drop-shadow-[0px_8px_12px_rgba(19,41,75,0.05)] max-xl:overflow-x-auto max-xl:[scrollbar-width:none] max-xl:[&::-webkit-scrollbar]:hidden max-md:justify-center max-md:gap-0 max-md:px-3 max-md:py-3', className)}>
       {steps.map((s, i) => {
         const done = i < current
         const on = i === current
         return (
           <div key={s} className="flex flex-1 items-start last:flex-none">
-            <div className="flex w-[64px] flex-col items-center gap-2">
+            <div className="flex w-8 flex-col items-center gap-1 md:w-[64px] md:gap-2">
               <span
                 className={cx(
                   'flex size-[30px] items-center justify-center rounded-full text-[12px] font-bold',
@@ -382,7 +382,7 @@ export function Stepper({ steps, current, className = '' }) {
               >
                 {done ? <Icon name="check" size={16} strokeWidth={2} /> : i + 1}
               </span>
-              <span className={cx('text-center text-[11px] whitespace-nowrap', on || done ? 'font-semibold text-ink' : 'font-medium text-muted')}>{s}</span>
+              <span className={cx('hidden text-center text-[11px] whitespace-nowrap md:block', on || done ? 'font-semibold text-ink' : 'font-medium text-muted')}>{s}</span>
             </div>
             {i < steps.length - 1 && (
               <span className={cx('mt-[15px] h-[2px] min-w-[12px] flex-1 rounded-full', done ? 'bg-navy' : 'bg-line')} />

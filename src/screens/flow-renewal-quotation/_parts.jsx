@@ -17,7 +17,7 @@ function Stepper({ current }) {
           return (
             <div key={s} className="contents">
               {i > 0 && <span className={cx('h-0.5 flex-1 rounded-[1px]', i <= current ? 'bg-navy' : 'bg-line')} />}
-              <div className="flex w-[224.8px] shrink-0 flex-col items-center gap-2">
+              <div className="flex w-[224.8px] shrink-0 flex-col items-center gap-2 max-md:w-auto max-md:min-w-[100px] max-md:flex-1">
                 <span
                   className={cx(
                     'flex size-[34px] items-center justify-center rounded-full text-[13px] font-bold',
@@ -40,7 +40,7 @@ function Stepper({ current }) {
 
 export function LiveSummary({ rows }) {
   return (
-    <div className="flex w-[400px] shrink-0 flex-col gap-3.5 rounded-[28px] bg-linear-to-b from-[#fbd3dc] to-[#f6b3c3] p-6 shadow-[0px_18px_36px_-12px_rgba(232,137,156,0.3)]">
+    <div className="flex w-[400px] shrink-0 flex-col gap-3.5 rounded-[28px] bg-linear-to-b from-[#fbd3dc] to-[#f6b3c3] p-6 shadow-[0px_18px_36px_-12px_rgba(232,137,156,0.3)] max-md:!w-full max-md:!shrink max-md:rounded-[22px] max-md:p-4">
       <CardHead title="Renewal · new quotation" sub="Replaces FamilySure from 04 Dec 2026" right={<Pill tone="pink">Draft</Pill>} />
       <div className="flex flex-col gap-2.5 rounded-[20px] bg-white/80 p-4">
         {rows.map(([k, v]) => <KV key={k} k={k} v={v} kClass="text-rose-ink" className="h-4" />)}
@@ -60,9 +60,9 @@ export function NewQuoteWizard({ step, title, sub, backTo, next, summary, childr
         sub="Kavya Hegde · replaces Star Health FamilySure (ends 03 Dec 2026)"
         actions={<Btn variant="white" icon="download" to={P.n1}>Save and exit</Btn>}
       />
-      <div className="mt-[21px]"><Stepper current={step} /></div>
-      <div className="mt-[35px] flex items-start gap-5">
-        <Card className="w-[760px] gap-4">
+      <div className="mt-[21px] max-md:mt-3 max-md:overflow-x-auto max-md:[scrollbar-width:none]"><Stepper current={step} /></div>
+      <div className="mt-[35px] flex items-start gap-5 max-md:mt-4 max-md:flex-col">
+        <Card className="w-[760px] gap-4 max-md:!w-full max-md:min-w-0">
           <CardHead title={`${step + 1} · ${title}`} sub={sub} />
           {children}
           <StepFooter backTo={backTo} next={next} />

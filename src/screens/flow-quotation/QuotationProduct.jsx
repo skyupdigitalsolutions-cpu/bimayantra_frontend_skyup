@@ -34,15 +34,15 @@ export default function QuotationProduct() {
               role="radio"
               aria-checked={on}
               onClick={() => !p.withdrawn && setSel(p.key)}
-              className={cx('flex w-full items-center gap-3.5 p-3.5', choice(on, p.withdrawn), p.withdrawn ? 'opacity-60' : 'cursor-pointer')}
+              className={cx('flex w-full items-center gap-3.5 p-3.5 max-md:flex-wrap max-md:gap-2.5 max-md:p-3', choice(on, p.withdrawn), p.withdrawn ? 'opacity-60' : 'cursor-pointer')}
             >
               <Radio on={on} />
-              <span className="flex size-[42px] shrink-0 items-center justify-center rounded-full bg-pink-100">
+              <span className="flex size-[42px] shrink-0 items-center justify-center rounded-full bg-pink-100 max-md:size-9">
                 <Icon name="heart" size={18} className="text-[#b4325a]" />
               </span>
               <span className="flex min-w-px flex-1 flex-col gap-0.5">
-                <span className="text-[14px] font-bold text-ink">{p.name}</span>
-                <span className={cx('text-[12px] font-medium', p.withdrawn ? 'text-[#b4323c]' : 'text-muted')}>{p.meta}</span>
+                <span className="text-[14px] font-bold text-ink max-md:text-[13px]">{p.name}</span>
+                <span className={cx('text-[12px] font-medium max-md:text-[11px]', p.withdrawn ? 'text-[#b4323c]' : 'text-muted')}>{p.meta}</span>
               </span>
               {p.withdrawn ? (
                 <span className="inline-flex items-center gap-[5px] rounded-[14px] bg-[#fbebec] py-[5px] pr-3 pl-2 text-[12px] font-semibold text-[#b4323c]">

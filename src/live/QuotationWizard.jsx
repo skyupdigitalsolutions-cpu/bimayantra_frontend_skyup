@@ -229,10 +229,10 @@ function Wizard({ initial, presetCustomer }) {
   }
 
   return (
-    <AppLayout active="quotations">
+    <AppLayout active="quotations" responsive mobileTitle="New quotation">
       {header}
       {ren && (
-        <div className="mt-4 flex items-center gap-4 rounded-[24px] bg-linear-to-r from-[#fde7d2] to-[#f9d6b5] px-5 py-4">
+        <div className="mt-3 flex flex-wrap items-center gap-3 rounded-[20px] bg-linear-to-r from-[#fde7d2] to-[#f9d6b5] px-4 py-3 md:mt-4 md:flex-nowrap md:gap-4 md:rounded-[24px] md:px-5 md:py-4">
           <span className="flex size-11 items-center justify-center rounded-full bg-white"><Icon name="refresh" size={18} className="text-ink" /></span>
           <div className="flex flex-1 flex-col gap-0.5">
             <p className="text-[14px] font-bold text-ink">Renewal of the current policy{ren.portabilityRequested ? ' · portability requested' : ''}</p>
@@ -243,7 +243,7 @@ function Wizard({ initial, presetCustomer }) {
       )}
       <Stepper className="mt-4" steps={STEPS} current={step} />
 
-      <div className="mt-5 flex items-start gap-5">
+      <div className="mt-4 flex flex-col gap-4 md:mt-5 md:flex-row md:items-start md:gap-5">
         {/* Main step card */}
         <div className={cx('flex min-w-0 flex-1 flex-col gap-5', CARD)}>
           {step === 0 && <CustomerStep customerId={customerId} onPick={(c) => { setCustomerId(c.id); setQ(null) }} locked={!!q} />}
@@ -251,7 +251,7 @@ function Wizard({ initial, presetCustomer }) {
           {step === 1 && (
             <>
               <div><p className="text-[17px] font-bold text-ink">Quotation type</p><p className="text-[12px] font-medium text-muted">Single, or 2 to 3 products side by side</p></div>
-              <div className="flex items-start gap-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-4">
                 <TypeCard on={quoteType === 'single'} onClick={() => setQuoteType('single')} icon="quote" iconBg="bg-amber-100" title="Single quotation" text="One product. Can carry the insurer's payment link." />
                 <TypeCard on={quoteType === 'comparative'} to={`/comparisons/new?customerId=${customerId}`} icon="compare" iconBg="bg-[#d4f1e7]" title="Comparative quotation" text="2 to 3 products or variants side by side. No payment link." />
               </div>
@@ -290,19 +290,19 @@ function Wizard({ initial, presetCustomer }) {
 
           <ErrorNote error={err} />
 
-          <div className="flex items-center gap-3">
-            <button type="button" disabled={step === 0 || busy} onClick={() => { setErr(null); setStep(step - 1) }} className="flex h-[48px] w-[140px] items-center justify-center rounded-[24px] border border-line text-[14px] font-semibold text-ink disabled:opacity-40">Back</button>
+          <div className="flex items-center gap-3 max-md:flex-wrap max-md:gap-2">
+            <button type="button" disabled={step === 0 || busy} onClick={() => { setErr(null); setStep(step - 1) }} className="flex h-[48px] w-[140px] items-center justify-center rounded-[24px] border border-line text-[14px] font-semibold text-ink disabled:opacity-40 max-md:h-10 max-md:w-auto max-md:rounded-[20px] max-md:px-5 max-md:text-[13px]">Back</button>
             {q && <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted"><Icon name="check" size={16} className="text-muted" />Draft saved</span>}
             <span className="flex-1" />
             {step < 9 && (
               <button type="button" disabled={busy || !canNext} onClick={handleNext}
-                className="flex h-[48px] items-center gap-2 rounded-[24px] bg-navy px-6 text-[14px] font-semibold text-white shadow-[0px_10px_10px_rgba(19,41,75,0.25)] disabled:opacity-50 disabled:shadow-none">
+                className="flex h-[48px] items-center gap-2 rounded-[24px] bg-navy px-6 text-[14px] font-semibold text-white shadow-[0px_10px_10px_rgba(19,41,75,0.25)] disabled:opacity-50 disabled:shadow-none max-md:h-10 max-md:rounded-[20px] max-md:px-4 max-md:text-[13px]">
                 <Icon name="arrow" size={18} />{busy ? 'Saving…' : nextLabels[step]}
               </button>
             )}
             {step === 9 && (
               <button type="button" disabled={busy || !b} onClick={generate}
-                className="flex h-[48px] items-center gap-2 rounded-[24px] bg-navy px-6 text-[14px] font-semibold text-white shadow-[0px_10px_10px_rgba(19,41,75,0.25)] disabled:opacity-50 disabled:shadow-none">
+                className="flex h-[48px] items-center gap-2 rounded-[24px] bg-navy px-6 text-[14px] font-semibold text-white shadow-[0px_10px_10px_rgba(19,41,75,0.25)] disabled:opacity-50 disabled:shadow-none max-md:h-10 max-md:rounded-[20px] max-md:px-4 max-md:text-[13px]">
                 <Icon name="sparkle" size={16} />{busy ? 'Generating…' : 'Generate quotation'}
               </button>
             )}
@@ -310,7 +310,7 @@ function Wizard({ initial, presetCustomer }) {
         </div>
 
         {/* Figma: pink "Your quotation" live summary */}
-        <div className="w-[400px] shrink-0 rounded-[28px] bg-gradient-to-b from-[#fbd3dc] to-[#f6b3c3] p-6 shadow-[0px_18px_18px_rgba(232,137,156,0.25)]">
+        <div className="w-full rounded-[20px] bg-gradient-to-b from-[#fbd3dc] to-[#f6b3c3] p-4 shadow-[0px_18px_18px_rgba(232,137,156,0.25)] md:w-[400px] md:shrink-0 md:rounded-[28px] md:p-6">
           <div className="flex items-start justify-between">
             <div><p className="text-[17px] font-bold text-ink">Your quotation</p><p className="text-[12px] font-medium text-muted">Builds up as you go</p></div>
             <span className="rounded-[14px] bg-[#fde8ec] px-3 py-[5px] text-[12px] font-semibold text-[#b4325a]">Draft</span>
@@ -372,7 +372,7 @@ function ListStep({ title, items, empty, emptyAction, value, onPick, loading, su
   return (
     <>
       <p className="text-[17px] font-bold text-ink">{title}</p>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {(items ?? []).map((i) => <Choice key={i.id} on={value === i.id} onClick={() => onPick(i)} title={i.name} sub={sub?.(i)} />)}
       </div>
       {!loading && !(items ?? []).length && (
@@ -402,7 +402,7 @@ function DetailsStep({ people, product, inputs, set, errors }) {
         {people.map((p) => <Choice key={p.key} on={inputs.people?.includes(p.key)} onClick={() => toggle(p.key)} title={p.name} sub={`${p.rel}${p.age != null ? ` · ${p.age} years` : ' · add date of birth for age-based pricing'}`} />)}
         {errors.people && <span className="text-[12px] font-semibold text-[#b4323c]">{errors.people}</span>}
       </div>
-      <div className="flex gap-3">
+      <div className="flex flex-col gap-3 md:flex-row">
         {siOptions
           ? <Field label="Sum insured *" type="select" value={inputs.sumInsured ?? ''} onChange={(v) => set({ sumInsured: v === '' ? undefined : Number(v) })} options={[{ value: '', label: 'Choose' }, ...siOptions.map((o) => ({ value: o, label: fmtMoney(o) }))]} error={errors.sumInsured} />
           : <Field label="Sum insured (₹) *" type="number" value={inputs.sumInsured ?? ''} onChange={(v) => set({ sumInsured: v === '' ? undefined : v })} error={errors.sumInsured} />}
@@ -414,7 +414,7 @@ function DetailsStep({ people, product, inputs, set, errors }) {
       {(product?.questions ?? []).length > 0 && (
         <div className="flex flex-col gap-3">
           <span className="text-[13px] font-semibold text-ink">Questions for this insurance type</span>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {product.questions.map((qn) => {
               const v = inputs.answers?.[qn.key] ?? ''
               const put = (x) => set({ answers: { ...(inputs.answers ?? {}), [qn.key]: x } })
@@ -436,7 +436,7 @@ function RidersStep({ product, inputs, set }) {
     <>
       <div><p className="text-[17px] font-bold text-ink">Riders and add-ons</p><p className="text-[12px] font-medium text-muted">Tick the riders this product offers</p></div>
       {addOns.length
-        ? <div className="grid grid-cols-2 gap-3">{addOns.map((a) => <Choice key={a.name} on={on(a.name)} title={a.name} sub={a.description} onClick={() => set({ riders: on(a.name) ? inputs.riders.filter((x) => x !== a.name) : [...(inputs.riders ?? []), a.name] })} />)}</div>
+        ? <div className="grid grid-cols-1 gap-3 md:grid-cols-2">{addOns.map((a) => <Choice key={a.name} on={on(a.name)} title={a.name} sub={a.description} onClick={() => set({ riders: on(a.name) ? inputs.riders.filter((x) => x !== a.name) : [...(inputs.riders ?? []), a.name] })} />)}</div>
         : <p className="text-[13px] font-medium text-muted">This product has no riders. Continue.</p>}
     </>
   )
@@ -448,7 +448,7 @@ function PremiumStep({ b, product, inputs, set, busy, onRecalc, errors }) {
     <>
       <div><p className="text-[17px] font-bold text-ink">Premium</p><p className="text-[12px] font-medium text-muted">Calculated from the rate table. Order: base → riders → override → discount → GST.</p></div>
       {manual && (
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-3 md:flex-row">
           <Field label="Net premium (₹) *" type="number" value={inputs.manual?.netPremium ?? ''} onChange={(v) => set({ manual: { ...(inputs.manual ?? {}), netPremium: v === '' ? undefined : v } })} error={errors['manual.netPremium']} />
           <Field label="Tax amount (₹)" type="number" value={inputs.manual?.taxAmount ?? ''} onChange={(v) => set({ manual: { ...(inputs.manual ?? {}), taxAmount: v === '' ? undefined : v } })} />
           <button type="button" onClick={onRecalc} disabled={busy} className="mt-[26px] h-[50px] rounded-[25px] bg-navy px-6 text-[13px] font-semibold text-white disabled:opacity-60">Calculate</button>

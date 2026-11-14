@@ -162,17 +162,17 @@ export function Ledger({ rows, total, className = '', labelClass = 'text-muted',
 
 export function QuoteStepper({ current }) {
   return (
-    <div className="rounded-[28px] bg-white px-7 py-5 shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]">
-      <div className="flex items-center">
+    <div className="rounded-[28px] bg-white px-7 py-5 shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)] max-md:-mx-4 max-md:overflow-x-auto max-md:rounded-none max-md:bg-transparent max-md:px-4 max-md:py-0 max-md:shadow-none max-md:[scrollbar-width:none]">
+      <div className="flex items-center max-md:min-w-[820px] max-md:gap-0 max-md:rounded-[20px] max-md:bg-white max-md:px-4 max-md:py-3.5 max-md:shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]">
         {STEPS.map((s, i) => {
           const done = i < current
           const on = i === current
           const dot = (
             <span
               className={cx(
-                'flex size-[34px] items-center justify-center rounded-full text-[13px] font-bold',
+                'flex size-[34px] items-center justify-center rounded-full text-[13px] font-bold max-md:size-[28px] max-md:text-[11px]',
                 done && 'bg-navy text-white',
-                on && 'border-2 border-blue bg-white text-blue shadow-[0px_0px_0px_5px_rgba(31,95,214,0.2)]',
+                on && 'border-2 border-blue bg-white text-blue shadow-[0px_0px_0px_5px_rgba(31,95,214,0.2)] max-md:shadow-[0px_0px_0px_3px_rgba(31,95,214,0.2)]',
                 !done && !on && 'bg-panel text-muted',
               )}
             >
@@ -182,17 +182,17 @@ export function QuoteStepper({ current }) {
           return (
             <div key={s.label} className="contents">
               {done ? (
-                <Link to={s.path} className="flex min-w-px flex-1 flex-col items-center gap-2 hover:opacity-80">
+                <Link to={s.path} className="flex min-w-[60px] flex-1 flex-col items-center gap-1.5 hover:opacity-80 max-md:gap-1">
                   {dot}
-                  <span className="text-[12px] font-semibold whitespace-nowrap text-ink-2">{s.label}</span>
+                  <span className="text-[12px] font-semibold whitespace-nowrap text-ink-2 max-md:text-[10px]">{s.label}</span>
                 </Link>
               ) : (
-                <div className="flex min-w-px flex-1 flex-col items-center gap-2">
+                <div className="flex min-w-[60px] flex-1 flex-col items-center gap-1.5 max-md:gap-1">
                   {dot}
-                  <span className={cx('text-[12px] whitespace-nowrap', on ? 'font-bold text-ink' : 'font-semibold text-muted')}>{s.label}</span>
+                  <span className={cx('text-[12px] whitespace-nowrap max-md:text-[10px]', on ? 'font-bold text-ink' : 'font-semibold text-muted')}>{s.label}</span>
                 </div>
               )}
-              {i < STEPS.length - 1 && <span className={cx('h-[2px] min-w-px flex-1 rounded-[1px]', done ? 'bg-navy' : 'bg-line')} />}
+              {i < STEPS.length - 1 && <span className={cx('h-[2px] min-w-px flex-1 rounded-[1px] max-md:min-w-[8px]', done ? 'bg-navy' : 'bg-line')} />}
             </div>
           )
         })}
@@ -214,7 +214,7 @@ export function QuoteStepper({ current }) {
 export function LiveSummary({ filled = 0, extraRows = [], rowGap = 12, total, children }) {
   const rows = [...SUMMARY.map(([k, v], i) => [k, i < filled ? v : null]), ...extraRows]
   return (
-    <aside className="flex w-[400px] shrink-0 flex-col gap-3.5 rounded-[28px] bg-pink-hero p-6 shadow-[0px_18px_36px_-12px_rgba(232,137,156,0.3)]">
+    <aside className="flex w-[400px] shrink-0 flex-col gap-3.5 rounded-[28px] bg-pink-hero p-6 shadow-[0px_18px_36px_-12px_rgba(232,137,156,0.3)] max-md:!w-full max-md:!shrink max-md:rounded-[22px] max-md:p-4">
       <Head
         title="Your quotation"
         subtitle="Builds up as you go"
@@ -249,25 +249,25 @@ export function StepCard({ index, title, subtitle, children, next, back, saved =
   const backTo = back ?? (index > 0 ? STEPS[index - 1].path : null)
   return (
     <section
-      className="flex w-[760px] shrink-0 flex-col rounded-[28px] bg-white p-6 shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]"
+      className="flex w-[760px] shrink-0 flex-col rounded-[28px] bg-white p-6 shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)] max-md:!w-full max-md:!shrink max-md:min-w-0 max-md:rounded-[22px] max-md:p-4"
       style={{ gap }}
     >
       <Head title={`${index + 1} · ${title}`} subtitle={subtitle} />
       {children}
       <span className="h-px w-full bg-line" />
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 max-md:flex-wrap">
         {backTo && (
-          <OutlineButton to={backTo} className={backChevron ? 'gap-2 pr-5 pl-4' : 'px-5'}>
+          <OutlineButton to={backTo} className={cx(backChevron ? 'gap-2 pr-5 pl-4' : 'px-5', 'max-md:h-10 max-md:rounded-[20px] max-md:text-[13px]')}>
             {backChevron && <Icon name="chev-right" size={18} className="rotate-180" />}
             Back
           </OutlineButton>
         )}
-        <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted">
+        <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted max-md:text-[12px]">
           <Icon name="check" size={16} strokeWidth={2} className="text-[#127650]" />
           {saved}
         </span>
         <span className="flex-1" />
-        {next && <NavyButton to={next.to} icon={next.icon ?? 'arrow'}>{next.label}</NavyButton>}
+        {next && <NavyButton to={next.to} icon={next.icon ?? 'arrow'} className="max-md:h-10 max-md:rounded-[20px] max-md:text-[13px] max-md:pr-4 max-md:pl-3">{next.label}</NavyButton>}
       </div>
     </section>
   )
@@ -289,14 +289,14 @@ export default function QuoteWizard({ step, numbered = false, subtitle = 'Kavya 
         title="New quotation"
         titleExtra={<GreenChip>{chip}</GreenChip>}
         subtitle={subtitle}
-        actions={<OutlineButton to="/quotations" icon="download" className="mt-px">Save and exit</OutlineButton>}
+        actions={<OutlineButton to="/quotations" icon="download" className="mt-px max-md:h-10 max-md:rounded-[20px] max-md:text-[13px]">Save and exit</OutlineButton>}
       />
       {step != null && (
-        <div className="mt-[21px]">
+        <div className="mt-[21px] max-md:mt-3">
           <QuoteStepper current={step} />
         </div>
       )}
-      <div className="mt-[35px] flex items-start gap-5">{children}</div>
+      <div className="mt-[35px] flex items-start gap-5 max-md:mt-4 max-md:flex-col max-md:min-w-0 max-md:overflow-hidden">{children}</div>
     </AppLayout>
   )
 }

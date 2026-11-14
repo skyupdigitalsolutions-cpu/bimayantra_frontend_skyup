@@ -26,8 +26,8 @@ export default function QuotationDiscount() {
           </span>
         </div>
         {give && (
-          <div className="flex items-end gap-3.5">
-            <div className="flex w-[190px] shrink-0 flex-col gap-2">
+          <div className="flex items-end gap-3.5 max-md:flex-col max-md:items-stretch max-md:gap-3">
+            <div className="flex w-[190px] shrink-0 flex-col gap-2 max-md:w-full">
               <span className="text-[13px] font-semibold text-ink">Type</span>
               <div className="flex h-11 items-center gap-1 rounded-[26px] bg-white p-[5px] shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)]">
                 {[['amount', 'Amount ₹'], ['percent', 'Percent']].map(([k, l]) => (
@@ -45,15 +45,15 @@ export default function QuotationDiscount() {
                 ))}
               </div>
             </div>
-            <Field label="Discount *" className="w-[247px] flex-none gap-2">
+            <Field label="Discount *" className="w-[247px] flex-none gap-2 max-md:w-full">
               <TextField prefix={mode === 'amount' ? '₹' : undefined} value={value} onChange={setValue} />
             </Field>
-            <Field label="Reference *" hint="For example the insurer’s published offer code." className="w-[247px] flex-none gap-2 [&>span:last-child]:w-[260px]">
+            <Field label="Reference *" hint="For example the insurer’s published offer code." className="w-[247px] flex-none gap-2 max-md:w-full [&>span:last-child]:w-[260px] max-md:[&>span:last-child]:w-full">
               <TextField value={ref} onChange={setRef} />
             </Field>
           </div>
         )}
-        <Note tone="amber" icon="alert" className="w-[714px] shrink-0">
+        <Note tone="amber" icon="alert" className="w-[714px] shrink-0 max-md:w-full">
           Discounts are pending legal confirmation (DEC-23). Passing your commission to the customer is rebating.
         </Note>
       </StepCard>

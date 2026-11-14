@@ -33,23 +33,23 @@ export function RenewalCard({ r, to = '/renewals' }) {
   return (
     <Link
       to={to}
-      className="flex w-[232px] flex-col items-center rounded-[30px] bg-white px-[18px] pt-6 pb-[22px] drop-shadow-[0px_8px_12px_rgba(19,41,75,0.05)] transition hover:-translate-y-0.5 hover:drop-shadow-[0px_14px_18px_rgba(19,41,75,0.1)]"
+      className="flex w-full flex-col items-center overflow-hidden rounded-[24px] bg-white px-3 pt-4 pb-3 drop-shadow-[0px_8px_12px_rgba(19,41,75,0.05)] transition hover:-translate-y-0.5 hover:drop-shadow-[0px_14px_18px_rgba(19,41,75,0.1)] md:w-[232px] md:rounded-[30px] md:px-[18px] md:pt-6 md:pb-[22px]"
     >
-      <Avatar initials={r.initials} tone={r.tone} size={60} ring className="text-[18px]" />
-      <p className="mt-3 text-[15px] font-bold text-ink">{r.name}</p>
-      <p className="mt-1 text-[12px] font-medium text-muted">{r.insurer}</p>
-      <div className="mt-3.5 flex w-full flex-col items-center gap-[3px] rounded-[16px] bg-pink-100 py-3">
-        <p className="text-[13px] font-semibold text-ink">{r.plan}</p>
-        <p className={cx('text-[11px] font-medium', r.urgent ? 'text-rose' : 'text-slate')}>{r.due}</p>
+      <Avatar initials={r.initials} tone={r.tone} size={60} ring className="text-[18px] max-md:!size-[44px] max-md:text-[14px]" />
+      <p className="mt-2 text-center text-[13px] font-bold text-ink md:mt-3 md:text-[15px]">{r.name}</p>
+      <p className="mt-0.5 text-center text-[11px] font-medium text-muted md:mt-1 md:text-[12px]">{r.insurer}</p>
+      <div className="mt-2.5 flex w-full flex-col items-center gap-[3px] rounded-[12px] bg-pink-100 px-2 py-2 md:mt-3.5 md:rounded-[16px] md:px-0 md:py-3">
+        <p className="text-center text-[11px] font-semibold text-ink md:text-[13px]">{r.plan}</p>
+        <p className={cx('text-center text-[10px] font-medium md:text-[11px]', r.urgent ? 'text-rose' : 'text-slate')}>{r.due}</p>
       </div>
-      <div className="mt-2.5 flex w-full gap-2">
-        <InfoBox label="Renews" value={r.renews} />
-        <InfoBox label="Premium" value={r.premium} />
+      <div className="mt-2 flex w-full gap-1.5 md:mt-2.5 md:gap-2">
+        <InfoBox label="Renews" value={r.renews} className="max-md:px-2 max-md:py-2" />
+        <InfoBox label="Premium" value={r.premium} className="max-md:px-2 max-md:py-2" />
       </div>
-      <div className="mt-4 flex gap-2.5" onClick={(e) => e.preventDefault()}>
-        <RoundAction icon="phone" aria-label="Call" />
-        <RoundAction icon="chat" aria-label="WhatsApp" />
-        <RoundAction icon="quote" aria-label="Quote" />
+      <div className="mt-3 flex gap-2 md:mt-4 md:gap-2.5" onClick={(e) => e.preventDefault()}>
+        <RoundAction icon="phone" aria-label="Call" className="max-md:!size-9" />
+        <RoundAction icon="chat" aria-label="WhatsApp" className="max-md:!size-9" />
+        <RoundAction icon="quote" aria-label="Quote" className="max-md:!size-9" />
       </div>
     </Link>
   )

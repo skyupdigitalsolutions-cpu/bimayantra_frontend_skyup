@@ -36,14 +36,14 @@ export default function QuotationCustomer() {
         {list.map((c) => {
           const on = sel === c.id
           return (
-            <button key={c.id} type="button" onClick={() => setSel(c.id)} className={`flex w-full items-center gap-3.5 p-3.5 ${choice(on)}`}>
+            <button key={c.id} type="button" onClick={() => setSel(c.id)} className={`flex w-full items-center gap-3.5 p-3.5 max-md:gap-2.5 max-md:p-3 ${choice(on)}`}>
               <Radio on={on} />
               <RowAvatar initials={c.initials} tone={c.tone} />
               <span className="flex min-w-px flex-1 flex-col gap-0.5">
-                <span className="text-[14px] font-bold text-ink">{c.name}</span>
-                <span className="text-[12px] font-medium text-muted">{c.meta}</span>
+                <span className="text-[14px] font-bold text-ink max-md:text-[13px]">{c.name}</span>
+                <span className="text-[12px] font-medium text-muted max-md:text-[11px]">{c.meta}</span>
               </span>
-              {c.consent && <GreenChip>Consent given</GreenChip>}
+              {c.consent && <GreenChip className="max-md:hidden">Consent given</GreenChip>}
             </button>
           )
         })}

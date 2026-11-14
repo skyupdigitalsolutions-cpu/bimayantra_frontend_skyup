@@ -84,13 +84,33 @@ export function LivePolicies() {
   if (list.error && !list.data) return <ErrorPanel active="policies" error={list.error} />
   const tabLabel = P_TABS.find(([k]) => k === tab)[1].toLowerCase()
   return (
-    <AppLayout active="policies">
+    <AppLayout active="policies" responsive mobileTitle="Policies">
       <Header breadcrumb={'AFTER-SALE  /  POLICIES'} title="Policies" subtitle="Issued policies start a renewal cycle automatically."
         actions={<HeadButton icon="plus" onClick={() => setPick(true)}>Existing policy</HeadButton>} />
-      <div className="mt-[13px] flex gap-5">{stats.map((s) => <StatTile key={s.key} {...s} />)}</div>
-      <SegTabs items={P_TABS.map(([key, l]) => ({ key, label: l, count: all.filter((p) => p.status === key).length }))} value={tab} onChange={setTab} className="mt-5" />
-      <DataTable className="mt-7 w-[1180px]" columns={columns} rows={list.loading && !list.data ? [] : rows} rowTo={(r) => `/policies/${r.id}`}
+      <div data-rsp className="mt-[13px] flex gap-5 max-md:mt-3 max-md:grid max-md:grid-cols-2 max-md:gap-2.5">{stats.map((s) => <StatTile key={s.key} {...s} />)}</div>
+      <SegTabs items={P_TABS.map(([key, l]) => ({ key, label: l, count: all.filter((p) => p.status === key).length }))} value={tab} onChange={setTab} className="mt-3 md:mt-5" />
+      <DataTable className="mt-7 w-[1180px] max-md:hidden" columns={columns} rows={list.loading && !list.data ? [] : rows} rowTo={(r) => `/policies/${r.id}`}
         empty={list.loading ? 'Loading…' : q.trim() ? `No ${tabLabel} policies match “${q.trim()}”.` : `No ${tabLabel} policies yet.`} onClear={q.trim() ? clearQ : undefined} />
+      {/* Mobile card list */}
+      <div className="mt-3 flex flex-col gap-2 md:hidden">
+        {rows.map((r) => (
+          <Link key={r.id} to={`/policies/${r.id}`} className="flex items-center gap-3 rounded-[16px] border border-line bg-white p-3">
+            <span className={`flex size-9 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-white ${r.bg}`}>{r.initials}</span>
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <p className="truncate text-[14px] font-bold text-ink">{r.number}</p>
+              <p className="truncate text-[12px] font-medium text-muted">{r.customer} · {r.product}</p>
+              <div className="flex items-center gap-2">
+                <span className="text-[12px] font-semibold text-ink">{r.premiumText}</span>
+                {r.ends && <span className="text-[11px] text-muted">ends {r.ends}</span>}
+                {P_CHIP[r.status]}
+              </div>
+            </div>
+            <RowChevron />
+          </Link>
+        ))}
+        {list.loading && !list.data && <p className="px-4 py-5 text-[13px] font-medium text-muted">Loading\u2026</p>}
+        {!list.loading && rows.length === 0 && <p className="px-4 py-4 text-center text-[13px] font-medium text-muted">{q.trim() ? 'No matches.' : `No ${tabLabel} policies yet.`}</p>}
+      </div>
       {pick && <PickCustomerDialog onClose={() => setPick(false)} />}
     </AppLayout>
   )
@@ -157,16 +177,16 @@ export function LivePolicyDetail() {
         <HeadButton variant="navy" icon="users" onClick={() => setDlg('nominees')}>Edit nominees</HeadButton>
       </>
   return (
-    <AppLayout active="policies">
+    <AppLayout active="policies" responsive mobileTitle="Policy">
       <Header back="/policies" breadcrumb={`POLICIES  /  ${(p.number || 'POLICY').toUpperCase()}`} title={p.policyNumber || 'Awaiting issuance'}
         titleExtra={P_CHIP[p.status]} subtitle={[p.number, p.customer?.name, productLine].filter(Boolean).join(' · ')}
         actions={headActions} />
 
       {showHero && (
-        <div className="mt-6 flex items-center gap-6 rounded-[32px] bg-linear-to-b from-[#d4f1e7] to-[#b9e8d7] px-[30px] py-[26px] shadow-[0px_18px_36px_-12px_rgba(22,132,91,0.2)]">
-          <span className="flex size-[72px] shrink-0 items-center justify-center rounded-[36px] bg-white/85"><Icon name="shield" size={32} className="text-ink" /></span>
+        <div className="mt-4 flex flex-wrap items-center gap-4 rounded-[24px] bg-linear-to-b from-[#d4f1e7] to-[#b9e8d7] px-5 py-5 shadow-[0px_18px_36px_-12px_rgba(22,132,91,0.2)] md:mt-6 md:flex-nowrap md:gap-6 md:rounded-[32px] md:px-[30px] md:py-[26px]">
+          <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-white/85 md:size-[72px] md:rounded-[36px]"><Icon name="shield" size={24} className="text-ink" /></span>
           <div className="flex min-w-0 flex-1 flex-col gap-2.5">
-            <p className="text-[22px] font-bold tracking-[-0.22px] text-ink">{productLine}</p>
+            <p className="text-[17px] font-bold tracking-[-0.16px] text-ink md:text-[22px] md:tracking-[-0.22px]">{productLine}</p>
             <p className="text-[13px] font-medium text-[#2f6b55]">{[coversText(p.insured) && `Covers ${coversText(p.insured)}`, p.sumInsured != null ? fmtLakh(p.sumInsured) : null, p.frequency].filter(Boolean).join(' · ')}</p>
             <div className="flex flex-col gap-1.5">
               <div className="h-2.5 w-[520px] max-w-full overflow-hidden rounded-[5px] bg-white/70"><div className="h-full rounded-[5px] bg-[#16845b]" style={{ width: `${pct}%` }} /></div>
@@ -177,7 +197,7 @@ export function LivePolicyDetail() {
             </div>
           </div>
           {p.premium != null && (
-            <div className="flex shrink-0 flex-col gap-0.5 rounded-[20px] bg-white/80 px-5 py-3.5">
+            <div className="flex shrink-0 flex-col gap-0.5 rounded-[16px] bg-white/80 px-4 py-3 max-md:basis-full md:rounded-[20px] md:px-5 md:py-3.5">
               <p className="text-[12px] font-semibold text-[#2f6b55]">Premium</p>
               <p className="text-[22px] font-bold text-ink">{fmtMoney(p.premium)}</p>
             </div>
@@ -185,13 +205,13 @@ export function LivePolicyDetail() {
         </div>
       )}
 
-      <div className={cx('flex items-start gap-5', showHero ? 'mt-5' : 'mt-6')}>
-        <div className="flex w-[760px] flex-col gap-5">
+      <div className={cx('flex flex-col gap-4 md:flex-row md:items-start md:gap-5', showHero ? 'mt-4 md:mt-5' : 'mt-4 md:mt-6')}>
+        <div className="flex min-w-0 flex-col gap-4 md:w-[760px] md:gap-5">
           <Panel className="flex flex-col gap-4">
             <PanelHead title="Policy" subtitle={p.frozen?.quotation ? `Recorded from ${p.frozen.quotation}` : p.source === 'EXISTING' ? 'Recorded existing policy' : 'As issued by the insurer'}
               right={docId && <SmallButton variant="ghost" icon="download" onClick={() => window.open(api.files.url(docId), '_blank', 'noopener')}>Policy PDF</SmallButton>} />
-            <div className="flex flex-wrap gap-x-5 gap-y-[18px]">
-              {kv.map(([k, v]) => <div key={k} className="flex w-[220px] flex-col gap-1"><p className="text-[12px] font-medium text-muted">{k}</p><p className="text-[14px] font-semibold text-ink">{v}</p></div>)}
+            <div className="flex flex-wrap gap-x-5 gap-y-3 md:gap-y-[18px]">
+              {kv.map(([k, v]) => <div key={k} className="flex w-full flex-col gap-1 md:w-[220px]"><p className="text-[12px] font-medium text-muted">{k}</p><p className="text-[14px] font-semibold text-ink">{v}</p></div>)}
             </div>
           </Panel>
 
@@ -212,9 +232,9 @@ export function LivePolicyDetail() {
           {p.cancellation && <Panel><PanelHead title="Cancelled" subtitle={`${p.cancellation.reason ?? ''} · ${day(p.cancellation.date)}`} /></Panel>}
         </div>
 
-        <div className="flex w-[400px] flex-col gap-5">
+        <div className="flex w-full flex-col gap-4 md:w-[400px] md:gap-5">
           {p.renewal && (
-            <div className="flex flex-col gap-4 rounded-[28px] bg-linear-to-r from-[#fde8c9] to-[#fbd9b0] p-6 shadow-[0px_14px_30px_-12px_rgba(201,138,46,0.2)]">
+            <div className="flex flex-col gap-3 rounded-[20px] bg-linear-to-r from-[#fde8c9] to-[#fbd9b0] p-4 shadow-[0px_14px_30px_-12px_rgba(201,138,46,0.2)] md:gap-4 md:rounded-[28px] md:p-6">
               <div className="flex items-center gap-3"><p className="flex-1 text-[17px] font-bold text-ink">Renewal</p><StatusChip tone="amber" icon="alert">{label(p.renewal.status)}</StatusChip></div>
               <div className="flex items-center gap-3.5">
                 <span className="flex size-14 shrink-0 items-center justify-center rounded-[28px] bg-white text-[18px] font-bold text-ink">{dueDays != null ? Math.abs(dueDays) : '—'}</span>
@@ -227,7 +247,7 @@ export function LivePolicyDetail() {
             </div>
           )}
           {p.expectedCommission != null && (
-            <section className="flex flex-col gap-3 rounded-[28px] bg-linear-to-b from-[#1a3460] to-[#0e1f3b] p-6 text-white shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.05)]">
+            <section className="flex flex-col gap-3 rounded-[20px] bg-linear-to-b from-[#1a3460] to-[#0e1f3b] p-4 text-white shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.05)] md:rounded-[28px] md:p-6">
               <div className="flex items-center gap-2.5"><p className="flex-1 text-[17px] font-bold">Expected commission</p><span className="flex items-center gap-1 rounded-[12px] bg-[rgba(255,255,255,0.12)] px-2.5 py-1 text-[11px] font-semibold"><Icon name="lock" size={12} />Only you</span></div>
               <p className="text-[32px] font-bold tracking-[-0.64px]">{fmtMoney(p.expectedCommission)}</p>
               <p className="text-[12px] leading-[18px] font-medium text-[#c9d6ea]">{p.commissionRate != null ? `${p.commissionRate}% of premium before tax. ` : ''}For your reference only.</p>
@@ -341,28 +361,30 @@ export function LiveRenewals() {
         }))
     : []
   return (
-    <AppLayout active="renewals">
+    <AppLayout active="renewals" responsive mobileTitle="Renewals">
       <Header breadcrumb={'AFTER-SALE  /  RENEWALS'} title="Renewals" subtitle="The system moves each renewal by date. You close each one."
         actions={<Dropdown value={range} onChange={setRange} options={RANGES} minWidth={200} className="w-[210px]" buttonClassName="h-[46px] rounded-[24px] border border-line bg-white" />} />
-      <SegTabs items={R_TABS.map(([key, l]) => ({ key, label: l, count: all.filter((r) => r.status === key).length }))} value={tab} onChange={setTab} className="mt-[13px]" />
+      <SegTabs items={R_TABS.map(([key, l]) => ({ key, label: l, count: all.filter((r) => r.status === key).length }))} value={tab} onChange={setTab} className="mt-3 md:mt-[13px]" />
       {cur && !lapsedTab && cur.status !== 'RENEWED' && (() => { const dl = cur.daysLeft ?? daysFromToday(cur.dueDate) ?? 0; return (
-        <div className="mt-5 flex h-[120px] items-center gap-[22px] rounded-[34px] bg-gradient-to-r from-[#fde8c9] to-[#fbd9b0] px-[30px] shadow-[0px_18px_36px_-12px_rgba(201,138,46,0.2)]">
-          <span className="flex size-[80px] shrink-0 flex-col items-center justify-center rounded-full bg-white">
-            <span className="text-[26px] font-bold text-ink">{Math.max(0, dl)}</span>
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-[24px] bg-gradient-to-r from-[#fde8c9] to-[#fbd9b0] px-4 py-4 shadow-[0px_18px_36px_-12px_rgba(201,138,46,0.2)] md:mt-5 md:h-[120px] md:flex-nowrap md:gap-[22px] md:rounded-[34px] md:px-[30px] md:py-0">
+          <span className="flex size-14 shrink-0 flex-col items-center justify-center rounded-full bg-white md:size-[80px]">
+            <span className="text-[20px] font-bold text-ink md:text-[26px]">{Math.max(0, dl)}</span>
             <span className="text-[11px] font-semibold text-[#8a5a12]">days</span>
           </span>
           <div className="flex flex-1 flex-col gap-1">
-            <p className="text-[22px] font-bold tracking-[-0.2px] text-ink">{cur.customer?.name}{cur.policy?.product ? ` \u00b7 ${[cur.policy.insurer, cur.policy.product].filter(Boolean).join(' ')}` : ''}</p>
+            <p className="text-[16px] font-bold tracking-[-0.1px] text-ink md:text-[22px] md:tracking-[-0.2px]">{cur.customer?.name}{cur.policy?.product ? ` \u00b7 ${[cur.policy.insurer, cur.policy.product].filter(Boolean).join(' ')}` : ''}</p>
             <p className="text-[13px] font-medium text-[#8a5a12]">{cur.dueDate ? `Renews ${fmtDate(cur.dueDate)}` : ''}{cur.graceUntil ? ` \u00b7 grace till ${fmtDate(cur.graceUntil)}` : ''}</p>
           </div>
-          <div className="flex flex-col gap-0.5 rounded-[18px] bg-white/80 px-[18px] py-3">
+          <div className="flex flex-col gap-0.5 rounded-[14px] bg-white/80 px-3.5 py-2.5 max-md:basis-full md:rounded-[18px] md:px-[18px] md:py-3">
             <p className="text-[12px] font-semibold text-[#8a5a12]">Premium</p>
             <p className="text-[16px] font-bold whitespace-nowrap text-ink">{fmtMoney(cur.premium ?? cur.policy?.premium)}</p>
           </div>
         </div>
       ) })()}
-      <div className="mt-7 flex items-start gap-6">
-        <div className={cx('w-[756px]', lapsedTab ? 'flex flex-col gap-4' : 'flex flex-wrap gap-5')}>
+      <div className="mt-4 flex flex-col gap-4 md:mt-7 md:flex-row md:items-start md:gap-6">
+        <div className={cx('w-full md:w-[756px]', lapsedTab ? 'flex flex-col gap-3 md:gap-4' : 'flex flex-col gap-2 md:flex-row md:flex-wrap md:gap-5')}>
+          {/* Desktop: original card layout */}
+          <div className="hidden md:contents">
           {rows.map((r, i) => lapsedTab ? (
             <button key={r.id} type="button" onClick={() => setSel(r.id)} className={cx('flex w-full items-center gap-3.5 rounded-[26px] bg-white px-[22px] py-[18px] text-left', SH8, cur?.id === r.id && 'ring-2 ring-blue')}>
               <RingAvatar initials={initials(r.customer?.name)} bg="bg-[#eef1f5]" size={44} text={14} />
@@ -377,13 +399,31 @@ export function LiveRenewals() {
               <RenewalCard r={card(r, i)} to={`/renewals/${r.id}`} />
             </div>
           ))}
+          </div>
+          {/* Mobile: compact list cards */}
+          <div className="contents md:hidden">
+          {rows.map((r, i) => { const c = card(r, i); return (
+            <Link key={r.id} to={`/renewals/${r.id}`} className="flex items-center gap-3 rounded-[16px] border border-line bg-white p-3">
+              <RingAvatar initials={c.initials} bg={`bg-${c.tone}-100`} size={40} text={13} />
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <p className="truncate text-[14px] font-bold text-ink">{c.name}</p>
+                <p className="truncate text-[12px] font-medium text-muted">{c.insurer} \u00b7 {c.plan}</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] font-semibold text-ink">{c.premium}</span>
+                  <span className={cx('text-[11px] font-medium', c.urgent ? 'text-rose' : 'text-muted')}>{c.due}</span>
+                </div>
+              </div>
+              <RowChevron />
+            </Link>
+          )})}
+          </div>
           {rows.length === 0 && (
             <NoMatches className={cx('w-full rounded-[26px] bg-white', SH8)} text={list.loading ? 'Loading…' : q.trim() ? 'No matches' : 'Nothing here'}
               sub={q.trim() ? `No renewals match “${q.trim()}”.` : `No ${R_TABS.find(([k]) => k === tab)[1].toLowerCase()} renewals.`} onClear={q.trim() ? clearQ : undefined} />
           )}
         </div>
         {cur && (
-          <div className="flex w-[400px] flex-col gap-5">
+          <div className="flex w-full flex-col gap-4 md:w-[400px] md:gap-5">
             <Panel className="flex flex-col gap-3.5">
               <PanelHead title="Customer reminders" subtitle={`${cur.customer?.name ?? ''} · only on channels with consent`}
                 right={<StatusChip tone={cur.remindersPaused ? 'amber' : 'blue'} icon="clock">{cur.remindersPaused ? 'Paused' : 'Auto'}</StatusChip>} />
@@ -407,7 +447,7 @@ export function LiveRenewals() {
                 {cur.lastContact.note && <p className="text-[12px] font-medium text-muted">{cur.lastContact.note}</p>}
               </Panel>
             )}
-            <div className="flex flex-col items-start gap-2.5 rounded-[28px] bg-linear-to-b from-[#e9e3fc] to-[#dcd2fb] p-6 shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]">
+            <div className="flex flex-col items-start gap-2.5 rounded-[20px] bg-linear-to-b from-[#e9e3fc] to-[#dcd2fb] p-4 md:rounded-[28px] md:p-6 shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]">
               <p className="text-[16px] font-bold text-ink">How to renew</p>
               <p className="text-[13px] leading-[20px] font-medium text-ink-2">Create the renewal quotation, share it, record payment, submit the proposal, then record the new policy. That closes this renewal and starts the next.</p>
               {cur.renewalQuotationId
@@ -500,7 +540,7 @@ export function LiveRenewalDetail() {
       })
 
   return (
-    <AppLayout active="renewals">
+    <AppLayout active="renewals" responsive mobileTitle="Renewal">
       {/* Header */}
       <Header back="/renewals" breadcrumb={`RENEWALS  /  ${custName.toUpperCase()}`} title={`Renewal \u00b7 ${custName}`}
         titleExtra={<StatusChip tone={chip[0]} icon={chip[0] === 'amber' ? 'alert' : chip[0] === 'green' ? 'check' : undefined}>{chip[1]}</StatusChip>}
@@ -516,26 +556,26 @@ export function LiveRenewalDetail() {
 
       {/* Countdown banner */}
       {r.status !== 'RENEWED' && r.status !== 'LAPSED' && (
-        <div className="mt-5 flex h-[144px] items-center gap-[22px] rounded-[34px] bg-gradient-to-r from-[#fde8c9] to-[#fbd9b0] px-[30px] shadow-[0px_18px_36px_-12px_rgba(201,138,46,0.2)]">
-          <span className="flex size-[92px] shrink-0 flex-col items-center justify-center rounded-full bg-white">
-            <span className="text-[28px] font-bold text-ink">{Math.max(0, dl)}</span>
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-[24px] bg-gradient-to-r from-[#fde8c9] to-[#fbd9b0] px-4 py-4 shadow-[0px_18px_36px_-12px_rgba(201,138,46,0.2)] md:mt-5 md:h-[144px] md:flex-nowrap md:gap-[22px] md:rounded-[34px] md:px-[30px] md:py-0">
+          <span className="flex size-14 shrink-0 flex-col items-center justify-center rounded-full bg-white md:size-[92px]">
+            <span className="text-[20px] font-bold text-ink md:text-[28px]">{Math.max(0, dl)}</span>
             <span className="text-[11px] font-semibold text-[#8a5a12]">days</span>
           </span>
           <div className="flex flex-1 flex-col gap-1.5">
-            <p className="text-[24px] font-bold tracking-[-0.2px] text-ink">{r.dueDate ? `Renews on ${fmtDate(r.dueDate)}` : 'Renewal'}</p>
+            <p className="text-[16px] font-bold tracking-[-0.1px] text-ink md:text-[24px] md:tracking-[-0.2px]">{r.dueDate ? `Renews on ${fmtDate(r.dueDate)}` : 'Renewal'}</p>
             <p className="text-[13px] font-medium text-[#8a5a12]">{[r.graceUntil ? `Grace period until ${fmtDate(r.graceUntil)}` : null, r.policy?.premium ? `last premium ${fmtMoney(r.policy.premium)}` : null, r.policy?.sumInsured ? fmtLakh(r.policy.sumInsured) : null].filter(Boolean).join(' \u00b7 ')}</p>
           </div>
-          <div className="flex flex-col gap-0.5 rounded-[18px] bg-white/80 px-[18px] py-3">
+          <div className="flex flex-col gap-0.5 rounded-[14px] bg-white/80 px-3.5 py-2.5 max-md:basis-full md:rounded-[18px] md:px-[18px] md:py-3">
             <p className="text-[12px] font-semibold text-[#8a5a12]">Reminders</p>
-            <p className="text-[16px] font-bold whitespace-nowrap text-ink">{sentCount} of {steps.length} sent</p>
+            <p className="text-[14px] font-bold whitespace-nowrap text-ink md:text-[16px]">{sentCount} of {steps.length} sent</p>
           </div>
         </div>
       )}
 
       {/* Body: Contacts + How to renew */}
-      <div className="mt-9 flex items-start gap-5">
+      <div className="mt-5 flex flex-col gap-4 md:mt-9 md:flex-row md:items-start md:gap-5">
         {/* Contacts card */}
-        <Panel className="flex w-[760px] flex-col gap-3.5">
+        <Panel className="flex w-full flex-col gap-3.5 md:w-[760px]">
           <PanelHead title="Contacts" subtitle="Logging one moves the renewal to In follow-up" />
           {contacts.length === 0 && <p className="text-[13px] font-medium text-muted">No contacts logged yet.</p>}
           {contacts.map((c, i) => {
@@ -561,7 +601,7 @@ export function LiveRenewalDetail() {
         </Panel>
 
         {/* How to renew card */}
-        <div className="flex w-[400px] flex-col items-start gap-2.5 rounded-[28px] bg-gradient-to-b from-[#e9e3fc] to-[#dcd2fb] p-6 shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]">
+        <div className="flex w-full flex-col items-start gap-2.5 rounded-[20px] bg-gradient-to-b from-[#e9e3fc] to-[#dcd2fb] p-4 shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)] md:w-[400px] md:rounded-[28px] md:p-6">
           <p className="text-[16px] font-bold text-ink">How to renew</p>
           <p className="text-[13px] leading-[20px] font-medium text-ink-2">{"Renewal quotation \u2192 share \u2192 record payment \u2192 proposal \u2192 record the new policy. That closes this renewal."}</p>
           {r.renewalQuotationId

@@ -33,25 +33,27 @@ export default function QuotationGenerated() {
       />
 
       {/* Success hero */}
-      <section className="mt-[21px] flex h-[144px] items-center gap-6 rounded-[34px] bg-linear-to-b from-[#d4f1e7] to-[#b9e8d7] px-[34px] shadow-[0px_18px_36px_-12px_rgba(22,132,91,0.2)]">
-        <span className="flex size-[84px] shrink-0 items-center justify-center rounded-full bg-white">
-          <Icon name="check" size={40} className="text-[#127650]" />
-        </span>
-        <div className="flex min-w-px flex-1 flex-col gap-1.5">
-          <p className="text-[26px] font-bold tracking-[-0.3px] text-ink">Quotation is ready to share</p>
-          <p className="text-[14px] font-medium text-[#2f6b55]">PDF generated with price PV-3 frozen. Validity (15 days) starts on the first share.</p>
+      <section className="mt-[21px] flex h-[144px] items-center gap-6 rounded-[34px] bg-linear-to-b from-[#d4f1e7] to-[#b9e8d7] px-[34px] shadow-[0px_18px_36px_-12px_rgba(22,132,91,0.2)] max-md:mt-3 max-md:h-auto max-md:flex-col max-md:items-start max-md:gap-3 max-md:rounded-[22px] max-md:px-4 max-md:py-4">
+        <div className="flex items-center gap-3 max-md:w-full md:contents">
+          <span className="flex size-[84px] shrink-0 items-center justify-center rounded-full bg-white max-md:size-12">
+            <Icon name="check" size={40} className="text-[#127650] max-md:!size-6" />
+          </span>
+          <div className="flex min-w-px flex-1 flex-col gap-1.5 max-md:gap-0.5">
+            <p className="text-[26px] font-bold tracking-[-0.3px] text-ink max-md:text-[18px] max-md:tracking-[-0.2px]">Quotation is ready to share</p>
+            <p className="text-[14px] font-medium text-[#2f6b55] max-md:text-[12px]">PDF generated with price PV-3 frozen. Validity (15 days) starts on the first share.</p>
+          </div>
         </div>
-        <div className="flex h-[75px] w-[138px] shrink-0 flex-col gap-0.5 rounded-[20px] bg-white/80 px-5 py-3.5">
+        <div className="flex h-[75px] w-[138px] shrink-0 flex-col gap-0.5 rounded-[20px] bg-white/80 px-5 py-3.5 max-md:h-auto max-md:w-full max-md:flex-row max-md:items-center max-md:rounded-[14px] max-md:px-3.5 max-md:py-2.5">
           <span className="text-[12px] font-semibold text-[#2f6b55]">Total</span>
-          <span className="text-[24px] font-bold text-ink">₹18,054</span>
+          <span className="text-[24px] font-bold text-ink max-md:ml-auto max-md:text-[20px]">₹18,054</span>
         </div>
       </section>
 
-      <div className="mt-[46px] flex items-start gap-5">
+      <div className="mt-[46px] flex items-start gap-5 max-md:mt-4 max-md:flex-col">
         {/* Share now */}
-        <section className={cx(card, 'flex w-[760px] shrink-0 flex-col gap-4')}>
+        <section className={cx(card, 'flex w-[760px] shrink-0 flex-col gap-4 max-md:!w-full max-md:!shrink max-md:min-w-0 max-md:rounded-[22px] max-md:p-4')}>
           <Head title="Share with Kavya" subtitle="Pick a channel. Email consent: given." />
-          <div className="flex items-start gap-3.5">
+          <div className="flex items-start gap-3.5 max-md:flex-wrap max-md:gap-2.5">
             {shareChannels.map((c) => {
               const on = c.key === ch
               return (
@@ -60,8 +62,8 @@ export default function QuotationGenerated() {
                   type="button"
                   onClick={() => { setCh(c.key); setDone(null) }}
                   className={cx(
-                    'flex flex-col items-start gap-2.5 rounded-[22px] p-4 text-left transition',
-                    on ? 'h-[131px] w-[169.8px] shrink-0 border-[1.5px] border-blue bg-[#f3f7ff]' : 'h-[128px] min-w-px flex-1 bg-panel hover:bg-[#eef1f8]',
+                    'flex flex-col items-start gap-2.5 rounded-[22px] p-4 text-left transition max-md:rounded-[16px] max-md:p-3',
+                    on ? 'h-[131px] w-[169.8px] shrink-0 border-[1.5px] border-blue bg-[#f3f7ff] max-md:h-auto max-md:w-[calc(50%-6px)]' : 'h-[128px] min-w-px flex-1 bg-panel hover:bg-[#eef1f8] max-md:h-auto max-md:min-w-[calc(50%-6px)] max-md:flex-none',
                   )}
                 >
                   <span className={cx('flex size-11 items-center justify-center rounded-full', c.iconBg)}>
@@ -73,8 +75,8 @@ export default function QuotationGenerated() {
               )
             })}
           </div>
-          <div className="flex items-center gap-2.5">
-            <NavyButton icon={active.ctaIcon} onClick={() => (active.to ? navigate(active.to) : setDone(active.key))}>{active.cta}</NavyButton>
+          <div className="flex items-center gap-2.5 max-md:flex-wrap">
+            <NavyButton icon={active.ctaIcon} onClick={() => (active.to ? navigate(active.to) : setDone(active.key))} className="max-md:h-10 max-md:rounded-[20px] max-md:text-[13px] max-md:pr-4 max-md:pl-3">{active.cta}</NavyButton>
             {done && (
               <span className="inline-flex items-center gap-[5px] rounded-[14px] bg-[#e7f4ee] py-[5px] pr-3 pl-2 text-[12px] font-semibold text-[#127650]">
                 <Icon name="check" size={13} />
@@ -85,7 +87,7 @@ export default function QuotationGenerated() {
         </section>
 
         {/* What happens next */}
-        <section className={cx(card, 'flex w-[400px] shrink-0 flex-col gap-3')}>
+        <section className={cx(card, 'flex w-[400px] shrink-0 flex-col gap-3 max-md:!w-full max-md:!shrink max-md:min-w-0 max-md:rounded-[22px] max-md:p-4')}>
           <p className="text-[16px] font-bold text-ink">What happens next</p>
           {nextSteps.map(([t, s], i) => (
             <div key={t} className="flex items-center gap-3">

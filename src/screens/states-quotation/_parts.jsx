@@ -29,17 +29,17 @@ function Search() {
 export function Header({ chip, actions, breadcrumb = 'QUOTATIONS  /  QT-202610-00012  R2', title = Q.id, subtitle = Q.meta }) {
   return (
     <header className="flex items-start justify-between max-xl:flex-col max-xl:gap-3">
-      <div className="flex w-0 flex-1 flex-col gap-1.5 whitespace-nowrap">
-        <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre max-xl:whitespace-pre-wrap text-muted">{breadcrumb}</p>
+      <div className="flex w-0 flex-1 flex-col gap-1.5 whitespace-nowrap max-md:w-full max-md:flex-none">
+        <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre max-xl:whitespace-pre-wrap text-muted max-md:hidden">{breadcrumb}</p>
         <div className="flex items-center gap-3">
           <h1 className="text-[24px] md:text-[30px] font-bold tracking-[-0.6px] text-ink">{title}</h1>
           {chip}
         </div>
-        <p className="text-[14px] font-medium text-muted">{subtitle}</p>
+        <p className="text-[14px] font-medium text-muted max-md:text-[13px]">{subtitle}</p>
       </div>
-      <div className="mt-1 flex shrink-0 items-center gap-3 max-xl:flex-wrap">
-        <Search />
-        <button type="button" aria-label="Notifications" className="flex size-11 items-center justify-center rounded-full bg-white text-ink shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)] hover:bg-tile">
+      <div className="mt-1 flex shrink-0 items-center gap-3 max-xl:flex-wrap max-md:gap-2">
+        <span className="hidden md:block"><Search /></span>
+        <button type="button" aria-label="Notifications" className="hidden md:flex size-11 items-center justify-center rounded-full bg-white text-ink shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)] hover:bg-tile">
           <Icon name="bell" size={18.5} />
         </button>
         {actions}
@@ -91,7 +91,7 @@ function PaymentCard({ payment }) {
   const newLink = payment === 'failed' || payment === 'linkExpired'
   const dim = payment === 'cancelled' ? 'opacity-30' : ''
   return (
-    <SCard className="h-[404px]">
+    <SCard className="h-[404px] max-md:h-auto">
       <div className="flex items-center gap-3">
         <p className="flex-1 text-[17px] font-bold text-ink">Premium payment</p>
         {PAY_CHIP[payment]}
@@ -156,7 +156,7 @@ function CustomerLinkCard({ link }) {
     { icon: 'link', label: copied ? 'Copied' : 'Copy link', onClick: () => { setCopied(true); setTimeout(() => setCopied(false), 1500) } },
     { icon: 'download', label: 'PDF' },
   ]
-  const tileCls = 'flex h-16 w-20 flex-col items-center justify-center gap-1.5 rounded-[18px] bg-panel text-ink hover:bg-[#edf1f8]'
+  const tileCls = 'flex h-16 w-20 flex-col items-center justify-center gap-1.5 rounded-[18px] bg-panel text-ink hover:bg-[#edf1f8] max-md:h-14 max-md:w-0 max-md:min-w-0 max-md:flex-1 max-md:rounded-[14px]'
   return (
     <SCard>
       <SCardHead title="Customer link" subtitle={L.sub} />
@@ -170,7 +170,7 @@ function CustomerLinkCard({ link }) {
           <p className="text-[12px] font-medium text-[#5b3fb8]">{L.note}</p>
         </div>
       </div>
-      <div className="flex gap-2.5">
+      <div className="flex gap-2.5 max-md:gap-2">
         {tiles.map((t) =>
           t.to ? (
             <Link key={t.icon} to={t.to} className={tileCls}>
@@ -197,15 +197,15 @@ function CustomerLinkCard({ link }) {
  */
 export function QuoteDetailBase({ chip, actions, activity, payment = 'awaiting', link = 'valid', children }) {
   return (
-    <AppLayout active="quotations" panelClass="h-[976px] overflow-y-auto pb-5! [scrollbar-width:none]">
+    <AppLayout active="quotations" panelClass="h-[976px] overflow-y-auto pb-5! [scrollbar-width:none] max-md:h-auto">
       <Header chip={chip} actions={actions} />
 
-      <div className="mt-[37px] flex items-start gap-5">
-        <div className="flex w-[760px] shrink-0 flex-col gap-5">
+      <div className="mt-[37px] flex items-start gap-5 max-md:mt-4 max-md:flex-col">
+        <div className="flex w-[760px] shrink-0 flex-col gap-5 max-md:!w-full max-md:!shrink max-md:min-w-0">
           <SCard>
             <SCardHead title="Quotation" subtitle="Everything printed on the PDF" right={<PillButton variant="ghost" size="sm" icon="download">PDF</PillButton>} />
-            <div className="flex flex-wrap gap-x-5 gap-y-[18px]">
-              {Q.kv.map(([k, v]) => <KVItem key={k} k={k} v={v} />)}
+            <div className="flex flex-wrap gap-x-5 gap-y-[18px] max-md:gap-x-3 max-md:gap-y-3">
+              {Q.kv.map(([k, v]) => <KVItem key={k} k={k} v={v} className="w-[220px] max-md:w-[calc(50%-6px)]" />)}
             </div>
           </SCard>
 
@@ -230,7 +230,7 @@ export function QuoteDetailBase({ chip, actions, activity, payment = 'awaiting',
           </SCard>
         </div>
 
-        <div className="flex w-[400px] flex-col gap-5">
+        <div className="flex w-[400px] flex-col gap-5 max-md:w-full">
           <PaymentCard payment={payment} />
           <CustomerLinkCard link={link} />
         </div>
@@ -317,7 +317,7 @@ export function DangerButton({ icon = 'x', to, children }) {
 /** Navy toast at the bottom-left of the workspace (40,900). */
 export function Toast({ children }) {
   return (
-    <div data-overlay="toast" className="fixed bottom-[52px] left-[196px] z-20 flex h-12 items-center gap-2.5 rounded-[18px] bg-navy px-4 text-[13px] font-semibold whitespace-nowrap text-white shadow-[0px_16px_30px_-8px_rgba(19,41,75,0.3)]">
+    <div data-overlay="toast" className="fixed bottom-[52px] left-[196px] z-20 flex h-12 items-center gap-2.5 rounded-[18px] bg-navy px-4 text-[13px] font-semibold whitespace-nowrap text-white shadow-[0px_16px_30px_-8px_rgba(19,41,75,0.3)] max-md:left-4 max-md:right-4 max-md:bottom-[calc(env(safe-area-inset-bottom,0px)+72px)] max-md:justify-center">
       <span className="flex size-6 items-center justify-center rounded-full bg-[#16845b]">
         <Icon name="check" size={13} />
       </span>

@@ -90,7 +90,7 @@ export function CircleBtn({ icon, dark = true, size = 48, iconSize = 20, classNa
 /** White section card: p24, r28, gap16 */
 export function SCard({ className = '', gap = 'gap-4', children, ...rest }) {
   return (
-    <section className={cx('flex flex-col rounded-[28px] bg-white p-6 shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]', gap, className)} {...rest}>
+    <section className={cx('flex flex-col rounded-[28px] bg-white p-6 shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)] max-md:rounded-[22px] max-md:p-4', gap, className)} {...rest}>
       {children}
     </section>
   )
@@ -201,11 +201,11 @@ export function StatCard({ icon, label, value, sub, bg, className = 'w-[280px]' 
 /** items: [{key,label,count,to}] — renders Links when `to` is given */
 export function SegTabs({ items, value, onChange, className = '' }) {
   return (
-    <div className={cx('flex w-max gap-1 rounded-[26px] bg-white p-[5px] shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.05)]', className)}>
+    <div className={cx('flex w-max gap-1 rounded-[26px] bg-white p-[5px] shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.05)] max-md:shrink-0', className)}>
       {items.map((t) => {
         const on = t.key === value
         const cls = cx(
-          'flex items-center gap-2 rounded-[21px] px-4 py-[9px] text-[13px] font-semibold whitespace-nowrap transition',
+          'flex items-center gap-2 rounded-[21px] px-4 py-[9px] text-[13px] font-semibold whitespace-nowrap transition max-md:px-3 max-md:py-2 max-md:text-[12px]',
           on ? 'bg-navy text-white' : 'text-slate hover:bg-panel hover:text-ink',
         )
         const inner = (
