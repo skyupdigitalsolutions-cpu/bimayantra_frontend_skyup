@@ -1,6 +1,6 @@
 // 04 · Policy Holders list and 05 · Customer profile (overview tab) on the live API.
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Icon from '../components/Icon'
 import { PageHeader } from '../components/ui'
@@ -45,15 +45,17 @@ export function LiveCustomers() {
   ]
   if (list.error && !list.data) return <ErrorPanel active="customers" error={list.error} />
   return (
-    <AppLayout active="customers">
-      <PageHeader title="Policy Holders" subtitle="Everyone you have converted or added directly." actions={<PillButton variant="pink" icon="plus" to="/customers/new">New customer</PillButton>} />
-      <div className="mt-[34px] flex gap-5">{stats.map((s) => <StatCard key={s.label} {...s} />)}</div>
-      <div className="mt-[19px] flex items-center gap-3">
+    <AppLayout active="customers" responsive mobileTitle="Policy Holders">
+      <PageHeader title="Policy Holders" subtitle="Everyone you have converted or added directly." actions={<PillButton variant="pink" icon="plus" to="/customers/new" className="max-md:h-9 max-md:gap-1.5 max-md:rounded-[18px] max-md:pr-3.5 max-md:pl-3 max-md:text-[13px]">New customer</PillButton>} />
+      <div data-rsp className="mt-4 grid grid-cols-2 gap-2.5 md:mt-[34px] md:flex md:gap-5">{stats.map((s) => <StatCard key={s.label} {...s} className="w-full min-w-0 md:w-[280px]" />)}</div>
+      <div className="mt-3 flex flex-col gap-2.5 overflow-hidden md:mt-[19px] md:flex-row md:items-center md:gap-3 md:overflow-visible">
         <SegTabs value={tab} onChange={setTab} items={[{ key: 'active', label: 'Active', count: activeTotal.meta?.total ?? 0 }, { key: 'inactive', label: 'Inactive', count: inactiveTotal.meta?.total ?? 0 }]} />
-        <SearchField placeholder="Name, mobile or CU number" value={q} onChange={setQ} />
-        <PillButton variant="outline" size="sm" icon="filter">Filters</PillButton>
+        <div className="flex items-center gap-2 md:contents">
+          <SearchField placeholder="Name, mobile or CU number" value={q} onChange={setQ} className="min-w-0 flex-1 md:w-[320px] md:flex-none" />
+          <PillButton variant="outline" size="sm" icon="filter" className="max-md:h-10 max-md:rounded-[20px] max-md:px-3 max-md:text-[12px]">Filters</PillButton>
+        </div>
       </div>
-      <TableCard className="mt-6">
+      <TableCard className="mt-4 hidden md:flex md:mt-6">
         <THead cols={COLS} />
         <div>
           {rows.map((c) => (
@@ -76,6 +78,27 @@ export function LiveCustomers() {
           <button type="button" aria-label="Next page" disabled={page >= (meta.pages ?? 1)} onClick={() => setPage((p) => p + 1)} className="flex size-[34px] items-center justify-center rounded-[17px] bg-white text-ink shadow-soft hover:bg-tile disabled:opacity-40"><Icon name="chev-right" size={15} /></button>
         </div>
       </TableCard>
+    {/* ── Mobile card list ── */}
+      <div className="mt-3 flex flex-col gap-2 md:hidden">
+        {rows.map((c) => (
+          <Link key={c.id} to={`/customers/${c.id}`} className="flex items-center gap-3 rounded-[16px] border border-line bg-white p-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-white" style={{ background: avatarHex(c.name) }}>{initials(c.name)}</span>
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <p className="truncate text-[14px] font-bold text-ink">{c.name}</p>
+              <p className="text-[12px] font-medium text-muted">{fmtMobile(c.mobile)}{c.city ? ` · ${c.city}` : ''}</p>
+              <p className="text-[11px] font-medium text-ink-2">{c.policyCount ?? 0} {c.policyCount === 1 ? 'policy' : 'policies'}{c.familyCount ? ` · ${c.familyCount} family` : ''}</p>
+            </div>
+            <ChevBtn size={30} />
+          </Link>
+        ))}
+        {list.loading && !rows.length && <p className="px-4 py-5 text-[13px] font-medium text-muted">Loading…</p>}
+        {!list.loading && rows.length === 0 && <NoMatches className="rounded-[16px] border border-line px-4 py-4" onClear={() => setQ('')} sub="No policy holders fit the current search." />}
+        <div className="flex items-center gap-2 px-1 py-2">
+          <p className="flex-1 text-[12px] font-medium text-muted">{rows.length ? `${rows.length} of ${meta.total ?? rows.length}` : '0'} customers</p>
+          <button type="button" aria-label="Previous page" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="flex size-8 items-center justify-center rounded-full bg-white text-ink shadow-soft disabled:opacity-40"><Icon name="chev-right" size={13} className="rotate-180" /></button>
+          <button type="button" aria-label="Next page" disabled={page >= (meta.pages ?? 1)} onClick={() => setPage((p) => p + 1)} className="flex size-8 items-center justify-center rounded-full bg-white text-ink shadow-soft disabled:opacity-40"><Icon name="chev-right" size={13} /></button>
+        </div>
+      </div>
     </AppLayout>
   )
 }

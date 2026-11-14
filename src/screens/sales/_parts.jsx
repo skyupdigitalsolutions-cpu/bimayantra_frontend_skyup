@@ -183,15 +183,15 @@ export function LeadCard({ lead, to = "/leads/1" /* only one lead-detail design 
 
 export function StatCard({ icon, label, value, sub, bg, className = 'w-[280px]' }) {
   return (
-    <div className={cx('flex flex-col items-start gap-1.5 rounded-[26px] p-[22px]', className)} style={{ background: bg }}>
-      <div className="flex items-center gap-2.5">
-        <span className="flex size-10 items-center justify-center rounded-full bg-white/70 text-ink">
+    <div className={cx('flex flex-col items-start gap-1.5 rounded-[26px] p-[22px] max-md:gap-1 max-md:rounded-[20px] max-md:p-3.5', className)} style={{ background: bg }}>
+      <div className="flex items-center gap-2.5 max-md:gap-2">
+        <span className="flex size-10 items-center justify-center rounded-full bg-white/70 text-ink max-md:size-8">
           <Icon name={icon} size={20} />
         </span>
-        <p className="text-[13px] font-semibold whitespace-nowrap text-ink-2">{label}</p>
+        <p className="text-[13px] font-semibold whitespace-nowrap text-ink-2 max-md:text-[11px] max-md:whitespace-normal">{label}</p>
       </div>
-      <p className="text-[30px] font-bold tracking-[-0.6px] text-ink">{value}</p>
-      <p className="text-[12px] font-medium whitespace-nowrap text-slate">{sub}</p>
+      <p className="text-[30px] font-bold tracking-[-0.6px] text-ink max-md:text-[22px] max-md:tracking-[-0.4px]">{value}</p>
+      <p className="text-[12px] font-medium whitespace-nowrap text-slate max-md:text-[10px] max-md:whitespace-normal">{sub}</p>
     </div>
   )
 }
@@ -230,7 +230,7 @@ export function SegTabs({ items, value, onChange, className = '' }) {
 
 export function TableCard({ className = '', children }) {
   return (
-    <div className={cx('flex flex-col overflow-hidden rounded-[28px] bg-white shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]', className)}>
+    <div className={cx('flex flex-col overflow-hidden rounded-[20px] bg-white shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)] md:rounded-[28px]', className)}>
       {children}
     </div>
   )
@@ -281,7 +281,7 @@ export function PersonCell({ initials, bg, name, sub, size = 40 }) {
 /** White search field (filters row) */
 export function SearchField({ placeholder, value, onChange, className = 'w-[320px]' }) {
   return (
-    <label className={cx('flex h-12 items-center gap-2.5 rounded-[24px] bg-white px-[18px] shadow-soft', className)}>
+    <label className={cx('flex h-10 items-center gap-2 rounded-[20px] bg-white px-3.5 shadow-soft md:h-12 md:gap-2.5 md:rounded-[24px] md:px-[18px]', className)}>
       <Icon name="search" size={18} className="text-ink" />
       <input
         value={value}

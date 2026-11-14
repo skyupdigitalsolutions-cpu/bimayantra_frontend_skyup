@@ -104,7 +104,7 @@ function Form({ c }) {
   const prefLabel = (p) => PREF[p] ?? titleCase(p)
 
   const action = (
-    <button type="button" disabled={save.busy} onClick={() => submit()} className="inline-flex h-[46px] items-center gap-2 rounded-[24px] bg-navy pr-5 pl-4 text-[14px] font-semibold text-white shadow-[0px_10px_20px_-6px_rgba(19,41,75,0.3)] hover:bg-navy-700 disabled:opacity-60">
+    <button type="button" disabled={save.busy} onClick={() => submit()} className="inline-flex h-[46px] items-center justify-center gap-2 rounded-[24px] bg-navy pr-5 pl-4 text-[14px] font-semibold text-white shadow-[0px_10px_20px_-6px_rgba(19,41,75,0.3)] hover:bg-navy-700 disabled:opacity-60 max-md:w-full">
       <Icon name="check" size={18} />{save.busy ? 'Saving…' : c ? 'Save changes' : 'Save customer'}
     </button>
   )

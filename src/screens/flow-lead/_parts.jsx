@@ -11,7 +11,7 @@ export const cardShadow = 'shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]'
 /** White form card (r28, p24) with 17/bold title + optional 12 subtitle and right slot */
 export function FormCard({ title, subtitle, right, gap = 14, className = '', children }) {
   return (
-    <section className={cx('flex flex-col rounded-[28px] bg-white p-6', cardShadow, className)} style={{ gap }}>
+    <section className={cx('flex flex-col rounded-[20px] bg-white p-4 md:rounded-[28px] md:p-6', cardShadow, className)} style={{ gap }}>
       <div className="flex items-center gap-3">
         <div className="flex min-w-px flex-1 flex-col gap-[3px]">
           <p className="text-[17px] font-bold text-ink">{title}</p>
@@ -25,7 +25,7 @@ export function FormCard({ title, subtitle, right, gap = 14, className = '', chi
 }
 
 export function Row({ className = '', children }) {
-  return <div className={cx('flex items-start gap-3.5', className)}>{children}</div>
+  return <div className={cx('flex flex-col gap-3 md:flex-row md:items-start md:gap-3.5', className)}>{children}</div>
 }
 
 /** Label + control + optional hint (gap 8) */
@@ -124,22 +124,22 @@ export function AfterSave({ tone, steps, className = '' }) {
 export default function LeadShell({ active, breadcrumb, title, titleExtra, subtitle, side, cancel = true, actions, children }) {
   const navigate = useNavigate()
   return (
-    <AppLayout active={active}>
-      <div className="flex min-h-[900px] flex-col">
+    <AppLayout active={active} responsive mobileTitle={title}>
+      <div className="flex min-h-[600px] flex-col md:min-h-[900px]">
       <PageHeader breadcrumb={breadcrumb} title={title} titleExtra={titleExtra} subtitle={subtitle} />
-      <div className="mt-[21px] flex items-start gap-5">
-        <div className="flex w-[760px] shrink-0 flex-col">{children}</div>
-        <div className="relative w-[400px] shrink-0">{side}</div>
+      <div className="mt-4 flex flex-col gap-4 md:mt-[21px] md:flex-row md:items-start md:gap-5">
+        <div className="flex min-w-0 flex-col md:w-[760px] md:shrink-0">{children}</div>
+        <div className="relative md:w-[400px] md:shrink-0">{side}</div>
       </div>
-      <div className="min-h-6 flex-1" aria-hidden="true" />
-      <div className="sticky bottom-1.5 z-20 -mb-[34px] flex h-[70px] shrink-0 items-center gap-3 rounded-[30px] bg-white py-3 pr-3 pl-6 shadow-[0px_18px_40px_-14px_rgba(19,41,75,0.1),0px_-8px_24px_-12px_rgba(19,41,75,0.12)]">
+      <div className="min-h-4 flex-1 md:min-h-6" aria-hidden="true" />
+      <div className="sticky bottom-1.5 z-20 -mb-[34px] flex shrink-0 flex-wrap items-center gap-2 rounded-[24px] bg-white p-3 shadow-[0px_18px_40px_-14px_rgba(19,41,75,0.1),0px_-8px_24px_-12px_rgba(19,41,75,0.12)] md:h-[70px] md:flex-nowrap md:gap-3 md:rounded-[30px] md:py-3 md:pr-3 md:pl-6">
         {cancel && (
-          <button type="button" onClick={() => navigate(-1)} className="inline-flex h-[46px] items-center rounded-[24px] border border-line bg-white px-5 text-[14px] font-semibold text-ink hover:bg-tile">
+          <button type="button" onClick={() => navigate(-1)} className="inline-flex h-[46px] items-center justify-center rounded-[24px] border border-line bg-white px-5 text-[14px] font-semibold text-ink hover:bg-tile max-md:order-2 max-md:h-10 max-md:flex-1 max-md:px-3 max-md:text-[13px]">
             Cancel
           </button>
         )}
-        <span className="flex-1" />
-        {actions}
+        <span className="flex-1 max-md:hidden" />
+        <div className="max-md:order-1 max-md:w-full">{actions}</div>
       </div>
       </div>
     </AppLayout>

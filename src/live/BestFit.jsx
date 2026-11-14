@@ -63,12 +63,12 @@ export default function LiveBestFit() {
   const chosen = useMemo(() => (res?.results || []).filter((r) => compare.includes(r.variantId)), [res, compare])
 
   return (
-    <AppLayout active="bestfit">
+    <AppLayout active="bestfit" responsive mobileTitle="Best fit">
       <Header breadcrumb={'SELL  /  BEST FIT'} title="Best fit" subtitle="Ranks the products you can quote with fixed rules. Every score shows its reason."
-        actions={<HeadButton variant="white" icon="compare" disabled={chosen.length < 2} onClick={() => setShowCompare(true)}>Compare selected</HeadButton>} />
-      <div className="mt-6 flex items-start gap-6">
+        actions={<HeadButton variant="white" icon="compare" disabled={chosen.length < 2} onClick={() => setShowCompare(true)} className="max-md:h-9 max-md:rounded-[18px] max-md:pr-3.5 max-md:pl-3 max-md:text-[13px]">Compare selected</HeadButton>} />
+      <div className="mt-4 flex flex-col gap-4 md:mt-6 md:flex-row md:items-start md:gap-6">
         {/* ── questions ── */}
-        <Panel className="flex w-[475px] shrink-0 flex-col gap-5">
+        <Panel className="flex w-full shrink-0 flex-col gap-5 md:w-[475px]">
           <div><p className="text-[19px] font-bold text-ink">{first ? `What does ${first} need?` : 'Who is it for?'}</p><p className="text-[13px] font-medium text-muted">{[typeName, people && `${people.length} people`].filter(Boolean).join(' · ')}</p></div>
 
           <div className="relative flex flex-col gap-2">
@@ -158,23 +158,28 @@ export default function LiveBestFit() {
           )}
           {(res?.results || []).map((r, i) => (
             <Panel key={r.variantId ?? r.productId} className={cx('flex flex-col gap-3', i === 0 && 'ring-1 ring-blue/30')}>
-              <div className="flex items-center gap-4">
-                <span className={cx('flex size-12 items-center justify-center rounded-full text-[16px] font-bold', i === 0 ? 'bg-navy text-white' : 'bg-panel text-ink')}>#{i + 1}</span>
-                <div className="flex-1"><p className="text-[19px] font-bold text-ink">{r.insurer} {r.name}</p><p className="text-[13px] font-medium text-muted">Per year incl. GST</p></div>
-                <p className="text-[26px] font-bold text-ink">{r.premium != null ? fmtMoney(r.premium) : 'At quotation'}</p>
-                <span className={cx('rounded-[16px] px-3.5 py-2 text-[15px] font-bold', r.total >= 75 ? 'bg-[#e7f4ee] text-[#127650]' : 'bg-blue-50 text-blue')}>Score {Math.round(r.total)}</span>
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
+                <div className="flex items-center gap-3 md:flex-1 md:gap-4">
+                  <span className={cx('flex size-10 shrink-0 items-center justify-center rounded-full text-[14px] font-bold md:size-12 md:text-[16px]', i === 0 ? 'bg-navy text-white' : 'bg-panel text-ink')}>#{i + 1}</span>
+                  <div className="min-w-0 flex-1"><p className="text-[15px] font-bold text-ink md:text-[19px]">{r.insurer} {r.name}</p><p className="hidden text-[13px] font-medium text-muted md:block">Per year incl. GST</p></div>
+                </div>
+                <div className="flex items-center gap-2 pl-[52px] md:gap-3 md:pl-0">
+                  <p className="text-[12px] font-medium text-muted md:hidden">Per year incl. GST</p>
+                  <p className="text-[18px] font-bold text-ink md:text-[26px]">{r.premium != null ? fmtMoney(r.premium) : 'At quotation'}</p>
+                  <span className={cx('rounded-[14px] px-2.5 py-1 text-[12px] font-bold md:rounded-[16px] md:px-3.5 md:py-2 md:text-[15px]', r.total >= 75 ? 'bg-[#e7f4ee] text-[#127650]' : 'bg-blue-50 text-blue')}>Score {Math.round(r.total)}</span>
+                </div>
               </div>
               {r.coverage && <div className="flex items-center gap-2.5 rounded-[14px] bg-[#fbf1e1] px-4 py-3 text-[14px] font-semibold text-[#8a5a12]"><Icon name="alert" size={16} />{r.coverage.message}</div>}
               {!r.coverage && PART.map(([k, l], j) => (
-                <div key={k} className="flex items-center gap-3 text-[13px]">
-                  <span className="w-[190px] font-semibold text-ink">{l} <span className="text-[11px] font-medium text-muted">×{res.weights?.[j] ?? ''}%</span></span>
-                  <span className="h-1.5 w-[340px] overflow-hidden rounded-full bg-panel"><span className={cx('block h-full rounded-full', r.parts[k].score >= 60 ? 'bg-[#1f5fd6]' : 'bg-[#9aa4b5]')} style={{ width: `${r.parts[k].score}%` }} /></span>
-                  <span className="flex-1 truncate font-medium text-muted">{r.parts[k].reason}</span>
-                  <span className="w-8 text-right font-bold text-ink">{r.parts[k].score}</span>
+                <div key={k} className="flex items-center gap-2 text-[12px] md:gap-3 md:text-[13px]">
+                  <span className="w-[90px] shrink-0 font-semibold text-ink md:w-[190px]">{l} <span className="hidden text-[11px] font-medium text-muted md:inline">×{res.weights?.[j] ?? ''}%</span></span>
+                  <span className="hidden h-1.5 overflow-hidden rounded-full bg-panel md:block md:w-[340px]"><span className={cx('block h-full rounded-full', r.parts[k].score >= 60 ? 'bg-[#1f5fd6]' : 'bg-[#9aa4b5]')} style={{ width: `${r.parts[k].score}%` }} /></span>
+                  <span className="min-w-0 flex-1 truncate font-medium text-muted">{r.parts[k].reason}</span>
+                  <span className="w-8 shrink-0 text-right font-bold text-ink">{r.parts[k].score}</span>
                 </div>
               ))}
-              <div className="flex items-center gap-4">
-                <button type="button" disabled={busy} onClick={() => quote(r)} className={cx('flex h-[44px] items-center gap-2 rounded-[22px] px-5 text-[14px] font-semibold', i === 0 ? 'bg-navy text-white' : 'border border-line bg-white text-ink')}><Icon name="quote" size={16} />Create quotation</button>
+              <div className="flex flex-wrap items-center gap-3 md:gap-4">
+                <button type="button" disabled={busy} onClick={() => quote(r)} className={cx('flex h-10 items-center gap-2 rounded-[20px] px-4 text-[13px] font-semibold md:h-[44px] md:rounded-[22px] md:px-5 md:text-[14px]', i === 0 ? 'bg-navy text-white' : 'border border-line bg-white text-ink')}><Icon name="quote" size={16} />Create quotation</button>
                 <label className="flex cursor-pointer items-center gap-2 text-[14px] font-semibold text-ink">
                   <Tick checked={compare.includes(r.variantId)} onChange={() => setCompare(compare.includes(r.variantId) ? compare.filter((x) => x !== r.variantId) : [...compare, r.variantId])} />Add to comparison
                 </label>
@@ -214,7 +219,7 @@ export default function LiveBestFit() {
       {showCompare && (
         <Modal onClose={() => setShowCompare(false)} width={Math.min(1100, 260 + chosen.length * 260)}>
           <p className="text-[21px] font-bold text-ink">Compare</p>
-          <div className="mt-4 grid gap-3" style={{ gridTemplateColumns: `200px repeat(${chosen.length}, 1fr)` }}>
+          <div className="mt-4 grid gap-3 overflow-x-auto" style={{ gridTemplateColumns: `140px repeat(${chosen.length}, minmax(120px, 1fr))` }}>
             <span />{chosen.map((r) => <p key={r.variantId} className="text-[14px] font-bold text-ink">{r.insurer} {r.name}</p>)}
             <span className="text-[13px] font-semibold text-muted">Premium</span>{chosen.map((r) => <p key={r.variantId} className="text-[14px] font-bold text-ink">{fmtMoney(r.premium)}</p>)}
             <span className="text-[13px] font-semibold text-muted">Score</span>{chosen.map((r) => <p key={r.variantId} className="text-[14px] font-bold text-ink">{Math.round(r.total)}</p>)}
