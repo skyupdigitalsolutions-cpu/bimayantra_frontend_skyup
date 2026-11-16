@@ -26,7 +26,7 @@ export default function CustomerProfile({ data }) {
   const C = data ?? MOCK
   const customerTabs = data?.tabs ?? MOCK_TABS
   return (
-    <AppLayout active="customers">
+    <AppLayout active="customers" responsive mobileTitle="Policy Holder">
       <PageHeader
         className={NOWRAP}
         hideSearch
@@ -36,22 +36,22 @@ export default function CustomerProfile({ data }) {
         subtitle={C.meta}
         actions={
           <>
-            <SearchPill />
+            <span className="hidden md:block"><SearchPill /></span>
             {data?.statusActions ?? <PillButton variant="danger" size="sm" className="px-3.5" to="/customers">Deactivate</PillButton>}
-            <IconButton icon="bell" />
-            <PillButton variant="outline" icon="target" className="pl-[17px]" to={data?.bestFitTo ?? '/best-fit'}>Best fit</PillButton>
-            {data?.active !== false && <PillButton variant="pink" icon="quote" to={data?.quoteTo ?? '/quotations/new'}>New quotation</PillButton>}
+            <span className="hidden md:block"><IconButton icon="bell" /></span>
+            <PillButton variant="outline" icon="target" className="max-md:hidden pl-[17px]" to={data?.bestFitTo ?? '/best-fit'}>Best fit</PillButton>
+            {data?.active !== false && <PillButton variant="pink" icon="quote" to={data?.quoteTo ?? '/quotations/new'} className="max-md:text-[12px] max-md:px-3 max-md:py-2 max-md:h-9 max-md:rounded-[18px]">New quotation</PillButton>}
           </>
         }
       />
 
       {/* Profile hero */}
       <div className="mt-[13px] flex flex-wrap items-center gap-4 rounded-[32px] bg-linear-to-r from-[#fbd3dc] to-[#f6b3c3] px-5 py-5 shadow-[0px_18px_36px_-12px_rgba(232,137,156,0.3)] md:gap-6 md:px-8 md:py-[26px] xl:h-[144px] xl:flex-nowrap">
-        <span className="flex size-[92px] shrink-0 items-center justify-center rounded-full border-4 border-white bg-white text-[29px] font-bold text-navy">
+        <span className="flex size-16 shrink-0 items-center justify-center rounded-full border-3 border-white bg-white text-[20px] font-bold text-navy md:size-[92px] md:border-4 md:text-[29px]">
           {C.initials}
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <p className="text-[24px] font-bold tracking-[-0.2px] text-ink">{C.name}</p>
+          <p className="text-[18px] font-bold tracking-[-0.1px] text-ink md:text-[24px] md:tracking-[-0.2px]">{C.name}</p>
           <p className="text-[13px] font-medium text-rose-ink">{C.tagline}</p>
           <div className="flex flex-wrap gap-2">
             {data ? <SChip tone={data.consentChip.tone} icon={data.consentChip.icon}>{data.consentChip.label}</SChip> : <SChip tone="green" icon="check">WhatsApp consent</SChip>}
@@ -60,25 +60,25 @@ export default function CustomerProfile({ data }) {
         </div>
         <div className="flex flex-wrap gap-4 xl:gap-6">
           {C.minis.map(([k, v]) => (
-            <div key={k} className="flex h-[70px] flex-col gap-0.5 rounded-[20px] bg-white/80 px-5 py-3.5">
-              <p className="text-[12px] font-semibold whitespace-nowrap text-rose-ink">{k}</p>
-              <p className="text-[20px] font-bold whitespace-nowrap text-ink">{v}</p>
+            <div key={k} className="flex flex-col gap-0.5 rounded-[14px] bg-white/80 px-3.5 py-2.5 md:h-[70px] md:rounded-[20px] md:px-5 md:py-3.5">
+              <p className="text-[10px] font-semibold whitespace-nowrap text-rose-ink md:text-[12px]">{k}</p>
+              <p className="text-[16px] font-bold whitespace-nowrap text-ink md:text-[20px]">{v}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <SegTabs className="mt-5" items={customerTabs} value="overview" />
+      <SegTabs className="mt-3 md:mt-5" items={customerTabs} value="overview" />
 
-      <div className="mt-7 flex items-start gap-5">
-        <div className="flex w-[760px] flex-col gap-5">
+      <div className="mt-4 flex flex-col gap-4 md:mt-7 md:flex-row md:items-start md:gap-5">
+        <div className="flex min-w-0 flex-col gap-4 md:w-[760px] md:gap-5">
           <SCard>
             <SCardHead
               title="Details"
               subtitle="Contact, address and dates"
               right={data?.active === false ? null : <PillButton variant="ghost" size="sm" icon="edit" to={data?.editTo ?? '/customers'}>Edit</PillButton>}
             />
-            <div className="flex flex-wrap gap-x-5 gap-y-[18px]">
+            <div className="flex flex-wrap gap-x-5 gap-y-3 max-md:[&>div]:w-full md:gap-y-[18px]">
               {C.details.map(([k, v]) => <KVItem key={k} k={k} v={v} />)}
             </div>
             <KVItem k="Address" v={C.address} className="w-auto" />
@@ -87,9 +87,9 @@ export default function CustomerProfile({ data }) {
           <SCard>
             <SCardHead title="Household" subtitle={data ? data.householdSub : '3 members · default nominee Arjun Hegde'} />
             {C.members.length === 0 && <p className="text-[13px] font-medium text-muted">No family members yet.</p>}
-            <div className="flex gap-3.5">
+            <div className="flex flex-col gap-2.5 md:flex-row md:gap-3.5">
               {C.members.map((m) => (
-                <div key={m.name} className="flex w-[224px] items-center gap-3 rounded-[22px] bg-panel py-3 pr-4 pl-3">
+                <div key={m.name} className="flex w-full items-center gap-3 rounded-[18px] bg-panel py-3 pr-4 pl-3 md:w-[224px] md:rounded-[22px]">
                   <Dot initials={m.initials} bg={m.bg} size={44} font={14} />
                   <div className="flex flex-col gap-0.5 whitespace-nowrap">
                     <p className="text-[14px] font-bold text-ink">{m.name}</p>
@@ -101,7 +101,7 @@ export default function CustomerProfile({ data }) {
           </SCard>
         </div>
 
-        <div className="flex w-[400px] flex-col gap-5">
+        <div className="flex w-full flex-col gap-4 md:w-[400px] md:gap-5">
           <SCard>
             <SCardHead title="Identity numbers" subtitle="From confirmed documents" right={data ? <SChip tone={data.consentChip.tone} icon={data.consentChip.icon}>{data.consentChip.short}</SChip> : <SChip tone="green" icon="check">Consent given</SChip>} />
             {C.ids.map((x) => <MaskedRow key={x.label} {...x} />)}

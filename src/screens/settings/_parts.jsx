@@ -27,7 +27,7 @@ export const SETTINGS_NAV = [
 
 export function SettingsNav() {
   return (
-    <nav className="flex w-[260px] shrink-0 flex-col gap-[2px] self-start rounded-[28px] bg-white p-2.5 shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]">
+    <nav className="flex w-0 min-w-full gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:w-[260px] md:min-w-0 md:shrink-0 md:flex-col md:gap-[2px] md:self-start md:overflow-visible md:rounded-[28px] md:bg-white md:p-2.5 md:pb-2.5 md:shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]">
       {SETTINGS_NAV.map((n) => (
         <NavLink
           key={n.to}
@@ -35,14 +35,14 @@ export function SettingsNav() {
           end
           className={({ isActive }) =>
             cx(
-              'flex items-center gap-3 rounded-[16px] px-3.5 py-[11px] text-[13px] font-semibold whitespace-nowrap',
-              isActive ? 'bg-navy text-white' : 'text-ink-2 hover:bg-panel',
+              'flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-[12px] font-semibold whitespace-nowrap md:gap-3 md:rounded-[16px] md:px-3.5 md:py-[11px] md:text-[13px]',
+              isActive ? 'bg-navy text-white' : 'bg-white text-ink-2 shadow-soft hover:bg-panel md:bg-transparent md:shadow-none',
             )
           }
         >
           {({ isActive }) => (
             <>
-              <Icon name={n.icon} size={18} className={isActive ? 'text-white' : 'text-muted'} />
+              <Icon name={n.icon} size={16} className={cx('md:!size-[18px]', isActive ? 'text-white' : 'text-muted')} />
               {n.label}
             </>
           )}
@@ -58,11 +58,11 @@ export function SettingsLayout({ breadcrumb, title, titleExtra, subtitle, action
   // Header "Search anything" pill: Ctrl/Cmd+K focuses it; pages with a list pass onSearch to filter it.
   useHeaderSearch(onSearch)
   return (
-    <AppLayout active="settings">
-      <PageHeader breadcrumb={breadcrumb} title={title} titleExtra={titleExtra} subtitle={subtitle} actions={actions} className="min-h-[83px]" />
-      <div className="mt-[21px] flex items-start gap-5">
+    <AppLayout active="settings" responsive mobileTitle="Settings">
+      <PageHeader breadcrumb={breadcrumb} title={title} titleExtra={titleExtra} subtitle={subtitle} actions={actions} className="min-h-[56px] md:min-h-[83px]" />
+      <div className="mt-3 flex flex-col gap-3 md:mt-[21px] md:flex-row md:items-start md:gap-5">
         <SettingsNav />
-        <div className={cx('flex w-[900px] flex-col', contentClass)}>{children}</div>
+        <div className={cx('flex w-full min-w-0 flex-col md:w-[900px]', contentClass)}>{children}</div>
       </div>
     </AppLayout>
   )
@@ -71,7 +71,7 @@ export function SettingsLayout({ breadcrumb, title, titleExtra, subtitle, action
 /** Section card: white r28 px24 py20, gap 12 */
 export function SCard({ className = '', children }) {
   return (
-    <section className={cx('flex flex-col gap-3 rounded-[28px] bg-white px-6 py-5 shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]', className)}>
+    <section className={cx('flex flex-col gap-3 rounded-[20px] bg-white px-4 py-4 shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)] md:rounded-[28px] md:px-6 md:py-5', className)}>
       {children}
     </section>
   )

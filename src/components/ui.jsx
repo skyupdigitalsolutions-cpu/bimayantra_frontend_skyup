@@ -56,18 +56,18 @@ export function IconButton({ icon, size = 44, iconSize = 18, badge, className = 
  */
 export function PageHeader({ breadcrumb, title, titleExtra, subtitle, actions, hideSearch, searchClass, className = '' }) {
   return (
-    <header className={cx('flex items-start gap-3 md:justify-between md:gap-6', className)}>
-      <div className="flex min-w-0 flex-1 flex-col gap-1 md:flex-none md:gap-1.5">
+    <header className={cx('flex flex-col gap-2 md:flex-row md:items-start md:justify-between md:gap-6', className)}>
+      <div className="flex min-w-0 flex-col gap-1 md:gap-1.5">
         {breadcrumb && (
           <p className="hidden text-[12px] font-semibold tracking-[0.24px] whitespace-pre text-muted uppercase md:block max-xl:whitespace-pre-wrap">{breadcrumb}</p>
         )}
-        <div className="flex items-center gap-3">
-          <h1 className="text-[22px] font-bold tracking-[-0.4px] text-ink md:text-[30px] md:tracking-[-0.6px]">{title}</h1>
+        <div className="flex items-center gap-2 md:gap-3">
+          <h1 className="text-[20px] font-bold tracking-[-0.3px] text-ink md:text-[30px] md:tracking-[-0.6px]">{title}</h1>
           {titleExtra}
         </div>
-        {subtitle && <p className="text-[13px] font-medium text-muted max-md:hidden md:text-[14px]">{subtitle}</p>}
+        {subtitle && <p className="text-[12px] font-medium text-muted max-md:hidden md:text-[14px]">{subtitle}</p>}
       </div>
-      <div className="mt-1 flex items-center gap-2 md:gap-3 max-xl:flex-wrap">
+      <div className="flex flex-wrap items-center gap-2 md:mt-1 md:shrink-0 md:flex-nowrap md:gap-3 max-xl:flex-wrap">
         {!hideSearch && <span className="hidden md:block"><SearchPill className={searchClass} /></span>}
         {!hideSearch && <span className="hidden md:block"><IconButton icon="bell" /></span>}
         {actions}

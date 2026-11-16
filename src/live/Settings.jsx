@@ -220,19 +220,19 @@ export function LiveKyc() {
         <SCard>
           <SHead title="Documents" subtitle={locked ? 'Locked while under review' : 'PAN and licence for verification'}
             right={locked && <SChip tone="gray" icon="lock">Read only</SChip>} />
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3 md:flex-row">
             <Field label="PAN *" value={form.pan} onChange={set('pan')} error={fe.pan} disabled={locked} />
             <Field label="Name as on PAN *" value={form.nameOnPan} onChange={set('nameOnPan')} error={fe.nameOnPan} disabled={locked} />
           </div>
           {(k.panFile || k.licenceFile) && (
-            <div className="flex gap-3.5">
+            <div className="flex flex-col gap-3 md:flex-row md:gap-3.5">
               <DocPreview bg="bg-[#e9e3fc]" icon="card" title="PAN card" file={k.panFile} />
               <DocPreview bg="bg-[#fde8c9]" icon="shield" title="IRDAI licence" file={k.licenceFile} />
             </div>
           )}
           {!locked && (
             <>
-              <div className="flex gap-3">
+              <div className="flex flex-col gap-3 md:flex-row">
                 <FilePick label="PAN card *" purpose="KYC_PAN" value={form.panFileId} onChange={set('panFileId')} />
                 <FilePick label="Licence or POSP certificate *" purpose="KYC_LICENCE" value={form.licenceFileId} onChange={set('licenceFileId')} />
               </div>
@@ -266,7 +266,7 @@ const Conn = ({ on }) => <div className={cx('h-[2px] w-[90px] shrink-0', on ? 'b
 function DocPreview({ bg, icon, title, file }) {
   const open = () => { if (file?.id) window.open(api.files.url(file.id), '_blank', 'noopener') }
   return (
-    <div className={cx('flex flex-1 items-center gap-3.5 rounded-[20px] p-4', bg)}>
+    <div className={cx('flex min-w-0 flex-1 items-center gap-3.5 rounded-[20px] p-4', bg)}>
       <span className="flex size-11 items-center justify-center rounded-full bg-white/80"><Icon name={icon} size={20} className="text-ink" /></span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <p className="text-[14px] font-bold text-ink">{title}</p>
@@ -434,20 +434,20 @@ export function LiveBilling() {
       <Loading q={q} />
       {b && (
         <>
-          <div className="flex gap-5">
+          <div className="flex flex-col gap-4 md:flex-row md:gap-5">
             {['NORMAL', 'PREMIUM'].map((plan) => {
               const cyc = cycles[plan], other = cyc === 'MONTHLY' ? 'YEARLY' : 'MONTHLY'
               const prem = plan === 'PREMIUM'
               const price = b.prices?.[plan]?.[cyc], alt = b.prices?.[plan]?.[other]
               const current = b.plan === plan && b.status === 'ACTIVE'
               return (
-                <div key={plan} className={cx('flex flex-1 flex-col gap-[18px] rounded-[28px] p-6', prem ? 'bg-linear-to-b from-[#1a3460] to-[#0e1f3b] text-white shadow-[0px_24px_22px_-18px_rgba(19,41,75,0.3)]' : 'bg-white text-ink shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]')}>
+                <div key={plan} className={cx('flex flex-1 flex-col gap-3 rounded-[20px] p-4 md:gap-[18px] md:rounded-[28px] md:p-6', prem ? 'bg-linear-to-b from-[#1a3460] to-[#0e1f3b] text-white shadow-[0px_24px_22px_-18px_rgba(19,41,75,0.3)]' : 'bg-white text-ink shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]')}>
                   <div className="flex items-center gap-2.5">
                     <p className="flex-1 text-[20px] font-bold">{label(plan)}</p>
                     {prem && <span className="rounded-[12px] bg-linear-to-r from-[#f9c6d0] to-[#f29db0] px-3 py-[5px] text-[11px] font-bold text-[#13294b]">Most popular</span>}
                   </div>
                   <div className="flex items-end gap-1.5">
-                    <p className="text-[36px] font-bold tracking-[-0.72px]">{price != null ? fmtMoney(price) : '—'}</p>
+                    <p className="text-[28px] font-bold tracking-[-0.5px] md:text-[36px] md:tracking-[-0.72px]">{price != null ? fmtMoney(price) : '—'}</p>
                     <p className={cx('text-[13px] font-medium', prem ? 'text-[#c9d6ea]' : 'text-muted')}> / {cyc === 'YEARLY' ? 'year' : 'month'} + GST</p>
                   </div>
                   <p className={cx('text-[13px] font-semibold', prem ? 'text-[#f7b9c4]' : 'text-[#1f5fd6]')}>{alt != null ? `or ${fmtMoney(alt)} / ${other === 'YEARLY' ? 'year' : 'month'}` : ''}</p>
@@ -524,7 +524,7 @@ export function LiveWallet() {
       {w && (
         <>
           <div className="flex gap-[18px]">
-            <div className="flex w-[440px] max-w-[48%] flex-col gap-3 rounded-[28px] bg-linear-to-b from-[#1a3460] to-[#0e1f3b] p-6 text-white shadow-[0px_24px_22px_-18px_rgba(19,41,75,0.3)]">
+            <div className="flex w-full flex-col gap-3 rounded-[20px] bg-linear-to-b from-[#1a3460] to-[#0e1f3b] p-4 md:w-[440px] md:max-w-[48%] md:rounded-[28px] md:p-6 text-white shadow-[0px_24px_22px_-18px_rgba(19,41,75,0.3)]">
               <div className="flex items-center gap-2.5">
                 <p className="flex-1 text-[14px] font-semibold text-[#c9d6ea]">Balance</p>
                 <span className="rounded-[12px] bg-[#f3f0fa] px-2.5 py-[5px] text-[11px] font-bold text-[#5b3fb8]">Paid to SkyUp</span>
@@ -1017,7 +1017,7 @@ export function LiveSecurity() {
       </SCard>
       <SCard>
         <SHead title="Login mobile" subtitle={`+91 ${fmtMobile(user?.mobile)}`} />
-        <div className="flex gap-3.5">
+        <div className="flex flex-col gap-3 md:flex-row md:gap-3.5">
           {CHANGE_STEPS.map(([t, s], i) => (
             <div key={t} className={cx('flex flex-1 items-center gap-3 rounded-[20px] p-4', i === 0 ? 'border border-[#1f5fd6] bg-[#f3f7ff]' : 'bg-panel')}>
               <span className={cx('flex size-8 items-center justify-center rounded-[16px] text-[13px] font-bold', i === 0 ? 'bg-navy text-white' : 'bg-white text-muted')}>{i + 1}</span>
