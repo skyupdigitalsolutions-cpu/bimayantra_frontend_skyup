@@ -38,14 +38,16 @@ export default function LiveMessageRules() {
       {q.error && (serverMissing(q.error) ? <ServerNotUpdated /> : <ErrorNote error={q.error} />)}
       {q.loading && !d && <p className="text-[13px] font-medium text-muted">Loading…</p>}
       {d && (
-        <>
-          <div className="flex gap-3">
+        // data-rsp: this page lays itself out with its own breakpoints (the index.css catch-alls skip it)
+        <div data-rsp className="contents">
+          {/* Phones: the two connection cards stack */}
+          <div className="flex flex-col gap-3 md:flex-row">
             <Connection on={waOn} status={d.connections.MSG91} ch={CH.whatsapp} off="WhatsApp uses Bimayantra’s templates and number. Connect MSG91 to send your own approved templates from your number." />
             <Connection on={mailOn} status={d.connections.BREVO} ch={CH.email} off="Emails go from Bimayantra’s address. Connect Brevo to send from your own address; your own wording works either way." />
           </div>
           {waOn && tq.error && <ErrorNote error={tq.error} />}
           {d.triggers.map((t) => <TriggerCard key={t.trigger} t={t} waOn={waOn} templates={usable} templatesLoading={waOn && tq.loading && !tq.data} />)}
-        </>
+        </div>
       )}
     </SettingsLayout>
   )
@@ -53,15 +55,15 @@ export default function LiveMessageRules() {
 
 function Connection({ on, status, ch, off }) {
   return (
-    <div className={cx('flex flex-1 items-start gap-3 rounded-[20px] px-4 py-3.5', on ? 'bg-[#eefaf3]' : 'bg-white shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]')}>
+    <div className={cx('flex min-w-0 flex-1 flex-wrap items-start gap-3 rounded-[20px] px-4 py-3.5 sm:flex-nowrap', on ? 'bg-[#eefaf3]' : 'bg-white shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]')}>
       <span className={cx('mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full', on ? 'bg-[#d4f1e7] text-[#127650]' : 'bg-panel text-muted')}><Icon name={ch.icon} size={17} /></span>
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <div className="flex min-w-0 flex-1 flex-col gap-1 max-sm:basis-[calc(100%-48px)]">
         <p className={cx('text-[14px] font-bold', on ? 'text-[#127650]' : 'text-ink')}>
           {ch.label} {on ? `through your ${ch.via}` : status === 'ERROR' ? `· your ${ch.via} needs attention` : `· ${ch.via} not connected`}
         </p>
         {!on && <p className="text-[12px] leading-[18px] font-medium text-muted">{off}</p>}
       </div>
-      {!on && <SBtn variant="white" icon="link" to={`/settings/integrations?tab=${ch.via.toLowerCase()}`}>Connect</SBtn>}
+      {!on && <SBtn variant="white" icon="link" className="max-sm:ml-12" to={`/settings/integrations?tab=${ch.via.toLowerCase()}`}>Connect</SBtn>}
     </div>
   )
 }
@@ -80,15 +82,18 @@ function TriggerCard({ t, waOn, templates, templatesLoading }) {
     ...(f.email ? { email: f.email.mode === 'OWN' ? { mode: 'OWN', subject: f.email.subject, body: f.email.body } : { mode: f.email.mode } } : {}),
   }), { invalidates: ['message-rules'] })
   const summary = ['whatsapp', 'email'].filter((k) => f[k] && f[k].mode !== 'OFF').map((k) => CH[k].label)
+  const status = <SChip tone={summary.length ? 'green' : 'gray'}>{summary.length ? `On · ${summary.join(' and ')}` : 'Off'}</SChip>
   return (
-    <SCard className="gap-4">
-      <SHead title={t.label} subtitle={t.when} right={<SChip tone={summary.length ? 'green' : 'gray'}>{summary.length ? `On · ${summary.join(' and ')}` : 'Off'}</SChip>} />
+    <SCard className="gap-3 sm:gap-4">
+      {/* Phones: the on/off chip goes under the title so the title keeps the full width */}
+      <SHead title={t.label} subtitle={t.when} right={<span className="max-sm:hidden">{status}</span>} />
+      <span className="-mt-1 sm:hidden">{status}</span>
       {t.locked && <p className="flex items-center gap-2 rounded-[14px] bg-[#fbf1e1] px-3.5 py-2.5 text-[13px] font-semibold text-[#8a5a12]"><Icon name="star" size={15} />{t.locked.message}</p>}
       {['whatsapp', 'email'].filter((k) => f[k]).map((k) => (
         <ChannelRow key={k} k={k} t={t} v={f[k]} set={(p) => setCh(k, p)} fe={fe} waOn={waOn} templates={templates} templatesLoading={templatesLoading} disabled={!!t.locked} />
       ))}
       <ErrorNote error={error} />
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <SBtn icon="check" disabled={!dirty || busy || !!t.locked} onClick={save} className="disabled:cursor-not-allowed disabled:opacity-50">{busy ? 'Saving…' : 'Save'}</SBtn>
         {dirty && <SBtn variant="white" onClick={() => { reset(); setF(initial) }}>Undo changes</SBtn>}
       </div>
@@ -101,15 +106,16 @@ function ChannelRow({ k, t, v, set, fe, waOn, templates, templatesLoading, disab
   const modes = ['OFF', 'DEFAULT', 'OWN']
   const def = k === 'whatsapp' ? t.defaults?.whatsapp : t.defaults?.email
   return (
-    <div className="flex flex-col gap-3 rounded-[20px] bg-panel p-4">
-      <div className="flex flex-wrap items-center gap-3 xl:flex-nowrap">
+    <div className="flex flex-col gap-3 rounded-[18px] bg-panel p-3 sm:rounded-[20px] sm:p-4">
+      <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 xl:flex-nowrap">
         <span className="flex items-center gap-2 text-[14px] font-bold text-ink"><Icon name={ch.icon} size={17} className="text-muted" />{ch.label}</span>
-        <div role="radiogroup" aria-label={`${ch.label} for ${t.label}`} className="ml-auto flex gap-1 rounded-[18px] bg-white p-1">
+        {/* Phones: the mode switch takes its own full-width row, three equal segments, one line each */}
+        <div role="radiogroup" aria-label={`${ch.label} for ${t.label}`} className="flex w-full gap-1 rounded-[18px] bg-white p-1 sm:ml-auto sm:w-auto">
           {modes.map((m) => (
             <button key={m} type="button" role="radio" aria-checked={v.mode === m} disabled={disabled}
               onClick={() => set({ mode: m })}
-              className={cx('rounded-[14px] px-3.5 py-[7px] text-[12px] font-semibold transition disabled:opacity-50', v.mode === m ? 'bg-navy text-white' : 'text-muted hover:text-ink')}>
-              {MODE_LABEL[m]}
+              className={cx('min-w-0 flex-auto rounded-[14px] px-2 py-[7px] text-[12px] font-semibold whitespace-nowrap transition disabled:opacity-50 max-[359px]:px-1.5 max-[359px]:text-[11px] sm:flex-none sm:px-3.5', v.mode === m ? 'bg-navy text-white' : 'text-muted hover:text-ink')}>
+              {m === 'DEFAULT' ? <><span className="sm:hidden">Bimayantra</span><span className="max-sm:hidden">{MODE_LABEL[m]}</span></> : MODE_LABEL[m]}
             </button>
           ))}
         </div>
@@ -161,7 +167,7 @@ function OwnWhatsApp({ t, v, set, fe, waOn, templates, loading }) {
         <div className="flex flex-col gap-2">
           <p className="text-[13px] font-semibold text-ink">What fills each blank</p>
           {Array.from({ length: blanks }, (_, i) => (
-            <div key={i} className="flex items-center gap-3">
+            <div key={i} className="flex items-center gap-2.5 sm:gap-3 [&>*:last-child]:min-w-0 [&>*:last-child]:flex-1">
               <span className="w-[52px] shrink-0 rounded-[10px] bg-white py-1.5 text-center text-[12px] font-bold text-ink-2">{`{{${i + 1}}}`}</span>
               <Field type="select" value={v.variables[i] ?? ''} options={t.variables.map((x) => [x, x.charAt(0).toUpperCase() + x.slice(1)])} placeholder="Choose a value"
                 onChange={(val) => set({ variables: Array.from({ length: blanks }, (_, j) => (j === i ? val : v.variables[j] ?? '')) })} />
@@ -173,7 +179,7 @@ function OwnWhatsApp({ t, v, set, fe, waOn, templates, loading }) {
       {chosen && (
         <div className="flex flex-col gap-1 rounded-[14px] bg-white px-3.5 py-3">
           <p className="text-[11px] font-semibold text-muted">Example</p>
-          <p className="text-[13px] leading-5 font-medium whitespace-pre-line text-ink-2">{fillBlanks(chosen.body, v.variables)}</p>
+          <p className="text-[13px] leading-5 font-medium break-words whitespace-pre-line text-ink-2">{fillBlanks(chosen.body, v.variables)}</p>
         </div>
       )}
     </div>

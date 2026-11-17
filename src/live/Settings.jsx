@@ -938,19 +938,22 @@ export function LiveActivityLog() {
   return (
     <SettingsLayout breadcrumb="SETTINGS  /  ACTIVITY LOG" title="Activity log" subtitle="Everything done in your account. Entries cannot be changed or deleted."
       actions={<HeadButton variant="white" icon="download" onClick={exportCsv}>Export CSV</HeadButton>}>
-      <div className="flex items-center gap-3">
-        <span className="flex h-[46px] w-[300px] items-center gap-2.5 rounded-[24px] bg-white px-4 shadow-[0px_6px_16px_-10px_rgba(19,41,75,0.1)]">
-          <Icon name="search" size={16} className="text-faint" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search activity" className="flex-1 bg-transparent text-[13px] font-medium text-ink outline-none placeholder:text-[#9aa4b5]" />
+      {/* data-rsp: this page lays itself out with its own breakpoints (the index.css catch-alls skip it) */}
+      <div data-rsp className="contents">
+      {/* Phones: search full width, then the who-filter as a sideways-scrolling pill bar */}
+      <div className="flex flex-col gap-2.5 md:flex-row md:items-center md:gap-3">
+        <span className="flex h-[46px] w-full items-center gap-2.5 rounded-[24px] bg-white px-4 shadow-[0px_6px_16px_-10px_rgba(19,41,75,0.1)] md:w-[300px] md:shrink-0">
+          <Icon name="search" size={16} className="shrink-0 text-faint" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search activity" className="min-w-0 flex-1 bg-transparent text-[13px] font-medium text-ink outline-none placeholder:text-[#9aa4b5]" />
         </span>
-        <div className="flex gap-1 rounded-[26px] bg-white p-[5px] shadow-[0px_6px_16px_-10px_rgba(19,41,75,0.1)]">
+        <div className="flex w-max max-w-full min-w-0 gap-1 overflow-x-auto rounded-[26px] bg-white p-[5px] shadow-[0px_6px_16px_-10px_rgba(19,41,75,0.1)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {tabs.map((t) => (
             <button key={t} type="button" onClick={() => setTab(t)}
-              className={cx('rounded-[21px] px-4 py-[9px] text-[13px] font-semibold', tab === t ? 'bg-navy text-white' : 'text-[#5b6b80]')}>{t}</button>
+              className={cx('shrink-0 rounded-[21px] px-3 py-2 text-[12px] font-semibold whitespace-nowrap md:px-4 md:py-[9px] md:text-[13px]', tab === t ? 'bg-navy text-white' : 'text-[#5b6b80]')}>{t}</button>
           ))}
         </div>
       </div>
-      <SCard>
+      <SCard className="max-md:px-2.5">
         <Loading q={q} />
         {groups.map((g) => (
           <div key={g.day} className="flex flex-col gap-1.5">
@@ -958,10 +961,10 @@ export function LiveActivityLog() {
             {g.items.map((e) => {
               const st = ACTION_STYLE(e.action)
               return (
-                <div key={e.id} className="flex items-center gap-3.5 rounded-[16px] px-2 py-2.5">
-                  <span className={cx('flex size-[38px] items-center justify-center rounded-[19px]', st.bg)}><Icon name={st.icon} size={17} className="text-ink" /></span>
+                <div key={e.id} className="flex items-center gap-3 rounded-[16px] px-2 py-2.5 md:gap-3.5">
+                  <span className={cx('flex size-[38px] shrink-0 items-center justify-center rounded-[19px]', st.bg)}><Icon name={st.icon} size={17} className="text-ink" /></span>
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <p className="truncate text-[13px] font-bold text-ink">{label(e.action)}{e.entityRef ? ` · ${e.entityRef}` : ''}</p>
+                    <p className="text-[13px] font-bold text-ink md:truncate">{label(e.action)}{e.entityRef ? ` · ${e.entityRef}` : ''}</p>
                     <p className="text-[12px] font-medium text-muted">{fmtDateTime(e.at)} · {e.actorName ?? label(e.actorRole)}</p>
                   </div>
                 </div>
@@ -971,12 +974,13 @@ export function LiveActivityLog() {
         ))}
         {!q.loading && !filtered.length && <p className="px-2 py-4 text-[13px] font-medium text-muted">No activity for this filter.</p>}
         {(meta.pages ?? 1) > 1 && (
-          <div className="flex items-center justify-end gap-2 text-[13px] font-medium text-muted">Page {page} of {meta.pages}
+          <div className="flex flex-wrap items-center justify-end gap-2 text-[13px] font-medium text-muted max-md:px-2">Page {page} of {meta.pages}
             <SmallButton variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</SmallButton>
             <SmallButton variant="outline" disabled={page >= meta.pages} onClick={() => setPage((p) => p + 1)}>Next</SmallButton>
           </div>
         )}
       </SCard>
+      </div>
     </SettingsLayout>
   )
 }
@@ -995,21 +999,26 @@ export function LiveSecurity() {
   const logoutAll = () => act(async () => { for (const s of others) await api.auth.endSession(s.id) }, { invalidates: ['sessions'], success: 'Signed out of other devices.' })
   return (
     <SettingsLayout breadcrumb="SETTINGS  /  SECURITY" title="Security" subtitle="Login is by mobile and OTP only. No passwords.">
+      {/* data-rsp: this page lays itself out with its own breakpoints (the index.css catch-alls skip it) */}
+      <div data-rsp className="contents">
       <SCard>
         <SHead title="Signed-in devices" subtitle="Up to 3 at a time. The oldest ends when a fourth signs in." />
         <Loading q={q} />
         {sessions.map((s) => {
           const phone = /app|android|ios|mobile/i.test(`${s.device || ''} ${s.client || ''}`)
           return (
-            <div key={s.id} className={cx('flex items-center gap-3.5 rounded-[20px] p-3.5', s.current ? 'border border-[#c9daf8] bg-[#f3f7ff]' : 'bg-panel')}>
-              <span className="flex size-[42px] items-center justify-center rounded-[21px] bg-white"><Icon name={phone ? 'phone' : 'grid'} size={18} className="text-ink" /></span>
-              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <div key={s.id} className={cx('flex flex-wrap items-center gap-x-3.5 gap-y-2.5 rounded-[20px] p-3.5 sm:flex-nowrap', s.current ? 'border border-[#c9daf8] bg-[#f3f7ff]' : 'bg-panel')}>
+              <span className="flex size-[42px] shrink-0 items-center justify-center rounded-[21px] bg-white"><Icon name={phone ? 'phone' : 'grid'} size={18} className="text-ink" /></span>
+              {/* Phones: name and place get the full width; the chip / Log out button moves under them */}
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5 max-sm:basis-[calc(100%-56px)]">
                 <p className="text-[14px] font-bold text-ink">{s.device ?? label(s.client)}</p>
-                <p className="truncate text-[12px] font-medium text-muted">{[s.location || s.ip, s.current ? 'active now' : fmtDateTime(s.lastActiveAt)].filter(Boolean).join(' · ')}</p>
+                <p className="text-[12px] font-medium text-muted sm:truncate">{[s.location || s.ip, s.current ? 'active now' : fmtDateTime(s.lastActiveAt)].filter(Boolean).join(' · ')}</p>
               </div>
-              {s.current
-                ? <SChip tone="blue">This device</SChip>
-                : <SmallButton variant="outline" icon="logout" onClick={() => act(() => api.auth.endSession(s.id), { invalidates: ['sessions'] })}>Log out</SmallButton>}
+              <div className="flex shrink-0 max-sm:ml-14">
+                {s.current
+                  ? <SChip tone="blue">This device</SChip>
+                  : <SmallButton variant="outline" icon="logout" onClick={() => act(() => api.auth.endSession(s.id), { invalidates: ['sessions'] })}>Log out</SmallButton>}
+              </div>
             </div>
           )
         })}
@@ -1017,10 +1026,10 @@ export function LiveSecurity() {
       </SCard>
       <SCard>
         <SHead title="Login mobile" subtitle={`+91 ${fmtMobile(user?.mobile)}`} />
-        <div className="flex flex-col gap-3 md:flex-row md:gap-3.5">
+        <div className="flex flex-col gap-3 xl:flex-row xl:gap-3.5">
           {CHANGE_STEPS.map(([t, s], i) => (
-            <div key={t} className={cx('flex flex-1 items-center gap-3 rounded-[20px] p-4', i === 0 ? 'border border-[#1f5fd6] bg-[#f3f7ff]' : 'bg-panel')}>
-              <span className={cx('flex size-8 items-center justify-center rounded-[16px] text-[13px] font-bold', i === 0 ? 'bg-navy text-white' : 'bg-white text-muted')}>{i + 1}</span>
+            <div key={t} className={cx('flex min-w-0 flex-1 items-center gap-3 rounded-[20px] p-4', i === 0 ? 'border border-[#1f5fd6] bg-[#f3f7ff]' : 'bg-panel')}>
+              <span className={cx('flex size-8 shrink-0 items-center justify-center rounded-[16px] text-[13px] font-bold', i === 0 ? 'bg-navy text-white' : 'bg-white text-muted')}>{i + 1}</span>
               <div className="flex flex-col gap-0.5">
                 <p className="text-[13px] font-bold text-ink">{t}</p>
                 <p className="text-[11px] font-medium text-muted">{s}</p>
@@ -1030,6 +1039,7 @@ export function LiveSecurity() {
         </div>
         <SmallButton variant="navy" icon="phone" className="self-start" onClick={() => setDlg(true)}>Change mobile number</SmallButton>
       </SCard>
+      </div>
       {dlg && <ChangeMobileDialog onClose={() => setDlg(false)} />}
     </SettingsLayout>
   )

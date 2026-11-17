@@ -91,7 +91,7 @@ export default function TaskDrawer({ task = null, related: presetRelated = null,
   return (
     <>
       <button type="button" aria-label="Close" data-overlay="scrim" onClick={onClose} className="fixed inset-0 z-40 bg-[#0e1f3b]/40" />
-      <form data-overlay="drawer" onSubmit={submit}
+      <form data-overlay="drawer" data-rsp onSubmit={submit}
         className={cx(
           'fixed inset-x-0 bottom-0 z-50 flex max-h-[92vh] flex-col gap-3 overflow-y-auto rounded-t-[28px] bg-white px-[18px] pt-2.5 pb-7 shadow-[0px_30px_60px_-10px_rgba(19,41,75,0.3)]',
           'md:inset-x-auto md:top-4 md:right-4 md:bottom-auto md:max-h-[calc(100vh-32px)] md:min-h-[min(928px,calc(100vh-32px))] md:w-[500px] md:gap-4 md:rounded-[32px] md:px-7 md:pt-7 md:pb-6',
@@ -146,7 +146,7 @@ export default function TaskDrawer({ task = null, related: presetRelated = null,
             {related ? (
               <>
                 <span className={cx('flex size-[30px] shrink-0 items-center justify-center rounded-full border-2 border-white text-[10px] font-bold text-navy', avatarClass(related.name))}>{initials(related.name)}</span>
-                <span className="flex-1">{related.name} · {related.type === 'LEAD' ? 'Lead' : 'Policy holder'}</span>
+                <span className="min-w-0 flex-1 truncate">{related.name} · {related.type === 'LEAD' ? 'Lead' : 'Policy holder'}</span>
                 {!edit && <button type="button" aria-label="Clear" onClick={() => setRelated(null)} className="text-muted hover:text-ink"><Icon name="x" size={14} /></button>}
               </>
             ) : (
@@ -194,15 +194,15 @@ export default function TaskDrawer({ task = null, related: presetRelated = null,
         </div>
 
         {edit && (
-          <div className="flex shrink-0 items-center gap-3 rounded-[16px] bg-panel p-3.5">
-            <div className="flex w-[116px] flex-col gap-0.5">
+          <div className="flex shrink-0 flex-wrap items-center gap-2.5 rounded-[16px] bg-panel p-3.5 md:flex-nowrap md:gap-3">
+            <div className="flex w-full flex-col gap-0.5 md:w-[116px]">
               <p className="text-[13px] font-bold text-ink">Status: Open</p>
-              <p className="text-[11px] font-medium whitespace-nowrap text-muted">Mark it done here or tick it in the list.</p>
+              <p className="text-[11px] font-medium text-muted md:whitespace-nowrap">Mark it done here or tick it in the list.</p>
             </div>
-            <button type="button" disabled={status.busy} onClick={() => status.run('done')} className="flex h-9 items-center gap-2 rounded-[18px] border border-line bg-white pr-3.5 pl-3 text-[13px] font-semibold text-ink hover:bg-tile">
+            <button type="button" disabled={status.busy} onClick={() => status.run('done')} className="flex h-9 items-center justify-center gap-2 rounded-[18px] border border-line bg-white pr-3.5 pl-3 text-[13px] font-semibold whitespace-nowrap text-ink hover:bg-tile max-md:flex-1">
               <Icon name="check" size={16} />Mark as completed
             </button>
-            <button type="button" disabled={status.busy} onClick={() => status.run('cancel')} className="flex h-9 items-center rounded-[18px] border border-[#f2c4c8] bg-white px-3.5 text-[13px] font-semibold text-[#b4323c]">Cancel task</button>
+            <button type="button" disabled={status.busy} onClick={() => status.run('cancel')} className="flex h-9 items-center justify-center rounded-[18px] border border-[#f2c4c8] bg-white px-3.5 text-[13px] font-semibold whitespace-nowrap text-[#b4323c] max-md:flex-1">Cancel task</button>
           </div>
         )}
 
