@@ -140,20 +140,20 @@ function MoreMenu({ items = [] }) {
 
 function FamilyMemberCard({ name, sub, inactive, info, chips, menuItems, onAddDoc, canAct }) {
   return (
-    <div className={cx('flex w-[370px] flex-col gap-3.5 rounded-[28px] bg-white p-6', CARD_SHADOW, inactive && 'opacity-60')}>
+    <div className={cx('flex w-full flex-col gap-3.5 rounded-[24px] bg-white p-5 md:w-[calc(50%-10px)] md:rounded-[28px] md:p-6 xl:w-[370px]', CARD_SHADOW, inactive && 'opacity-60')}>
       <div className="flex items-center gap-3.5">
         <Dot initials={initials(name)} bg={avatarHex(name)} size={52} font={17} />
         <div className="flex min-w-0 flex-1 flex-col gap-0.5 whitespace-nowrap">
-          <p className="text-[15px] font-bold text-ink">{name}</p>
-          <p className="text-[12px] font-medium text-muted">{sub}</p>
+          <p className="truncate text-[15px] font-bold text-ink">{name}</p>
+          <p className="truncate text-[12px] font-medium text-muted">{sub}</p>
         </div>
         {canAct ? <MoreMenu items={menuItems} /> : <Icon name="more" size={18} className="text-muted" />}
       </div>
-      <div className="flex gap-2.5">
+      <div className="flex flex-wrap gap-2.5">
         {info.map(([icon, v, warn]) => (
-          <div key={icon} className="flex flex-1 items-center gap-2 rounded-[14px] bg-panel px-3 py-2.5">
-            <Icon name={icon} size={15} className="text-muted" />
-            <span className={cx('text-[12px] font-semibold whitespace-nowrap', warn ? 'text-[#b4323c]' : 'text-ink')}>{v}</span>
+          <div key={icon} className="flex min-w-[132px] flex-1 items-center gap-2 rounded-[14px] bg-panel px-3 py-2.5">
+            <Icon name={icon} size={15} className="shrink-0 text-muted" />
+            <span className={cx('truncate text-[12px] font-semibold whitespace-nowrap', warn ? 'text-[#b4323c]' : 'text-ink')}>{v}</span>
           </div>
         ))}
       </div>
@@ -201,8 +201,8 @@ function FamilyTab({ live, id }) {
   }
   const age = live.raw.age
   return (
-    <div className="flex items-start gap-5">
-      <div className="flex w-[760px] flex-wrap items-start gap-5">
+    <div className="flex flex-col gap-4 md:gap-5 xl:flex-row xl:items-start">
+      <div className="flex w-full flex-wrap items-start gap-4 md:gap-5 xl:w-[760px]">
         {/* The policy holder's own "Self" card, first. */}
         <FamilyMemberCard
           name={live.raw.name}
@@ -233,15 +233,15 @@ function FamilyTab({ live, id }) {
         })}
       </div>
 
-      <div className="flex w-[400px] flex-col gap-[33px]">
-        <section className={cx('flex flex-col gap-3 rounded-[28px] bg-linear-to-r from-[#d4f1e7] to-[#b9e8d7] p-6', CARD_SHADOW)}>
+      <div className="flex w-full flex-col gap-4 md:gap-5 xl:w-[400px] xl:gap-[33px]">
+        <section className={cx('flex flex-col gap-3 rounded-[24px] bg-linear-to-r from-[#d4f1e7] to-[#b9e8d7] p-5 md:rounded-[28px] md:p-6', CARD_SHADOW)}>
           <Head title="Default nominee" right={live.active && <PillButton variant="outline" size="sm" className="px-3.5" onClick={() => setDlg({ kind: 'nominee' })}>{nominee.data?.defaultNominee ? 'Change' : 'Set'}</PillButton>} />
           {nominee.data?.defaultNominee ? (
             <>
               <div className="flex items-center gap-3">
                 <Dot initials={initials(nominee.data.defaultNominee.name)} bg="#ffffff" size={44} font={14} />
                 <div className="flex min-w-0 flex-col gap-0.5 whitespace-nowrap">
-                  <p className="text-[14px] font-bold text-ink">{nominee.data.defaultNominee.name}</p>
+                  <p className="truncate text-[14px] font-bold text-ink">{nominee.data.defaultNominee.name}</p>
                   <p className="text-[12px] font-medium text-[#2f6b55]">{nominee.data.defaultNominee.relationship} · 100%</p>
                 </div>
               </div>
@@ -252,14 +252,14 @@ function FamilyTab({ live, id }) {
           )}
         </section>
 
-        <section className={cx('flex flex-col gap-3 rounded-[28px] bg-white p-6', CARD_SHADOW)}>
+        <section className={cx('flex flex-col gap-3 rounded-[24px] bg-white p-5 md:rounded-[28px] md:p-6', CARD_SHADOW)}>
           <Head title="Linked customers" right={live.active && <PillButton variant="outline" size="sm" icon="link" onClick={() => setDlg({ kind: 'link' })}>Link</PillButton>} />
           {(links.data || []).map((l) => (
             <div key={l.id} className="flex items-center gap-3 rounded-[16px] bg-panel p-3">
               <Dot initials={initials(l.customer.name)} bg={avatarHex(l.customer.name)} size={38} font={12} />
               <Link to={`/customers/${l.customer.id}`} className="flex min-w-0 flex-1 flex-col whitespace-nowrap">
                 <span className="truncate text-[13px] font-bold text-ink">{l.customer.name}</span>
-                <span className="text-[12px] font-medium text-muted">{l.relationship} · {l.customer.number}</span>
+                <span className="truncate text-[12px] font-medium text-muted">{l.relationship} · {l.customer.number}</span>
               </Link>
               {live.active && <UnlinkButton customer={live.raw} link={l} />}
             </div>
@@ -306,12 +306,12 @@ function ConsentTab({ id, live }) {
     : 'Record it before adding PAN or Aadhaar'
   return (
     <div className="flex flex-col gap-6">
-      <div className={cx('flex h-[92px] items-center gap-4 rounded-[28px] px-6 py-5', given ? 'bg-linear-to-r from-[#d4f1e7] to-[#b9e8d7]' : 'bg-[#fbf1e1]')}>
+      <div className={cx('flex flex-wrap items-center gap-4 rounded-[24px] px-5 py-5 md:h-[92px] md:flex-nowrap md:rounded-[28px] md:px-6', given ? 'bg-linear-to-r from-[#d4f1e7] to-[#b9e8d7]' : 'bg-[#fbf1e1]')}>
         <span className={cx('flex size-[52px] shrink-0 items-center justify-center rounded-full bg-white', given ? 'text-[#127650]' : 'text-[#8a5a12]')}>
           <Icon name={given ? 'lock' : 'alert'} size={24} />
         </span>
-        <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
-          <p className="text-[16px] font-bold text-ink">Consent to store personal data: {(CCHIP[pd]?.[2] ?? 'Not recorded').toLowerCase()}</p>
+        <div className="flex min-w-0 flex-1 flex-col gap-[3px] max-md:basis-[calc(100%-68px)]">
+          <p className="text-[15px] font-bold text-ink md:text-[16px]">Consent to store personal data: {(CCHIP[pd]?.[2] ?? 'Not recorded').toLowerCase()}</p>
           <p className={cx('text-[12px] font-medium', given ? 'text-[#2f6b55]' : 'text-[#8a5a12]')}>{pdDetail}</p>
         </div>
         {live.active && (given
@@ -319,32 +319,36 @@ function ConsentTab({ id, live }) {
           : <PillButton variant="navy" size="sm" icon="shield" onClick={() => setDlg({ kind: 'pd' })}>Record</PillButton>)}
       </div>
 
-      <div className="flex items-start gap-5">
-        <section className={cx('w-[760px] overflow-hidden rounded-[28px] bg-white', CARD_SHADOW)}>
-          <div className="flex gap-3 px-[22px] py-[18px] text-[12px] font-semibold text-muted">
+      <div className="flex flex-col gap-4 md:gap-5 xl:flex-row xl:items-start">
+        <section className={cx('w-full overflow-hidden rounded-[24px] bg-white md:rounded-[28px] xl:w-[760px]', CARD_SHADOW)}>
+          <div className="hidden gap-3 px-[22px] py-[18px] text-[12px] font-semibold text-muted md:flex">
             <span className="w-[220px] shrink-0">Person</span>
             {CH_META.map(([, l]) => <span key={l} className="flex-1">{l}</span>)}
           </div>
+          <p className="px-5 pt-5 pb-3 text-[17px] font-bold text-ink md:hidden">Messaging consent</p>
           {q.loading && !q.data && <div className="px-[22px] pb-4"><Loading /></div>}
           {rows.map((r) => {
             const P = people.find((p) => p.id === r.person.id) || r.person
             return (
               <div key={r.person.id} className="flex flex-col">
                 <div className="h-px bg-line" />
-                <div className="flex items-center gap-3 px-[22px] py-4">
-                  <div className="flex w-[220px] shrink-0 items-center gap-2.5">
+                <div className="flex flex-col gap-3 px-5 py-4 md:flex-row md:items-center md:px-[22px]">
+                  <div className="flex shrink-0 items-center gap-2.5 md:w-[220px]">
                     <Dot initials={initials(r.person.name)} bg={avatarHex(r.person.name)} size={36} font={12} />
                     <div className="flex flex-col gap-px whitespace-nowrap">
                       <p className="text-[13px] font-bold text-ink">{r.person.name}</p>
                       <p className="text-[11px] font-medium text-muted">{r.person.relationship}</p>
                     </div>
                   </div>
-                  {CH_META.map(([ch]) => {
+                  {/* Phones: one line per channel (name · chip · action) under the person. md+: display:contents. */}
+                  <div className="flex flex-col gap-2 md:contents">
+                  {CH_META.map(([ch, chLabel]) => {
                     const v = r.channels?.[ch] ?? { status: 'NOT_RECORDED' }
                     const [tone, icon, txt] = CCHIP[v.status] ?? CCHIP.NOT_RECORDED
                     const isGiven = v.status === 'GIVEN'
                     return (
-                      <div key={ch} className="flex flex-1 flex-col items-start gap-1">
+                      <div key={ch} className="flex min-w-0 flex-1 flex-col items-start gap-1 max-md:flex-row max-md:items-center max-md:gap-2.5 max-md:rounded-[14px] max-md:bg-panel max-md:px-3 max-md:py-2.5">
+                        <span className="flex-1 text-[12px] font-semibold text-ink-2 md:hidden">{chLabel}</span>
                         <SChip tone={tone} icon={icon}>{txt}</SChip>
                         {live.active && (
                           <button type="button" className="text-[11px] font-bold text-blue hover:underline"
@@ -355,18 +359,19 @@ function ConsentTab({ id, live }) {
                       </div>
                     )
                   })}
+                  </div>
                 </div>
               </div>
             )
           })}
         </section>
 
-        <section className={cx('flex w-[400px] flex-col gap-3 rounded-[28px] bg-white p-6', CARD_SHADOW)}>
+        <section className={cx('flex w-full flex-col gap-3 rounded-[24px] bg-white p-5 md:rounded-[28px] md:p-6 xl:w-[400px]', CARD_SHADOW)}>
           <Head title="History" sub="Who changed what, and how" />
           {history.map((h, i) => (
             <div key={i} className="flex items-center gap-2.5">
               <span className="size-2.5 shrink-0 rounded-full bg-[#5b3fb8]" />
-              <div className="flex min-w-0 flex-col gap-px whitespace-nowrap">
+              <div className="flex min-w-0 flex-col gap-px whitespace-nowrap max-xl:whitespace-normal">
                 <p className="text-[13px] font-bold text-ink">
                   {h.channel === 'PERSONAL_DATA' ? 'Personal data consent' : `${label(h.channel)} ${h.to === 'GIVEN' ? 'given' : h.to === 'WITHDRAWN' ? 'withdrawn' : label(h.to)}`}
                   {h.person && h.channel !== 'PERSONAL_DATA' ? ` · ${h.person}` : ''}
@@ -404,8 +409,8 @@ function DocumentsTab({ id, live }) {
   return (
     <div className="flex flex-col gap-6">
       {q.data?.missing?.message && <Note icon="alert" bg="#fbf1e1" color="#8a5a12">{q.data.missing.message}</Note>}
-      <div className="flex items-start gap-5">
-        <section className={cx('flex w-[760px] flex-col gap-3 rounded-[28px] bg-white p-6', CARD_SHADOW)}>
+      <div className="flex flex-col gap-4 md:gap-5 xl:flex-row xl:items-start">
+        <section className={cx('flex w-full flex-col gap-3 rounded-[24px] bg-white p-4 md:rounded-[28px] md:p-6 xl:w-[760px]', CARD_SHADOW)}>
           <Head title="Documents" sub="Never deleted. A new upload of the same type adds a version." />
           {q.loading && !q.data && <Loading />}
           {byPerson.map((b) => (
@@ -418,11 +423,11 @@ function DocumentsTab({ id, live }) {
                 const check = needsCheck(v)
                 const [tone, icon, txt] = confirmed ? ['green', 'check', 'Confirmed'] : check ? ['amber', 'alert', 'Unconfirmed'] : ['gray', null, 'Saved']
                 return (
-                  <div key={`${g.personKey}:${g.type}:${g.name}`} className="flex items-center gap-3.5 rounded-[18px] bg-panel p-3.5">
+                  <div key={`${g.personKey}:${g.type}:${g.name}`} className="flex flex-wrap items-center gap-x-3.5 gap-y-2.5 rounded-[18px] bg-panel p-3.5 md:flex-nowrap">
                     <span className="flex h-[52px] w-11 shrink-0 items-center justify-center rounded-[12px] text-ink" style={{ background: avatarHex(g.name || g.type) }}><Icon name="folder" size={18} /></span>
-                    <div className="flex min-w-0 flex-1 flex-col gap-0.5 whitespace-nowrap">
-                      <p className="text-[14px] font-bold text-ink">{g.name || label(g.type)}</p>
-                      <p className="text-[12px] font-medium text-muted">{[v?.version != null ? `v${v.version}` : null, v?.uploadedAt ? fmtDate(v.uploadedAt, { year: false }) : null, uploader].filter(Boolean).join(' · ')}</p>
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5 whitespace-nowrap max-md:basis-[calc(100%-58px)]">
+                      <p className="truncate text-[14px] font-bold text-ink">{g.name || label(g.type)}</p>
+                      <p className="truncate text-[12px] font-medium text-muted">{[v?.version != null ? `v${v.version}` : null, v?.uploadedAt ? fmtDate(v.uploadedAt, { year: false }) : null, uploader].filter(Boolean).join(' · ')}</p>
                     </div>
                     <SChip tone={tone} icon={icon}>{txt}</SChip>
                     {check && <PillButton variant="navy" size="sm" className="px-3.5" onClick={() => setDlg({ kind: 'verify', vid: v.id })}>Check values</PillButton>}
@@ -436,7 +441,7 @@ function DocumentsTab({ id, live }) {
         </section>
 
         {live.active && (
-          <section className="flex w-[400px] flex-col items-center gap-3 rounded-[28px] border border-dashed border-[#c3ccd8] bg-white p-7">
+          <section className="flex w-full flex-col items-center gap-3 rounded-[24px] border border-dashed border-[#c3ccd8] bg-white p-6 md:rounded-[28px] md:p-7 xl:w-[400px]">
             <span className="flex size-[60px] items-center justify-center rounded-full bg-[#e8f0fd] text-blue"><Icon name="upload" size={26} /></span>
             <p className="text-[16px] font-bold text-ink">Upload a document</p>
             <p className="text-[12px] font-medium text-muted">PDF, JPG or PNG · file or camera</p>
@@ -468,18 +473,18 @@ function VehiclesTab({ id, live }) {
   const checklist = [['folder', 'RC'], ...slots.map((s) => ['eye', s])]
   const first = live.name.split(' ')[0]
   return (
-    <div className="flex items-start gap-5">
-      <div className="flex w-[760px] flex-col gap-5">
+    <div className="flex flex-col gap-4 md:gap-5 xl:flex-row xl:items-start">
+      <div className="flex w-full flex-col gap-4 md:gap-5 xl:w-[760px]">
         {q.loading && !q.data && <Loading />}
         {rows.length > 0 ? (
-          <div className="flex flex-wrap gap-5">
+          <div className="flex flex-wrap gap-4 md:gap-5">
             {rows.map((v) => (
-              <section key={v.id} className={cx('flex w-[370px] flex-col gap-3 rounded-[28px] bg-white p-6', CARD_SHADOW, v.status !== 'ACTIVE' && 'opacity-60')}>
+              <section key={v.id} className={cx('flex w-full flex-col gap-3 rounded-[24px] bg-white p-5 md:w-[calc(50%-10px)] md:rounded-[28px] md:p-6 xl:w-[370px]', CARD_SHADOW, v.status !== 'ACTIVE' && 'opacity-60')}>
                 <div className="flex items-center gap-3.5">
                   <IconTile icon="car" bg="#d9eafd" size={48} />
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5 whitespace-nowrap">
-                    <p className="text-[15px] font-bold text-ink">{v.registrationNumber ?? v.registration ?? '—'}</p>
-                    <p className="text-[12px] font-medium text-muted">{[v.make, v.model, v.year].filter(Boolean).join(' · ')}</p>
+                    <p className="truncate text-[15px] font-bold text-ink">{v.registrationNumber ?? v.registration ?? '—'}</p>
+                    <p className="truncate text-[12px] font-medium text-muted">{[v.make, v.model, v.year].filter(Boolean).join(' · ')}</p>
                   </div>
                   <SChip tone={v.status === 'ACTIVE' ? 'green' : 'gray'}>{label(v.status)}</SChip>
                 </div>
@@ -488,21 +493,21 @@ function VehiclesTab({ id, live }) {
             ))}
           </div>
         ) : !q.loading && (
-          <section className={cx('flex flex-col items-center gap-3.5 rounded-[32px] bg-white p-10', CARD_SHADOW)}>
+          <section className={cx('flex flex-col items-center gap-3.5 rounded-[24px] bg-white px-5 py-8 md:rounded-[32px] md:p-10', CARD_SHADOW)}>
             <span className="flex size-[84px] items-center justify-center rounded-full bg-linear-to-r from-[#d9eafd] to-[#c2dbfb] text-blue"><Icon name="car" size={38} /></span>
             <p className="text-[20px] font-bold text-ink">No vehicles yet</p>
-            <p className="w-[440px] text-center text-[14px] leading-[22px] font-medium text-muted">Add a vehicle with its RC and at least {minPhotos} photos to quote motor insurance for {first}.</p>
+            <p className="w-full max-w-[440px] text-center text-[14px] leading-[22px] font-medium text-muted">Add a vehicle with its RC and at least {minPhotos} photos to quote motor insurance for {first}.</p>
             {live.active && <PillButton variant="pink" icon="plus" onClick={() => setDlg({ kind: 'add' })}>Add vehicle</PillButton>}
           </section>
         )}
         {rows.length > 0 && live.active && <PillButton variant="pink" icon="plus" className="self-start" onClick={() => setDlg({ kind: 'add' })}>Add vehicle</PillButton>}
       </div>
 
-      <section className={cx('flex w-[400px] flex-col gap-3.5 rounded-[28px] bg-white p-6', CARD_SHADOW)}>
+      <section className={cx('flex w-full flex-col gap-3.5 rounded-[24px] bg-white p-5 md:rounded-[28px] md:p-6 xl:w-[400px]', CARD_SHADOW)}>
         <Head title="What you’ll need" sub="For each vehicle" />
         <div className="flex flex-wrap gap-2">
           {checklist.map(([icon, l]) => (
-            <div key={l} className="flex h-[63px] w-[108px] flex-col items-center gap-1.5 rounded-[16px] bg-panel p-3">
+            <div key={l} className="flex h-[63px] w-[calc((100%-16px)/3)] flex-col items-center gap-1.5 rounded-[16px] bg-panel p-3 md:w-[108px]">
               <Icon name={icon} size={18} className="text-muted" />
               <span className="text-[12px] font-semibold text-ink">{l}</span>
             </div>
@@ -550,16 +555,17 @@ function QuotationsTab({ live, id }) {
   return (
     <div className="flex flex-col gap-3.5">
       {rows.map((r) => (
-        <Link key={r.k} to={r.to} className={cx('group flex h-[84px] items-center gap-4 rounded-[24px] bg-white px-[22px] py-[18px]', CARD_SHADOW)}>
+        <Link key={r.k} to={r.to} className={cx('group flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[22px] bg-white p-4 md:h-[84px] md:flex-nowrap md:rounded-[24px] md:px-[22px] md:py-[18px]', CARD_SHADOW)}>
           <IconTile icon={r.icon} bg={r.bg} />
-          <div className="flex min-w-0 flex-1 flex-col gap-[3px] max-xl:whitespace-normal">
+          <div className="flex min-w-0 flex-1 flex-col gap-[3px] max-md:basis-[calc(100%-64px)] max-xl:whitespace-normal">
             <p className="text-[15px] font-bold text-ink">{r.title}</p>
             <p className="text-[12px] font-medium text-muted">{r.sub}</p>
           </div>
-          <p className="w-[220px] text-[12px] font-semibold whitespace-nowrap text-ink-2">{r.mid}</p>
-          <p className="w-[110px] text-[16px] font-bold whitespace-nowrap text-ink">{r.amount}</p>
+          {/* Phones: status line on its own row, then amount + chip; the whole card is the link, so no chevron */}
+          <p className="text-[12px] font-semibold whitespace-nowrap text-ink-2 max-md:basis-full max-md:whitespace-normal md:w-[220px]">{r.mid}</p>
+          <p className="text-[16px] font-bold whitespace-nowrap text-ink max-md:flex-1 md:w-[110px]">{r.amount}</p>
           <SChip tone={r.chip[0]} icon={r.chip[1]}>{r.chip[2]}</SChip>
-          <Chev />
+          <Chev className="max-md:hidden" />
         </Link>
       ))}
       {!rows.length && <Empty>No quotations for {live.name} yet.</Empty>}
@@ -580,7 +586,7 @@ export function LiveCustomerPolicies() {
     <TabPage tab="policies" crumb="POLICIES">
       {(live, id) => (
         <>
-          <div className="flex flex-wrap gap-5">
+          <div className="flex flex-wrap gap-4 md:gap-5">
             {live.policies.map((p) => {
               const insured = (p.insured || []).map((m) => (m.name || '').split(' ')[0]).filter(Boolean).join(', ')
               const statusText = p.status === 'ISSUED'
@@ -591,11 +597,11 @@ export function LiveCustomerPolicies() {
               const ref = p.reference ?? p.ref
               const sub = p.policyNumber ? p.policyNumber : `Number pending${ref ? ` · ${ref}` : ''}`
               return (
-                <section key={p.id} className={cx('flex w-[580px] flex-col gap-4 rounded-[28px] bg-white p-6', CARD_SHADOW)}>
+                <section key={p.id} className={cx('flex w-full flex-col gap-4 rounded-[24px] bg-white p-5 md:rounded-[28px] md:p-6 xl:w-[580px]', CARD_SHADOW)}>
                   <div className="flex items-center gap-3.5">
                     <IconTile icon="shield" bg={p.status === 'ISSUED' ? '#d4f1e7' : '#e9e3fc'} size={52} iconSize={24} />
-                    <div className="flex min-w-0 flex-1 flex-col gap-0.5 whitespace-nowrap">
-                      <p className="text-[16px] font-bold text-ink">{[p.insurer, p.productName].filter(Boolean).join(' ') || 'Policy'}</p>
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5 whitespace-nowrap max-md:whitespace-normal">
+                      <p className="text-[15px] font-bold text-ink md:text-[16px]">{[p.insurer, p.productName].filter(Boolean).join(' ') || 'Policy'}</p>
                       <p className="text-[12px] font-medium text-muted">{sub}</p>
                     </div>
                     <SChip tone={P_CHIP[p.status]?.[0] ?? 'gray'} icon={P_CHIP[p.status]?.[1]}>{P_CHIP[p.status]?.[2] ?? label(p.status)}</SChip>
@@ -604,12 +610,12 @@ export function LiveCustomerPolicies() {
                     <div className="h-2.5 overflow-hidden rounded-[5px] bg-panel">{termProgress(p) > 0 && <div className="h-full rounded-[5px] bg-[#16845b]" style={{ width: `${termProgress(p)}%` }} />}</div>
                     <p className="text-[12px] font-semibold text-ink-2">{p.startDate && p.endDate ? `${fmtDate(p.startDate)} → ${fmtDate(p.endDate)}` : 'Dates set when the policy is issued'}</p>
                   </div>
-                  <div className="flex gap-2.5">
+                  <div className="grid grid-cols-2 gap-2.5 md:flex">
                     {[['Premium', p.premium ? fmtMoney(p.premium) : '—'], ['Status', statusText], ['Insured', insured || '—']].map(([k, v]) => (
-                      <div key={k} className="flex flex-1 flex-col gap-0.5 rounded-[14px] bg-panel p-3 whitespace-nowrap"><p className="text-[11px] font-medium text-muted">{k}</p><p className="text-[13px] font-bold text-ink">{v}</p></div>
+                      <div key={k} className="flex min-w-0 flex-1 flex-col gap-0.5 rounded-[14px] bg-panel p-3 whitespace-nowrap max-md:whitespace-normal max-md:last:col-span-2"><p className="text-[11px] font-medium text-muted">{k}</p><p className="text-[13px] font-bold text-ink">{v}</p></div>
                     ))}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <PillButton variant="navy" size="sm" icon="arrow" to={`/policies/${p.id}`}>Open policy</PillButton>
                     {live.active && p.status === 'ISSUED' && <PillButton variant="outline" size="sm" icon="users" onClick={() => setNomFor(p.id)}>Edit nominees</PillButton>}
                     {live.active && p.status === 'AWAITING_ISSUANCE' && <PillButton variant="outline" size="sm" icon="shield" to={`/policies/${p.id}/issue`}>Record issued policy</PillButton>}
@@ -617,9 +623,9 @@ export function LiveCustomerPolicies() {
                 </section>
               )
             })}
-            {!live.policies.length && <Empty className="w-[580px]">No policies for {live.name} yet.</Empty>}
+            {!live.policies.length && <Empty className="w-full xl:w-[580px]">No policies for {live.name} yet.</Empty>}
           </div>
-          {live.active && <PillButton variant="pink" icon="plus" className="mt-[59px]" to={`/customers/${id}/policies/new`}>Record existing policy</PillButton>}
+          {live.active && <PillButton variant="pink" icon="plus" className="mt-6 max-md:w-full max-md:justify-center xl:mt-[59px]" to={`/customers/${id}/policies/new`}>Record existing policy</PillButton>}
           {nomFor && <PolicyNominees id={nomFor} onClose={() => setNomFor(null)} />}
         </>
       )}
@@ -650,29 +656,29 @@ function PaymentsTab({ live }) {
   return (
     <>
       <Note icon="shield" bg="#e7f4ee" color="#127650">{live.name.split(' ')[0]} pays insurers directly. You record each payment on its quotation.</Note>
-      <section className={cx('mt-6 flex flex-col gap-2.5 rounded-[28px] bg-white p-6', CARD_SHADOW)}>
+      <section className={cx('mt-4 flex flex-col gap-2.5 rounded-[24px] bg-white p-3 md:mt-6 md:rounded-[28px] md:p-6', CARD_SHADOW)}>
         {pays.loading && !pays.data && <Loading />}
         {rows.map((p) => {
           const [tone, icon, txt] = PAY_CHIP[p.status] ?? ['gray', null, label(p.status)]
           return (
-            <Link key={p.id} to={`/quotations/${p.quotationId}`} className="group flex items-center gap-4 rounded-[20px] bg-panel p-4">
+            <Link key={p.id} to={`/quotations/${p.quotationId}`} className="group flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[20px] bg-panel p-4 md:flex-nowrap">
               <IconTile icon="card" bg={PAY_TILE[p.status] ?? '#d4f1e7'} size={46} />
-              <div className="flex min-w-0 flex-1 flex-col gap-0.5 whitespace-nowrap">
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5 whitespace-nowrap max-md:basis-[calc(100%-62px)] max-md:whitespace-normal">
                 <p className="text-[14px] font-bold text-ink">{[p.quotationNumber, [p.insurer, p.productName].filter(Boolean).join(' ')].filter(Boolean).join(' · ')}</p>
                 <p className="text-[12px] font-medium text-muted">{[p.mode, p.reference, p.paymentDate ? fmtDate(p.paymentDate) : fmtDate(p.createdAt)].filter(Boolean).join(' · ')}</p>
               </div>
-              <p className="text-[16px] font-bold whitespace-nowrap text-ink">{amt(p) ? fmtMoney(amt(p), { decimals: 2 }) : '—'}</p>
+              <p className="text-[16px] font-bold whitespace-nowrap text-ink max-md:flex-1">{amt(p) ? fmtMoney(amt(p), { decimals: 2 }) : '—'}</p>
               <SChip tone={tone} icon={icon}>{txt}</SChip>
-              <Chev size={34} />
+              <Chev size={34} className="max-md:hidden" />
             </Link>
           )
         })}
         {!pays.loading && !rows.length && <p className="px-2 py-4 text-[13px] font-medium text-muted">No payments recorded yet.</p>}
       </section>
-      <div className="mt-3.5 flex gap-5">
+      <div className="mt-3.5 grid grid-cols-2 gap-2.5 md:flex md:gap-5">
         {totals.map(([bg, k, v]) => (
-          <div key={k} className="flex h-[89px] flex-1 flex-col gap-1 rounded-[24px] p-5" style={{ background: bg }}>
-            <p className="text-[12px] font-semibold text-ink-2">{k}</p><p className="text-[24px] font-bold tracking-[-0.2px] text-ink">{v}</p>
+          <div key={k} className="flex min-w-0 flex-1 flex-col gap-1 rounded-[20px] p-4 max-md:last:col-span-2 md:h-[89px] md:rounded-[24px] md:p-5" style={{ background: bg }}>
+            <p className="text-[12px] font-semibold text-ink-2">{k}</p><p className="truncate text-[19px] font-bold tracking-[-0.2px] text-ink md:text-[24px]">{v}</p>
           </div>
         ))}
       </div>
@@ -701,34 +707,34 @@ function RenewalsTab({ id, live }) {
     <>
       {q.loading && !q.data && <Loading />}
       {first && (
-        <section className="flex h-[132px] items-center gap-[22px] rounded-[32px] bg-linear-to-r from-[#fde8c9] to-[#fbd9b0] px-7 py-6 shadow-[0px_18px_36px_-12px_rgba(201,138,46,0.2)]">
-          <div className="flex size-[84px] shrink-0 flex-col items-center justify-center rounded-full bg-white">
+        <section className="flex flex-wrap items-center gap-x-[22px] gap-y-3 rounded-[24px] bg-linear-to-r from-[#fde8c9] to-[#fbd9b0] px-5 py-5 shadow-[0px_18px_36px_-12px_rgba(201,138,46,0.2)] max-md:gap-x-4 md:rounded-[32px] md:px-7 md:py-6 xl:h-[132px] xl:flex-nowrap">
+          <div className="flex size-[72px] shrink-0 md:size-[84px] flex-col items-center justify-center rounded-full bg-white">
             <span className="text-[26px] leading-[33px] font-bold text-ink">{Math.abs(first.daysLeft ?? 0)}</span>
             <span className="text-[11px] font-semibold text-[#8a5a12]">{(first.daysLeft ?? 0) < 0 ? 'days late' : 'days'}</span>
           </div>
-          <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5 whitespace-nowrap">
-            <p className="text-[19px] font-bold text-ink">{[first.policy?.insurer, first.policy?.product].filter(Boolean).join(' ')} renews on {fmtDate(first.dueDate)}</p>
+          <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5 whitespace-nowrap max-xl:basis-[calc(100%-106px)] max-xl:whitespace-normal max-md:basis-[calc(100%-88px)]">
+            <p className="text-[16px] font-bold text-ink md:text-[19px]">{[first.policy?.insurer, first.policy?.product].filter(Boolean).join(' ')} renews on {fmtDate(first.dueDate)}</p>
             <p className="text-[13px] font-medium text-[#8a5a12]">{heroSub(first)}</p>
             <SChip tone="amber" icon="alert">{label(first.status)}</SChip>
           </div>
-          <PillButton variant="outline" size="sm" icon="phone" to={`/renewals?open=${first.id}`}>Log contact</PillButton>
-          <PillButton variant="navy" size="sm" icon="quote" to={`/renewals?open=${first.id}`}>Create renewal quotation</PillButton>
+          <PillButton variant="outline" size="sm" icon="phone" className="max-md:flex-1 max-md:justify-center" to={`/renewals?open=${first.id}`}>Log contact</PillButton>
+          <PillButton variant="navy" size="sm" icon="quote" className="max-md:w-full max-md:justify-center" to={`/renewals?open=${first.id}`}>Create renewal quotation</PillButton>
         </section>
       )}
       {(rest.length > 0 || upcoming.length > 0) && (
-        <section className={cx('mt-12 flex flex-col gap-3 rounded-[28px] bg-white p-6', CARD_SHADOW)}>
+        <section className={cx('mt-6 flex flex-col gap-3 rounded-[24px] bg-white p-4 md:mt-12 md:rounded-[28px] md:p-6', CARD_SHADOW)}>
           <Head title="Next in line" />
           {rest.map((r) => (
             <Link key={r.id} to={`/renewals?open=${r.id}`} className="flex items-center gap-3.5 rounded-[20px] bg-panel p-4">
               <IconTile icon="refresh" bg="#e9e3fc" size={44} />
-              <div className="flex min-w-0 flex-1 flex-col gap-0.5 whitespace-nowrap"><p className="text-[14px] font-bold text-ink">{[r.policy?.insurer, r.policy?.product].filter(Boolean).join(' ')}</p><p className="text-[12px] font-medium text-muted">Renews {fmtDate(r.dueDate)}</p></div>
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5 whitespace-nowrap max-md:whitespace-normal"><p className="text-[14px] font-bold text-ink">{[r.policy?.insurer, r.policy?.product].filter(Boolean).join(' ')}</p><p className="text-[12px] font-medium text-muted">Renews {fmtDate(r.dueDate)}</p></div>
               <SChip tone="gray" icon="clock">{label(r.status)}</SChip>
             </Link>
           ))}
           {upcoming.map((p) => (
             <div key={p.id} className="flex items-center gap-3.5 rounded-[20px] bg-panel p-4">
               <IconTile icon="refresh" bg="#e9e3fc" size={44} />
-              <div className="flex min-w-0 flex-1 flex-col gap-0.5 whitespace-nowrap"><p className="text-[14px] font-bold text-ink">{[p.insurer, p.productName].filter(Boolean).join(' ')}</p><p className="text-[12px] font-medium text-muted">Cycle starts when the policy is issued{p.endDate ? ` · renews ${fmtDate(p.endDate)}` : ''}</p></div>
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5 whitespace-nowrap max-md:whitespace-normal"><p className="text-[14px] font-bold text-ink">{[p.insurer, p.productName].filter(Boolean).join(' ')}</p><p className="text-[12px] font-medium text-muted">Cycle starts when the policy is issued{p.endDate ? ` · renews ${fmtDate(p.endDate)}` : ''}</p></div>
               <SChip tone="gray" icon="clock">Upcoming</SChip>
             </div>
           ))}
@@ -762,7 +768,7 @@ function ActivitiesTab({ id }) {
   return (
     <>
       <PillTabs items={ACT_FILTERS.map((f) => ({ key: f, label: f }))} value={filter} onChange={setFilter} />
-      <section className={cx('mt-[22px] flex flex-col gap-1.5 rounded-[28px] bg-white p-6', CARD_SHADOW)}>
+      <section className={cx('mt-4 flex flex-col gap-1.5 rounded-[24px] bg-white p-3 md:mt-[22px] md:rounded-[28px] md:p-6', CARD_SHADOW)}>
         {q.loading && !q.data && <Loading />}
         {groups.map((g) => (
           <div key={g.day} className="contents">
@@ -770,9 +776,9 @@ function ActivitiesTab({ id }) {
             {g.items.map((i) => {
               const [icon, bg] = ACT_ICON[i.kind]
               return (
-                <div key={i.id} className="flex h-14 items-center gap-3.5 rounded-[16px] p-2 hover:bg-panel">
+                <div key={i.id} className="flex min-h-14 items-center gap-3.5 rounded-[16px] p-2 hover:bg-panel md:h-14">
                   <IconTile icon={icon} bg={bg} size={40} iconSize={18} />
-                  <div className="flex min-w-0 flex-1 flex-col gap-0.5 whitespace-nowrap">
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5 whitespace-nowrap max-md:whitespace-normal">
                     <p className="text-[14px] font-bold text-ink">{label(i.action)}{i.entityRef ? ` · ${i.entityRef}` : ''}</p>
                     <p className="text-[12px] font-medium text-muted">{i.actorName ?? 'System'} · {fmtTime(i.at)}</p>
                   </div>

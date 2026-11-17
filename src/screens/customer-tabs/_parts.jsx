@@ -20,7 +20,7 @@ export const CARD_SHADOW = 'shadow-[0px_8px_24px_-10px_rgba(19,41,75,0.1)]'
 function HeaderActions({ live }) {
   useHeaderSearch() // Ctrl/Cmd+K focuses the pill on every profile tab
   return (
-    <div className="flex shrink-0 items-center gap-3">
+    <div className="flex shrink-0 items-center gap-3 max-md:shrink max-md:flex-wrap max-md:gap-2 max-md:[&>a]:h-9 max-md:[&>a]:rounded-[18px] max-md:[&>a]:pr-3.5 max-md:[&>a]:pl-3 max-md:[&>a]:text-[13px] max-md:[&>button]:h-9 max-md:[&>button]:rounded-[18px] max-md:[&>button]:pr-3.5 max-md:[&>button]:pl-3 max-md:[&>button]:text-[13px]">
       <label className="hidden h-[50px] w-[240px] items-center gap-2.5 rounded-[25px] bg-white pr-2 pl-[18px] shadow-[0px_6px_18px_-8px_rgba(19,41,75,0.1)] md:flex">
         <Icon name="search" size={18} className="text-muted" />
         <input
@@ -29,11 +29,11 @@ function HeaderActions({ live }) {
         />
         <kbd className="rounded-[10px] bg-chip px-2 py-1 font-sans text-[11px] font-semibold text-muted">Ctrl K</kbd>
       </label>
-      <button type="button" className="flex size-11 items-center justify-center rounded-full bg-white text-ink shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)] hover:bg-tile">
+      <button type="button" className="flex size-11 items-center justify-center rounded-full bg-white text-ink max-md:hidden shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)] hover:bg-tile">
         <Icon name="bell" size={18.5} />
       </button>
       {live?.actions}
-      <PillButton variant="outline" icon="target" className="pl-[17px]" to={live?.bestFitTo ?? '/best-fit'}>Best fit</PillButton>
+      <PillButton variant="outline" icon="target" className="md:pl-[17px]" to={live?.bestFitTo ?? '/best-fit'}>Best fit</PillButton>
       {(!live || live.active) && <PillButton variant="pink" icon="quote" to={live?.quoteTo ?? '/quotations/new'}>New quotation</PillButton>}
     </div>
   )
@@ -54,19 +54,23 @@ function ProfileHero({ live }) {
   const minis = live ? [P2.minis[0], P2.minis[1], renewalMini()] : P2.minis
   return (
     <div className="mt-[13px] flex flex-wrap items-center gap-4 rounded-[32px] bg-linear-to-r from-[#fbd3dc] to-[#f6b3c3] px-5 py-5 shadow-[0px_18px_36px_-12px_rgba(232,137,156,0.3)] md:gap-[22px] md:px-[30px] md:py-[22px] xl:h-[120px] xl:flex-nowrap">
-      <span className="flex size-[76px] shrink-0 items-center justify-center rounded-full border-4 border-white bg-white text-[24px] font-bold text-navy">
+      <span className="flex size-16 shrink-0 items-center justify-center rounded-full border-3 border-white bg-white text-[20px] font-bold text-navy md:size-[76px] md:border-4 md:text-[24px]">
         {P2.initials}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <p className="text-[22px] font-bold tracking-[-0.2px] text-ink">{P2.name}</p>
+        <p className="text-[18px] font-bold tracking-[-0.1px] text-ink md:text-[22px] md:tracking-[-0.2px]">{P2.name}</p>
         <p className="text-[13px] font-medium text-rose-ink">{P2.tagline}</p>
       </div>
-      {minis.map(([k, v]) => (
-        <div key={k} className="flex shrink-0 flex-col gap-0.5 rounded-[18px] bg-white/80 px-[18px] py-3">
-          <p className="text-[12px] font-semibold whitespace-nowrap text-rose-ink">{k}</p>
-          <p className="text-[18px] font-bold whitespace-nowrap text-ink">{v}</p>
-        </div>
-      ))}
+      {/* Phones: the tiles get a row of their own (3 equal columns). From md up the wrapper is display:contents,
+          so the tiles sit in the hero row exactly as in Figma. */}
+      <div className="grid w-full grid-cols-3 gap-2 md:contents">
+        {minis.map(([k, v]) => (
+          <div key={k} className="flex min-w-0 shrink-0 flex-col gap-0.5 rounded-[14px] bg-white/80 px-3 py-2.5 md:rounded-[18px] md:px-[18px] md:py-3">
+            <p className="truncate text-[11px] font-semibold whitespace-nowrap text-rose-ink md:text-[12px]">{k}</p>
+            <p className="truncate text-[16px] font-bold whitespace-nowrap text-ink md:text-[18px]">{v}</p>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -110,28 +114,31 @@ export function ProfileShell({ tab, crumb, routes = {}, counts = {}, panelClass 
     count: counts[t.key] ?? t.count,
   }))
   return (
-    <AppLayout active="customers" panelClass={panelClass}>
+    <AppLayout active="customers" panelClass={panelClass} mobileTitle="Policy Holder">
+      {/* data-rsp: this frame lays itself out with its own breakpoints, so the catch-all rules in index.css skip it */}
+      <div data-rsp className="contents">
       <header className="flex items-start justify-between gap-6 max-xl:flex-col max-xl:gap-3">
-        <div className="flex flex-col gap-1.5 whitespace-nowrap">
-          <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre max-xl:whitespace-pre-wrap text-muted uppercase">{`POLICY HOLDERS  /  ${(live?.name ?? 'Kavya Hegde').toUpperCase()}  /  ${crumb}`}</p>
-          <div className="flex items-center gap-3">
-            <h1 className="text-[24px] md:text-[30px] font-bold tracking-[-0.6px] text-ink">{live?.name ?? P.name}</h1>
+        <div className="flex min-w-0 flex-col gap-1.5 whitespace-nowrap max-md:max-w-full max-md:whitespace-normal">
+          <p className="text-[12px] font-semibold tracking-[0.2px] whitespace-pre max-xl:whitespace-pre-wrap text-muted uppercase max-md:hidden">{`POLICY HOLDERS  /  ${(live?.name ?? 'Kavya Hegde').toUpperCase()}  /  ${crumb}`}</p>
+          <div className="flex min-w-0 items-center gap-3">
+            <h1 className="min-w-0 truncate text-[24px] md:text-[30px] font-bold tracking-[-0.6px] text-ink">{live?.name ?? P.name}</h1>
             {!live || live.active ? <SChip tone="green" icon="check">Active</SChip> : <SChip tone="gray" icon="x">Inactive</SChip>}
           </div>
-          <p className="text-[14px] font-medium text-muted">{live?.meta ?? P.meta}</p>
+          <p className="text-[13px] font-medium text-muted md:text-[14px]">{live?.meta ?? P.meta}</p>
         </div>
-        <div className="mt-1">
+        <div className="mt-1 max-md:mt-0 max-md:w-full">
           <HeaderActions live={live} />
         </div>
       </header>
 
       <ProfileHero live={live} />
 
-      <PillTabs className="mt-6" items={tabs} value={tab} />
+      <PillTabs className="mt-4 md:mt-6" items={tabs} value={tab} />
 
-      <div className="mt-6">{children}</div>
+      <div className="mt-4 md:mt-6">{children}</div>
 
       {overlay}
+      </div>
     </AppLayout>
   )
 }
@@ -154,8 +161,8 @@ export function Head({ title, sub, right, className = '' }) {
 /** Inline note banner (r16, px16 py12, 13/semibold) */
 export function Note({ icon, bg, color, className = '', children }) {
   return (
-    <div className={cx('flex w-max items-center gap-2.5 rounded-[16px] px-4 py-3 text-[13px] font-semibold', className)} style={{ background: bg, color }}>
-      <Icon name={icon} size={16} />
+    <div className={cx('flex w-max max-w-full items-center gap-2.5 rounded-[16px] px-4 py-3 text-[13px] font-semibold', className)} style={{ background: bg, color }}>
+      <Icon name={icon} size={16} className="shrink-0" />
       <span>{children}</span>
     </div>
   )

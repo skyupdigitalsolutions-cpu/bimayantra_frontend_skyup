@@ -68,7 +68,7 @@ export default function CustomerProfile({ data }) {
         </div>
       </div>
 
-      <SegTabs className="mt-3 md:mt-5" items={customerTabs} value="overview" />
+      <SegTabs className="mt-3 max-w-full overflow-x-auto [scrollbar-width:none] md:mt-5 xl:overflow-visible [&::-webkit-scrollbar]:hidden" items={customerTabs} value="overview" />
 
       <div className="mt-4 flex flex-col gap-4 md:mt-7 md:flex-row md:items-start md:gap-5">
         <div className="flex min-w-0 flex-col gap-4 md:w-[760px] md:gap-5">
