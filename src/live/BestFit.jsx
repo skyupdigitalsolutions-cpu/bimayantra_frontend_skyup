@@ -53,10 +53,28 @@ export default function LiveBestFit() {
   const rank = () => act(() => api.customers.runBestFit(customer.id, { typeId: tid, people, budget: Number(budget), priority, sumInsured: Number(si) }), {
     quiet: true, onDone: (r) => { setRes(r.data); setCompare(r.data.results.slice(0, 2).map((x) => x.variantId)) },
   })
+  // Create quotation: log the choice, then open the new quotation wizard with this ranking's answers filled in
+  // (customer, type, insurer, product, variant, people, sum insured). The draft is saved by the wizard's first Next.
   const quote = (r) => act(async () => {
     await api.customers.chooseBestFit(customer.id, res.rankingId, { productId: r.productId, variantId: r.variantId })
-    return api.quotations.create(customer.id)
-  }, { invalidates: ['quotations'], success: 'Draft quotation created from Best fit.', onDone: (q) => q?.data?.id && navigate(`/quotations/${q.data.id}`) })
+    let insurerId = r.insurerId
+    if (!insurerId) { // older backend without insurerId on the results: find the insurer by name among the quotable ones
+      const ch = await api.quotations.choices({ typeId: tid })
+      insurerId = (ch?.data?.insurers ?? []).find((i) => i.name === r.insurer)?.id
+    }
+    return { insurerId }
+  }, {
+    success: false,
+    onDone: ({ insurerId }) => {
+      const qs = new URLSearchParams({ customerId: customer.id, typeId: tid })
+      if (insurerId) qs.set('insurerId', insurerId)
+      if (insurerId) qs.set('productId', r.productId)
+      if (insurerId && r.variantId) qs.set('variantId', r.variantId)
+      if (people?.length) qs.set('people', people.join(','))
+      if (si) qs.set('sumInsured', String(si))
+      navigate(`/quotations/new?${qs}`)
+    },
+  })
 
   const first = customer?.name?.split(' ')[0]
   const typeName = typeList.find((t) => t.id === tid)?.name
