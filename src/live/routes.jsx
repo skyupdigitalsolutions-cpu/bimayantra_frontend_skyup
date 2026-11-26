@@ -23,7 +23,7 @@ import LiveProposalWizard from './ProposalWizard'
 import { LiveRecordIssuedPolicy, LiveRecordExistingPolicy } from './PolicyRecords'
 import LiveDocumentsLibrary from './DocumentsLibrary'
 import LiveFeatureTable from './FeatureTable'
-import { PublicQuotation, PublicReferral } from './PublicPages'
+import { PublicConsent, PublicQuotation, PublicReferral } from './PublicPages'
 import LiveReferrerDashboard from './Referrer'
 import { LiveAddProduct, LivePriceVersions, LiveCompareVariants } from './MyProducts'
 import { LiveComparisons, LiveNewComparison, LiveComparison, PublicComparison } from './Comparisons'
@@ -42,6 +42,7 @@ export const PUBLIC_ROUTES = [
   { path: '/c/:token', element: <PublicComparison /> },
   { path: '/forms/:key', element: <PublicWebsiteForm /> },
   { path: '/r/:code', element: <PublicReferral /> },
+  { path: '/consent/:token', element: <PublicConsent /> },
 ]
 
 /** Connected pages (sign-in required; roles = who may open them) */

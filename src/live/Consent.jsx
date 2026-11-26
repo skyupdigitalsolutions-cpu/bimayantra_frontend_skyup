@@ -1,8 +1,15 @@
 // Batch 4 · Consent on the live API (P-17): CS1 record · CS2 recorded (toast) · CS3 proof · CS4 withdraw · CS5 withdrawn · CS6/CS7 personal data.
+// Consent requests (Nov 2026): the person confirms consent themselves from a link the advisor sends by email, WhatsApp
+// or Telegram (RequestConsentDialog, ConsentRequests). RecordConsentDialog is only offered when the account's
+// consent_customer_confirms switch is off (the API answers CU-50 otherwise).
 import { useState } from 'react'
 import { api, useQuery } from '../api'
+import { fmtDate } from '../api/format'
 import { useAuth } from '../auth/AuthProvider'
 import Icon from '../components/Icon'
+import { cx } from '../components/ui'
+import { useToast } from '../components/LiveToast'
+import { SChip } from '../screens/sales/_parts'
 import { ActionDialog, Field, useAct, label } from './kit'
 
 const CHANNELS = [['WHATSAPP', 'WhatsApp'], ['EMAIL', 'Email'], ['SMS', 'SMS']]
@@ -97,5 +104,170 @@ export function ConsentHistoryDialog({ customerId, onClose }) {
         {!rows.length && <p className="text-[13px] font-medium text-muted">{q.loading ? 'Loading…' : 'No consent recorded yet.'}</p>}
       </div>
     </ActionDialog>
+  )
+}
+
+/* ───────── Consent requests: the person confirms from a link ───────── */
+
+const ASK = [['WHATSAPP', 'WhatsApp'], ['EMAIL', 'Email'], ['SMS', 'SMS'], ['PERSONAL_DATA', 'Personal data']]
+const VIA = [
+  { key: 'EMAIL', label: 'Email', icon: 'mail', sub: 'Bimayantra emails the link' },
+  { key: 'WHATSAPP', label: 'WhatsApp', icon: 'chat', sub: 'Send it from your WhatsApp' },
+  { key: 'TELEGRAM', label: 'Telegram', icon: 'send', sub: 'Send it from your Telegram' },
+]
+const askLabel = (c) => ASK.find(([k]) => k === c)?.[1] ?? label(c)
+
+/**
+ * Ask a person for consent. They get a link (by email from Bimayantra, or from the advisor's own WhatsApp / Telegram),
+ * open it, and agree or say no; consent is recorded on the customer only when they agree.
+ *   rows: the consent grid rows (to grey out what is already given) · personalData: the customer's personal-data cell
+ */
+export function RequestConsentDialog({ customer, people, rows = [], personalData, presetPersonId, presetChannels, onClose }) {
+  const { toast } = useToast()
+  const [personId, setPersonId] = useState(presetPersonId ?? people[0]?.id)
+  const person = people.find((p) => p.id === personId)
+  const isCustomer = person?.type === 'CUSTOMER'
+  const cells = rows.find((r) => r.person.id === personId)?.channels ?? {}
+  const statusOf = (c) => (c === 'PERSONAL_DATA' ? (isCustomer ? personalData?.status : null) : cells[c]?.status)
+  const blockedWhy = (c) => {
+    if (c === 'PERSONAL_DATA' && !isCustomer) return 'Only for the customer'
+    if (statusOf(c) === 'GIVEN') return 'Already given'
+    if ((c === 'WHATSAPP' || c === 'SMS') && !person?.mobile) return 'No mobile saved'
+    if (c === 'EMAIL' && !person?.email) return 'No email saved'
+    return null
+  }
+  const [channels, setChannels] = useState(() => (presetChannels ?? ['WHATSAPP']).filter((c) => !blockedWhy(c)))
+  const viaBlocked = (v) => (v === 'EMAIL' && !person?.email ? 'No email saved' : v === 'WHATSAPP' && !person?.mobile ? 'No mobile saved' : null)
+  const [via, setVia] = useState(person?.email ? 'EMAIL' : person?.mobile ? 'WHATSAPP' : 'TELEGRAM')
+  const [result, setResult] = useState(null)
+  const { act, busy, error, fieldErrors } = useAct()
+  const toggle = (c) => setChannels((s) => (s.includes(c) ? s.filter((x) => x !== c) : [...s, c]))
+  const pickPerson = (id) => {
+    setPersonId(id)
+    const p = people.find((x) => x.id === id)
+    setChannels((s) => s.filter((c) => c !== 'PERSONAL_DATA' || p?.type === 'CUSTOMER'))
+    if (viaBlockedFor(p, via)) setVia(p?.email ? 'EMAIL' : p?.mobile ? 'WHATSAPP' : 'TELEGRAM')
+  }
+  const send = () => act(() => api.customers.requestConsent(customer.id, { personType: person.type, personId, channels, via }), {
+    invalidates: ['consents', 'customer', 'activity'], quiet: true, onDone: (r) => setResult(r.data),
+  })
+  const copy = async (link) => { try { await navigator.clipboard.writeText(link); toast('Link copied.') } catch { toast('Could not copy. Select the link and copy it.', 'error') } }
+
+  if (result) {
+    const r = result.request
+    const open = result.whatsappUrl ?? result.telegramUrl
+    return (
+      <ActionDialog title={r.via === 'EMAIL' ? 'Consent request emailed' : `Send the request on ${VIA.find((v) => v.key === r.via)?.label}`} icon={r.via === 'EMAIL' ? 'mail' : 'send'} onClose={onClose} width={560}
+        body={r.via === 'EMAIL'
+          ? `${r.person.name} will get an email at ${r.sentTo}. Consent is recorded when they open the link and agree.`
+          : `Open ${r.via === 'WHATSAPP' ? 'WhatsApp' : 'Telegram'} with the message ready${r.via === 'TELEGRAM' ? ', pick ' + r.person.name + "'s chat" : ''} and send it. Consent is recorded when they open the link and agree.`}>
+        {open && (
+          <a href={open} target="_blank" rel="noreferrer" className="flex h-[50px] items-center justify-center gap-2 rounded-[25px] bg-navy text-[15px] font-semibold text-white hover:bg-navy-700">
+            <Icon name={r.via === 'WHATSAPP' ? 'chat' : 'send'} size={18} />Open {r.via === 'WHATSAPP' ? 'WhatsApp' : 'Telegram'}
+          </a>
+        )}
+        <div className="flex flex-col gap-2 rounded-[16px] bg-panel p-3.5">
+          <span className="text-[12px] font-semibold text-muted">Or copy the link and send it any other way</span>
+          <div className="flex items-center gap-2">
+            <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-ink select-all">{result.link}</span>
+            <button type="button" onClick={() => copy(result.link)} className="flex h-9 shrink-0 items-center gap-1.5 rounded-[18px] border border-line bg-white px-3 text-[13px] font-semibold text-ink hover:bg-tile"><Icon name="link" size={15} />Copy</button>
+          </div>
+          <span className="text-[12px] font-medium text-muted">Valid until {fmtDate(r.expiresAt)}. It works once.</span>
+        </div>
+      </ActionDialog>
+    )
+  }
+
+  return (
+    <ActionDialog title="Request consent" icon="send" confirm={via === 'EMAIL' ? 'Email the request' : 'Create the request'} busy={busy} error={error} onConfirm={send} onClose={onClose} width={600}
+      disabled={!person || !channels.length || !!viaBlocked(via)}
+      body="The person gets a link, reads what they are agreeing to, and confirms it themselves. Nothing is recorded until they agree.">
+      {people.length > 1 && (
+        <Field label="Person *" type="select" value={personId} onChange={pickPerson} options={people.map((p) => ({ value: p.id, label: `${p.name} · ${p.relationship}` }))} />
+      )}
+      <div className="flex flex-col gap-2">
+        <span className="text-[13px] font-semibold text-ink">Ask consent for *</span>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {ASK.map(([c, l]) => {
+            const why = blockedWhy(c)
+            const on = channels.includes(c) && !why
+            return (
+              <button key={c} type="button" disabled={!!why} onClick={() => toggle(c)} title={why ?? ''}
+                className={cx('flex min-h-[48px] flex-col items-center justify-center rounded-[18px] px-2 py-1.5 text-[13px] font-semibold disabled:cursor-not-allowed', on ? 'bg-navy text-white' : 'bg-panel text-ink', why && 'opacity-55')}>
+                <span className="flex items-center gap-1">{on && <Icon name="check" size={13} />}{l}</span>
+                {why && <span className="text-[10px] font-medium">{why}</span>}
+              </button>
+            )
+          })}
+        </div>
+        {fieldErrors.channels && <p className="text-[12px] font-semibold text-[#b4323c]">{fieldErrors.channels}</p>}
+      </div>
+      <div className="flex flex-col gap-2">
+        <span className="text-[13px] font-semibold text-ink">Send the request by *</span>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {VIA.map((v) => {
+            const why = viaBlocked(v.key)
+            const on = via === v.key
+            return (
+              <button key={v.key} type="button" disabled={!!why} onClick={() => setVia(v.key)}
+                className={cx('flex items-center gap-2.5 rounded-[18px] border px-3 py-2.5 text-left disabled:cursor-not-allowed disabled:opacity-55', on ? 'border-navy bg-[#eef1f8]' : 'border-line bg-white hover:bg-tile')}>
+                <span className={cx('flex size-9 shrink-0 items-center justify-center rounded-full', on ? 'bg-navy text-white' : 'bg-panel text-ink')}><Icon name={v.icon} size={16} /></span>
+                <span className="flex min-w-0 flex-col"><span className="text-[13px] font-bold text-ink">{v.label}</span><span className="text-[11px] font-medium text-muted">{why ?? v.sub}</span></span>
+              </button>
+            )
+          })}
+        </div>
+        {via === 'EMAIL' && person?.email && <p className="text-[12px] font-medium text-muted">Goes to {person.email}.</p>}
+      </div>
+    </ActionDialog>
+  )
+}
+const viaBlockedFor = (p, v) => (v === 'EMAIL' && !p?.email) || (v === 'WHATSAPP' && !p?.mobile)
+
+const RSTATUS = {
+  PENDING: ['amber', 'clock', 'Waiting'],
+  CONFIRMED: ['green', 'check', 'Confirmed'],
+  DECLINED: ['red', 'x', 'Said no'],
+  CANCELLED: ['gray', null, 'Cancelled'],
+  EXPIRED: ['gray', null, 'Expired'],
+}
+const VIA_ICON = { EMAIL: 'mail', WHATSAPP: 'chat', TELEGRAM: 'send' }
+
+/** Recent consent requests of one customer, with what happened to each; an open one can be cancelled. */
+export function ConsentRequests({ customerId, requests = [], active }) {
+  const { act, busy } = useAct()
+  const [cancelling, setCancelling] = useState(null)
+  if (!requests.length) return <p className="text-[13px] font-medium text-muted">No consent requests yet.</p>
+  return (
+    <div className="flex flex-col gap-2.5">
+      {requests.map((r) => {
+        const [tone, icon, txt] = RSTATUS[r.status] ?? RSTATUS.CANCELLED
+        const mailProblem = r.via === 'EMAIL' && ['FAILED', 'SKIPPED'].includes(r.email?.status) ? r.email.reason || 'Not sent' : null
+        const asked = r.channels.map(askLabel).join(', ')
+        const line = r.status === 'CONFIRMED'
+          ? `Agreed to ${r.given.map(askLabel).join(', ')}${r.declined.length ? `; not ${r.declined.map(askLabel).join(', ')}` : ''}`
+          : [`Sent ${fmtDate(r.createdAt, { year: false })}`, r.sentTo, r.openedAt && r.status === 'PENDING' ? 'opened' : null, r.closedReason].filter(Boolean).join(' · ')
+        return (
+          <div key={r.id} className="flex items-start gap-3 rounded-[16px] bg-panel p-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white text-ink"><Icon name={VIA_ICON[r.via] ?? 'send'} size={16} /></span>
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-[13px] font-bold text-ink">{r.person.name}</p>
+                <SChip tone={tone} icon={icon}>{txt}</SChip>
+              </div>
+              <p className="text-[12px] font-medium text-ink-2">{asked}</p>
+              <p className="text-[11px] font-medium text-muted">{line}</p>
+              {mailProblem && <p className="text-[11px] font-semibold text-[#b4323c]">Email not sent: {mailProblem}</p>}
+            </div>
+            {active && r.status === 'PENDING' && (
+              <button type="button" disabled={busy && cancelling === r.id} className="shrink-0 text-[11px] font-bold text-[#b4323c] hover:underline disabled:opacity-60"
+                onClick={() => { setCancelling(r.id); act(() => api.customers.cancelConsentRequest(customerId, r.id), { invalidates: ['consents'] }) }}>
+                Cancel
+              </button>
+            )}
+          </div>
+        )
+      })}
+    </div>
   )
 }

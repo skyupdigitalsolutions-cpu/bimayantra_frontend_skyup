@@ -288,7 +288,7 @@ function ReasonDialog({ title, onSave, onClose }) {
 }
 
 /* ═════════════ AA8 · Message templates ═════════════ */
-const PURPOSES = ['RENEWAL_REMINDER', 'QUOTATION_EMAIL', 'BIRTHDAY', 'FAMILY_BIRTHDAY', 'ANNIVERSARY', 'KYC_RESULT', 'SUBSCRIPTION']
+const PURPOSES = ['RENEWAL_REMINDER', 'QUOTATION_EMAIL', 'CONSENT_REQUEST', 'BIRTHDAY', 'FAMILY_BIRTHDAY', 'ANNIVERSARY', 'KYC_RESULT', 'SUBSCRIPTION']
 export function AdminTemplates() {
   const q = useQuery('admin:templates', () => api.admin.templates())
   const [add, setAdd] = useState(false)

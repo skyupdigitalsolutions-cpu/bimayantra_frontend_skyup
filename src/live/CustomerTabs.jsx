@@ -13,7 +13,7 @@ import { ActionDialog, Field, useAct, label } from './kit'
 import { LoadingPanel, ErrorPanel } from './common'
 import { customerTabPath } from './views'
 import { AddDocumentDialog, DefaultNomineeDialog, DocumentVersionsDialog, FamilyDialog, FamilyStatusDialog, LinkHolderDialog, UnlinkButton, VerifyDialog, needsCheck } from './FamilyDocs'
-import { RecordConsentDialog, WithdrawConsentDialog } from './Consent'
+import { ConsentRequests, RecordConsentDialog, RequestConsentDialog, WithdrawConsentDialog } from './Consent'
 import { AddVehicleDialog, VehicleStatusDialog } from './Vehicles'
 import { EditNomineesDrawer } from './PolicyRecords'
 
@@ -297,13 +297,16 @@ function ConsentTab({ id, live }) {
   const q = useQuery(['consents', id], () => api.customers.consents(id))
   const rows = q.data?.rows || []
   const history = q.data?.history || []
+  const requests = q.data?.requests || []
+  // Consent requests: on by default (consent_customer_confirms) — the person confirms; the advisor can only ask.
+  const confirms = q.data?.customerConfirms !== false
   const pd = live.raw.personalDataConsent
   const given = pd === 'GIVEN'
   // Personal-data grant detail from the newest matching history entry (its fields are guarded).
   const pdGrant = history.find((h) => h.channel === 'PERSONAL_DATA' && h.to === 'GIVEN')
   const pdDetail = given
     ? [pdGrant?.at ? fmtDate(pdGrant.at) : null, pdGrant?.howGiven, 'allows PAN, Aadhaar and identity documents'].filter(Boolean).join(' · ')
-    : 'Record it before adding PAN or Aadhaar'
+    : confirms ? 'Ask the customer to confirm it before adding PAN or Aadhaar' : 'Record it before adding PAN or Aadhaar'
   return (
     <div className="flex flex-col gap-6">
       <div className={cx('flex flex-wrap items-center gap-4 rounded-[24px] px-5 py-5 md:h-[92px] md:flex-nowrap md:rounded-[28px] md:px-6', given ? 'bg-linear-to-r from-[#d4f1e7] to-[#b9e8d7]' : 'bg-[#fbf1e1]')}>
@@ -316,7 +319,9 @@ function ConsentTab({ id, live }) {
         </div>
         {live.active && (given
           ? <PillButton variant="danger" size="sm" className="px-3.5" onClick={() => setDlg({ kind: 'withdraw', person: people[0], channel: 'PERSONAL_DATA' })}>Withdraw</PillButton>
-          : <PillButton variant="navy" size="sm" icon="shield" onClick={() => setDlg({ kind: 'pd' })}>Record</PillButton>)}
+          : confirms
+            ? <PillButton variant="navy" size="sm" icon="send" onClick={() => setDlg({ kind: 'request', person: people[0], channels: ['PERSONAL_DATA'] })}>Request</PillButton>
+            : <PillButton variant="navy" size="sm" icon="shield" onClick={() => setDlg({ kind: 'pd' })}>Record</PillButton>)}
       </div>
 
       <div className="flex flex-col gap-4 md:gap-5 xl:flex-row xl:items-start">
@@ -352,8 +357,8 @@ function ConsentTab({ id, live }) {
                         <SChip tone={tone} icon={icon}>{txt}</SChip>
                         {live.active && (
                           <button type="button" className="text-[11px] font-bold text-blue hover:underline"
-                            onClick={() => setDlg(isGiven ? { kind: 'withdraw', person: P, channel: ch } : { kind: 'record', person: P })}>
-                            {isGiven ? 'Withdraw' : 'Record'}
+                            onClick={() => setDlg(isGiven ? { kind: 'withdraw', person: P, channel: ch } : confirms ? { kind: 'request', person: P, channels: [ch] } : { kind: 'record', person: P })}>
+                            {isGiven ? 'Withdraw' : confirms ? 'Request' : 'Record'}
                           </button>
                         )}
                       </div>
@@ -366,7 +371,13 @@ function ConsentTab({ id, live }) {
           })}
         </section>
 
-        <section className={cx('flex w-full flex-col gap-3 rounded-[24px] bg-white p-5 md:rounded-[28px] md:p-6 xl:w-[400px]', CARD_SHADOW)}>
+        <div className="flex w-full flex-col gap-4 md:gap-5 xl:w-[400px]">
+        <section className={cx('flex w-full flex-col gap-3 rounded-[24px] bg-white p-5 md:rounded-[28px] md:p-6', CARD_SHADOW)}>
+          <Head title="Consent requests" sub="Sent to the person to confirm"
+            right={live.active && <PillButton variant="navy" size="sm" icon="send" onClick={() => setDlg({ kind: 'request', person: people[0] })}>Request</PillButton>} />
+          {q.loading && !q.data ? <p className="text-[13px] font-medium text-muted">Loading…</p> : <ConsentRequests customerId={id} requests={requests} active={live.active} />}
+        </section>
+        <section className={cx('flex w-full flex-col gap-3 rounded-[24px] bg-white p-5 md:rounded-[28px] md:p-6', CARD_SHADOW)}>
           <Head title="History" sub="Who changed what, and how" />
           {history.map((h, i) => (
             <div key={i} className="flex items-center gap-2.5">
@@ -382,8 +393,10 @@ function ConsentTab({ id, live }) {
           ))}
           {!history.length && <p className="text-[13px] font-medium text-muted">{q.loading ? 'Loading…' : 'No consent recorded yet.'}</p>}
         </section>
+        </div>
       </div>
 
+      {dlg?.kind === 'request' && <RequestConsentDialog customer={live.raw} people={people} rows={rows} personalData={q.data?.personalData} presetPersonId={dlg.person?.id} presetChannels={dlg.channels} onClose={() => setDlg(null)} />}
       {dlg?.kind === 'record' && <RecordConsentDialog customer={live.raw} people={people} presetPersonId={dlg.person.id} onClose={() => setDlg(null)} />}
       {dlg?.kind === 'pd' && <RecordConsentDialog customer={live.raw} people={people} presetPersonId={live.raw.id} personalData onClose={() => setDlg(null)} />}
       {dlg?.kind === 'withdraw' && <WithdrawConsentDialog customer={live.raw} person={dlg.person} channel={dlg.channel} onClose={() => setDlg(null)} />}

@@ -3,6 +3,8 @@
 //   QX1  the same link once the quotation is no longer live or in date (QT-20, with the advisor's name and mobile)
 //   20   /r/:code   a referrer's link: the referral form (GET/POST /public/r/:code)
 //   RX1  the same link once the code is revoked or the referrer disabled (REF-04)
+//   CR1  /consent/:token  a consent request (GET/POST /public/consent/:token): the person agrees or says no themselves;
+//        what they agree to is recorded on their customer record. Used, answered or expired links show CU-44 / CU-45.
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import Icon from '../components/Icon'
@@ -178,6 +180,78 @@ export function PublicReferral() {
           {fe.permission && <p className="text-[12px] font-semibold text-[#b4323c]">{fe.permission}</p>}
           <ErrorNote error={error} />
           <button type="button" disabled={busy || !ready} onClick={submit} className="flex h-[52px] items-center justify-center gap-2 rounded-[26px] bg-navy text-[15px] font-semibold text-white disabled:opacity-50"><Icon name="send" size={16} />{busy ? 'Sending…' : 'Send my details'}</button>
+        </section>
+      </div>
+    </Shell>
+  )
+}
+
+
+/* ───────── CR1 · consent request ───────── */
+export function PublicConsent() {
+  const { token } = useParams()
+  const q = useQuery(['public-consent', token], () => api.public.consent(token))
+  const [ticked, setTicked] = useState([])
+  const [declaration, setDeclaration] = useState(false)
+  const [busy, setBusy] = useState(null)
+  const [error, setError] = useState(null)
+  const [done, setDone] = useState(null)
+  if (q.error) return <Shell><Notice icon="alert" title="This link does not work" text={q.error.status === 404 ? 'Check that the whole link was copied, or ask your advisor to send the request again.' : q.error.message} /></Shell>
+  if (!q.data) return <Shell><p className="mt-20 text-center text-[14px] font-medium text-muted">Opening your consent request…</p></Shell>
+  const d = q.data
+  if (!d.valid) return <Shell advisor={d.advisor}><Notice icon={d.answered ? 'check' : 'clock'} title={d.answered ? 'Already answered' : 'This link is no longer valid'} text={d.message} /></Shell>
+  if (done) return <Shell advisor={d.advisor}><Notice icon={done.agreed ? 'check' : 'x'} title={done.agreed ? 'Consent recorded' : 'Nothing recorded'} text={done.message} /></Shell>
+
+  const single = d.channels.length === 1
+  const chosen = single ? d.channels.map((c) => c.channel) : ticked
+  const first = String(d.name ?? '').split(' ')[0]
+  const answer = async (agree) => {
+    setBusy(agree ? 'yes' : 'no'); setError(null)
+    try {
+      const r = await api.public.answerConsent(token, agree ? { agree: true, channels: chosen, declaration } : { agree: false })
+      setDone({ agreed: agree, message: r.meta?.message })
+    } catch (e) { setError(e) } finally { setBusy(null) }
+  }
+  const toggle = (c) => setTicked((s) => (s.includes(c) ? s.filter((x) => x !== c) : [...s, c]))
+  return (
+    <Shell advisor={d.advisor}>
+      <div className="mx-auto flex w-full max-w-[640px] flex-col gap-5">
+        <section className="flex flex-col gap-2 rounded-[32px] bg-linear-to-b from-[#f9d0db] to-[#f3b3c4] px-7 py-7">
+          <span className="flex w-fit items-center gap-1 rounded-[12px] bg-white/70 px-2.5 py-1 text-[12px] font-semibold text-ink"><Icon name="clock" size={13} />Valid until {longDate(d.validUntil)}</span>
+          <h1 className="text-[28px] leading-[1.15] font-bold tracking-[-0.6px] text-navy sm:text-[30px]">Hello {first}, {d.advisor?.name ?? 'your advisor'} asks for your consent</h1>
+          <p className="max-w-[52ch] text-[14px] leading-[21px] font-medium text-ink-2">Your insurance advisor asks for your permission. Choose what you agree to; nothing is recorded unless you agree. You can change your mind at any time by telling your advisor.</p>
+        </section>
+        <section className={`flex flex-col gap-4 rounded-[32px] bg-white p-6 ${SH}`}>
+          <p className="text-[18px] font-bold text-ink">{single ? 'You are asked to agree to' : 'Tick what you agree to'}</p>
+          <div className="flex flex-col gap-2.5">
+            {d.channels.map((c) => {
+              const on = single || ticked.includes(c.channel)
+              const body = (
+                <>
+                  <span className={`mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-[8px] border-2 ${on ? 'border-navy bg-navy text-white' : 'border-line bg-white text-transparent'}`}><Icon name="check" size={14} /></span>
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="text-[15px] font-bold text-ink">{c.purpose.charAt(0).toUpperCase() + c.purpose.slice(1)}</span>
+                    <span className="text-[12px] font-medium text-muted">{c.address ? `For ${c.address}` : c.channel === 'PERSONAL_DATA' ? `Stored securely, under the privacy terms ${d.termsVersion ?? ''}`.trim() : c.label}</span>
+                  </span>
+                </>
+              )
+              return single
+                ? <div key={c.channel} className="flex items-start gap-3 rounded-[20px] bg-panel p-4">{body}</div>
+                : <button key={c.channel} type="button" role="checkbox" aria-checked={on} onClick={() => toggle(c.channel)} className={`flex items-start gap-3 rounded-[20px] p-4 text-left focus-visible:ring-2 focus-visible:ring-blue/40 focus-visible:outline-none ${on ? 'bg-[#eef1f8]' : 'bg-panel hover:bg-tile'}`}>{body}</button>
+            })}
+          </div>
+          <Field type="checkbox" label={`I am ${d.name} and I give this consent myself.`} value={declaration} onChange={setDeclaration} />
+          <ErrorNote error={error} />
+          <div className="flex flex-col gap-2.5 sm:flex-row">
+            <button type="button" disabled={!!busy || !declaration || !chosen.length} onClick={() => answer(true)}
+              className="flex h-[50px] shrink-0 items-center justify-center gap-2 rounded-[25px] bg-navy text-[15px] font-semibold text-white disabled:opacity-60 sm:flex-1">
+              <Icon name="check" size={18} />{busy === 'yes' ? 'Saving…' : 'I agree'}
+            </button>
+            <button type="button" disabled={!!busy} onClick={() => answer(false)}
+              className="flex h-[50px] shrink-0 items-center justify-center rounded-[25px] border border-line bg-white px-6 text-[15px] font-semibold text-ink hover:bg-tile disabled:opacity-60">
+              {busy === 'no' ? 'Saving…' : 'No, I do not agree'}
+            </button>
+          </div>
         </section>
       </div>
     </Shell>

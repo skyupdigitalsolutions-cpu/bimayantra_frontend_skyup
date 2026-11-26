@@ -38,6 +38,11 @@ export const customers = {
   activateFamily: (id, memberId, body) => http.post(p`/customers/${id}/family/${memberId}/activate`, body),
   consents: (id) => http.get(p`/customers/${id}/consents`),
   recordConsent: (id, body, opts) => http.post(p`/customers/${id}/consents`, body, opts),
+  // Consent requests: the person confirms consent from a link sent by email, WhatsApp or Telegram
+  // body { personType, personId, channels: [WHATSAPP|EMAIL|SMS|PERSONAL_DATA], via: EMAIL|WHATSAPP|TELEGRAM }
+  // → { request, link, text, whatsappUrl?, telegramUrl?, consents }
+  requestConsent: (id, body, opts) => http.post(p`/customers/${id}/consent-requests`, body, opts),
+  cancelConsentRequest: (id, requestId) => http.post(p`/customers/${id}/consent-requests/${requestId}/cancel`, {}),
   // B-01 default nominee and linked policy holders · B-05/B-06 activity in one request
   defaultNominee: (id) => http.get(p`/customers/${id}/default-nominee`),
   setDefaultNominee: (id, body) => http.put(p`/customers/${id}/default-nominee`, body), // { version, nominee | null }

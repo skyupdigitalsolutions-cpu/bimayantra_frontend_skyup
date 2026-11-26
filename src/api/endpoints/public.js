@@ -1,4 +1,4 @@
-// Public pages (no sign-in): shared quotation, comparison, referral form, website lead form.
+// Public pages (no sign-in): shared quotation, comparison, referral form, website lead form, consent request.
 import { http, p } from '../client'
 
 export const publicApi = {
@@ -8,6 +8,9 @@ export const publicApi = {
   submitReferral: (code, body, opts) => http.post(p`/public/r/${code}`, body, opts),
   form: (key) => http.get(p`/public/forms/${key}`),
   submitForm: (key, body, opts) => http.post(p`/public/forms/${key}`, body, opts),
+  // the person's consent page: { valid, name, via, validUntil, advisor, channels: [{ channel, label, purpose, address }] }
+  consent: (token) => http.get(p`/public/consent/${token}`),
+  answerConsent: (token, body, opts) => http.post(p`/public/consent/${token}`, body, opts), // { agree, channels?, declaration? }
 }
 
 // Server-to-server only — NOT called from the browser (signed by Meta/Google/LinkedIn/payment gateway/WhatsApp):
