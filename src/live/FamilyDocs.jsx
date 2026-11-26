@@ -149,6 +149,8 @@ export function VerifyDialog({ documentId, customerId, onClose }) {
   }, [d?.readStatus, q])
   const [vals, setVals] = useState(null)
   const [done, setDone] = useState(null)
+  // Aadhaar: the address is on the back of the card. Read a photo of the back and fill the address (Nov 2026).
+  const [back, setBack] = useState(null) // { busy } | { message, ok }
   const { act, busy, error, fieldErrors } = useAct()
   const fields = VERIFY_FIELDS[d?.type] ?? []
   // Dates read before Nov 2026 came as DD-MM-YYYY, which the date fields cannot show: turn them into YYYY-MM-DD.
@@ -156,6 +158,16 @@ export function VerifyDialog({ documentId, customerId, onClose }) {
   const current = useMemo(() => vals ?? (d ? Object.fromEntries(Object.entries(d.readValues ?? {}).map(([k, v]) => [k, asIso(v) ?? ''])) : {}), [vals, d])
   const notRead = new Set(d?.readStatus === 'DONE' ? d?.missing ?? [] : [])
   const set = (k) => (v) => setVals({ ...current, [k]: v })
+  const readBack = async (file) => {
+    setBack({ busy: true })
+    try {
+      const up = (await api.files.upload(file, 'CUSTOMER_DOCUMENT')).data
+      const r = (await api.documents.readBack(documentId, up.id)).data
+      const got = Object.fromEntries(Object.entries(r.values ?? {}).filter(([k, v]) => v && (k === 'address' || !current[k])))
+      if (Object.keys(got).length) setVals({ ...current, ...got })
+      setBack({ message: r.message, ok: !!r.values?.address })
+    } catch (e) { setBack({ message: e.message, ok: false }) }
+  }
 
   if (!d) return <ActionDialog title="Check the document" icon="file" body={q.error ? q.error.message : 'Opening the document…'} onClose={onClose} />
   if (done) {
@@ -197,6 +209,19 @@ export function VerifyDialog({ documentId, customerId, onClose }) {
               : kind === 'type' ? [{ value: '', label: 'Choose a category' }, ...((types.data ?? []).map((t) => ({ value: t.id, label: t.name })))] : undefined} />
         ))}
       </div>
+      {d.type === 'Aadhaar' && !reading && (
+        <div className="flex flex-col gap-2 rounded-[16px] border border-dashed border-line p-3.5">
+          <div className="flex items-center gap-3">
+            <Icon name="folder" size={16} className="shrink-0 text-muted" />
+            <p className="flex-1 text-[13px] font-medium text-ink-2">The address is printed on the back of the Aadhaar card. Add a photo of the back to read it.</p>
+            <label className={`shrink-0 cursor-pointer rounded-[12px] border border-line bg-white px-3 py-1.5 text-[12px] font-semibold text-ink hover:bg-panel-2 ${back?.busy ? 'pointer-events-none opacity-60' : ''}`}>
+              {back?.busy ? 'Reading…' : 'Add the back side'}
+              <input type="file" accept={api.files.accept('CUSTOMER_DOCUMENT')} className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) readBack(f) }} />
+            </label>
+          </div>
+          {back?.message && <p className={`text-[12px] font-semibold ${back.ok ? 'text-[#127650]' : 'text-[#b4323c]'}`}>{back.message}</p>}
+        </div>
+      )}
       <p className="text-[12px] font-medium text-muted">Nothing read from a document is used anywhere until you confirm it.</p>
     </ActionDialog>
   )

@@ -148,16 +148,16 @@ export function LiveQuotations() {
       { invalidates: ['quotations', 'quotation'], onDone: (res) => navigate(`/quotations/${res?.data?.id ?? r.id}`) })
   }
   const columns = [
-    { key: 'q', label: 'Quotation', width: 250, render: (r) => <IdCell initials={initials(r.cname)} bg={avatarClass(r.cname)} title={r.number ?? 'Draft'} sub={r.cname} /> },
-    { key: 'product', label: 'Product', width: 260, render: (r) => <span className="truncate">{[r.insurerName, r.productName].filter(Boolean).join(' · ') || '—'}</span> },
-    { key: 'premium', label: 'Premium', width: 120, render: (r) => fmtMoney(r.premium) },
-    { key: 'valid', label: 'Valid till', width: 120, render: (r) => (r.validUntil ? fmtDate(r.validUntil, { year: false }) : '—') },
-    { key: 'updated', label: 'Updated', width: 130, render: (r) => fmtDate(r.updatedAt, { year: false }) },
-    { key: 'status', label: 'Status', width: 110, render: (r) => <StatusChip tone={Q_TONE[r.status]}>{label(r.status)}</StatusChip> },
-    { key: 'revise', label: '', width: 100, render: (r) => (['READY', 'SHARED'].includes(r.status)
+    { key: 'q', label: 'Quotation', width: 215, render: (r) => <IdCell initials={initials(r.cname)} bg={avatarClass(r.cname)} title={r.number ?? 'Draft'} sub={r.cname} /> },
+    { key: 'product', label: 'Product', width: 205, render: (r) => <span className="truncate" title={[r.insurerName, r.productName].filter(Boolean).join(' · ')}>{[r.insurerName, r.productName].filter(Boolean).join(' · ') || '—'}</span> },
+    { key: 'premium', label: 'Premium', width: 105, render: (r) => fmtMoney(r.premium) },
+    { key: 'valid', label: 'Valid till', width: 80, render: (r) => (r.validUntil ? fmtDate(r.validUntil, { year: false }) : '—') },
+    { key: 'updated', label: 'Updated', width: 80, render: (r) => fmtDate(r.updatedAt, { year: false }) },
+    { key: 'status', label: 'Status', width: 100, render: (r) => <StatusChip tone={Q_TONE[r.status]}>{label(r.status)}</StatusChip> },
+    { key: 'revise', label: '', width: 105, render: (r) => (['READY', 'SHARED'].includes(r.status)
       ? <SmallButton variant="outline" icon="refresh" disabled={busy} onClick={(e) => revise(e, r)}>Revise</SmallButton> : null) },
-    { key: 'go', label: '', width: 40, className: 'justify-end', render: (_r, hot) => <RowChevron on={hot} /> },
-  ]
+    { key: 'go', label: '', width: 30, className: 'justify-end', render: (_r, hot) => <RowChevron on={hot} /> },
+  ] // 920 + 7 gaps of 20 + 48 padding = 1108, inside the 1180px table
   if (list.error && !list.data) return <ErrorPanel active="quotations" error={list.error} />
   return (
     <AppLayout active="quotations" responsive mobileTitle="Quotations">

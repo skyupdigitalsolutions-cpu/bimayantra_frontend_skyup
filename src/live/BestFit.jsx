@@ -8,13 +8,21 @@ import AppLayout from '../components/AppLayout'
 import Icon from '../components/Icon'
 import { Dropdown } from '../components/pickers'
 import { Modal, cx } from '../components/ui'
-import { Header, HeadButton, Panel, Tick } from '../screens/catalogue/_parts'
+import { Header, Panel, Tick } from '../screens/catalogue/_parts'
 import { api, useQuery, useDebounced } from '../api'
 import { avatarClass, fmtMoney, initials } from '../api/format'
 import { ErrorNote, useAct, inputCls } from './kit'
 
 const PRIORITY_LABEL = { LOWEST_PREMIUM: 'Lowest premium', BEST_COVERAGE: 'Best coverage', CLAIM_RELIABILITY: 'Claim reliability', PRE_EXISTING: 'Pre-existing condition' }
 const PART = [['budget', 'Budget fit'], ['roomRent', 'Room rent'], ['coPay', 'Co-pay'], ['waiting', 'Waiting period'], ['claimRatio', 'Claim settlement']]
+/**
+ * Client change (Nov 2026): advisors see how well a product matches, not a number. The first-ranked product is the
+ * best match; the others are described by their total (75+ strong, 50+ good, below that partial).
+ */
+const matchOf = (total, index) => (index === 0 ? { label: 'Best match', tone: 'bg-[#e7f4ee] text-[#127650]' }
+  : total >= 75 ? { label: 'Strong match', tone: 'bg-[#e7f4ee] text-[#127650]' }
+  : total >= 50 ? { label: 'Good match', tone: 'bg-blue-50 text-blue' }
+  : { label: 'Partial match', tone: 'bg-panel text-ink-2' })
 const lakh = (n) => (n >= 10_000_000 ? `₹${n / 10_000_000} crore` : n >= 100_000 ? `₹${n / 100_000} lakh` : fmtMoney(n))
 
 export default function LiveBestFit() {
@@ -51,7 +59,7 @@ export default function LiveBestFit() {
   }, [opts.data])
 
   const rank = () => act(() => api.customers.runBestFit(customer.id, { typeId: tid, people, budget: Number(budget), priority, sumInsured: Number(si) }), {
-    quiet: true, onDone: (r) => { setRes(r.data); setCompare(r.data.results.slice(0, 2).map((x) => x.variantId)) },
+    quiet: true, onDone: (r) => { setRes(r.data); setCompare([]) }, // the advisor ticks what to compare (Nov 2026)
   })
   // Create quotation: log the choice, then open the new quotation wizard with this ranking's answers filled in
   // (customer, type, insurer, product, variant, people, sum insured). The draft is saved by the wizard's first Next.
@@ -82,8 +90,8 @@ export default function LiveBestFit() {
 
   return (
     <AppLayout active="bestfit" responsive mobileTitle="Best fit">
-      <Header breadcrumb={'SELL  /  BEST FIT'} title="Best fit" subtitle="Ranks the products you can quote with fixed rules. Every score shows its reason."
-        actions={<HeadButton variant="white" icon="compare" disabled={chosen.length < 2} onClick={() => setShowCompare(true)} className="max-md:h-9 max-md:rounded-[18px] max-md:pr-3.5 max-md:pl-3 max-md:text-[13px]">Compare selected</HeadButton>} />
+      <Header breadcrumb={'SELL  /  BEST FIT'} title="Best fit" subtitle="Ranks the products you can quote with fixed rules. Every match shows its reason. Tick two or more to compare."
+ />
       <div className="mt-4 flex flex-col gap-4 md:mt-6 md:flex-row md:items-start md:gap-6">
         {/* ── questions ── */}
         <Panel className="flex w-full shrink-0 flex-col gap-5 md:w-[475px]">
@@ -184,7 +192,7 @@ export default function LiveBestFit() {
                 <div className="flex items-center gap-2 pl-[52px] md:gap-3 md:pl-0">
                   <p className="text-[12px] font-medium text-muted md:hidden">Per year incl. GST</p>
                   <p className="text-[18px] font-bold text-ink md:text-[26px]">{r.premium != null ? fmtMoney(r.premium) : 'At quotation'}</p>
-                  <span className={cx('rounded-[14px] px-2.5 py-1 text-[12px] font-bold md:rounded-[16px] md:px-3.5 md:py-2 md:text-[15px]', r.total >= 75 ? 'bg-[#e7f4ee] text-[#127650]' : 'bg-blue-50 text-blue')}>Score {Math.round(r.total)}</span>
+                  <span className={cx('flex items-center gap-1.5 rounded-[14px] px-2.5 py-1 text-[12px] font-bold md:rounded-[16px] md:px-3.5 md:py-2 md:text-[15px]', matchOf(r.total, i).tone)}>{i === 0 && <Icon name="check" size={14} />}{matchOf(r.total, i).label}</span>
                 </div>
               </div>
               {r.coverage && <div className="flex items-center gap-2.5 rounded-[14px] bg-[#fbf1e1] px-4 py-3 text-[14px] font-semibold text-[#8a5a12]"><Icon name="alert" size={16} />{r.coverage.message}</div>}
@@ -193,7 +201,6 @@ export default function LiveBestFit() {
                   <span className="w-[90px] shrink-0 font-semibold text-ink md:w-[190px]">{l} <span className="hidden text-[11px] font-medium text-muted md:inline">×{res.weights?.[j] ?? ''}%</span></span>
                   <span className="hidden h-1.5 overflow-hidden rounded-full bg-panel md:block md:w-[340px]"><span className={cx('block h-full rounded-full', r.parts[k].score >= 60 ? 'bg-[#1f5fd6]' : 'bg-[#9aa4b5]')} style={{ width: `${r.parts[k].score}%` }} /></span>
                   <span className="min-w-0 flex-1 truncate font-medium text-muted">{r.parts[k].reason}</span>
-                  <span className="w-8 shrink-0 text-right font-bold text-ink">{r.parts[k].score}</span>
                 </div>
               ))}
               <div className="flex flex-wrap items-center gap-3 md:gap-4">
@@ -201,6 +208,13 @@ export default function LiveBestFit() {
                 <label className="flex cursor-pointer items-center gap-2 text-[14px] font-semibold text-ink">
                   <Tick checked={compare.includes(r.variantId)} onChange={() => setCompare(compare.includes(r.variantId) ? compare.filter((x) => x !== r.variantId) : [...compare, r.variantId])} />Add to comparison
                 </label>
+                {/* Client change (Nov 2026): Compare appears on the ticked cards once two or more are ticked */}
+                {chosen.length >= 2 && compare.includes(r.variantId) && (
+                  <button type="button" onClick={() => setShowCompare(true)} className="flex h-10 items-center gap-2 rounded-[20px] bg-violet px-4 text-[13px] font-semibold text-white md:h-[44px] md:rounded-[22px] md:px-5 md:text-[14px]">
+                    <Icon name="compare" size={16} />Compare {chosen.length} products
+                  </button>
+                )}
+                {chosen.length === 1 && compare.includes(r.variantId) && <span className="text-[12px] font-medium text-muted">Tick one more product to compare</span>}
               </div>
             </Panel>
           ))}
@@ -240,7 +254,7 @@ export default function LiveBestFit() {
           <div className="mt-4 grid gap-3 overflow-x-auto" style={{ gridTemplateColumns: `140px repeat(${chosen.length}, minmax(120px, 1fr))` }}>
             <span />{chosen.map((r) => <p key={r.variantId} className="text-[14px] font-bold text-ink">{r.insurer} {r.name}</p>)}
             <span className="text-[13px] font-semibold text-muted">Premium</span>{chosen.map((r) => <p key={r.variantId} className="text-[14px] font-bold text-ink">{fmtMoney(r.premium)}</p>)}
-            <span className="text-[13px] font-semibold text-muted">Score</span>{chosen.map((r) => <p key={r.variantId} className="text-[14px] font-bold text-ink">{Math.round(r.total)}</p>)}
+            <span className="text-[13px] font-semibold text-muted">Match</span>{chosen.map((r) => <p key={r.variantId} className="text-[14px] font-bold text-ink">{matchOf(r.total, (res?.results || []).indexOf(r)).label}</p>)}
             {PART.map(([k, l]) => [<span key={k} className="text-[13px] font-semibold text-muted">{l}</span>, ...chosen.map((r) => <p key={r.variantId + k} className="text-[13px] font-medium text-ink">{r.parts[k].reason}</p>)])}
           </div>
         </Modal>

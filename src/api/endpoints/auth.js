@@ -76,7 +76,18 @@ export const files = {
   upload: (file, purpose) => {
     const problem = files.check(file, purpose)
     if (problem) return Promise.reject(Object.assign(new Error(problem), { status: 400, fieldErrors: { file: problem } }))
-    return http.raw('/files', file, { purpose })
+    // The server's own checks answer with a clear message (VAL-23/24/26). When the upload never reaches it, say what
+    // to do instead of "The API did not answer": a file too large for the connection (413) or no answer at all.
+    const r = ruleOf(purpose)
+    const size = `${(file.size / 1024 / 1024).toFixed(1)} MB`
+    const allowed = r ? `${orList(r.types)} file of up to ${r.maxMb} MB` : 'smaller file'
+    return http.raw('/files', file, { purpose }).catch((e) => {
+      if (e?.name === 'AbortError' || (e?.status && e.status < 500 && e.status !== 413 && e.code !== 'API_UNREACHABLE')) throw e
+      const message = e?.status === 413 || (e?.code === 'API_UNREACHABLE' && file.size > 1024 * 1024)
+        ? `This file (${size}) is too large to upload. Upload a ${allowed}. For a photo, take it at a lower resolution or send a screenshot of it.`
+        : `The file (${size}) could not be uploaded: the server did not answer. Check the internet connection and try again. Allowed: ${allowed}.`
+      throw Object.assign(new Error(message), { status: e?.status ?? 0, code: 'UPLOAD_FAILED', fieldErrors: { file: message } })
+    })
   },
   open: (id) => http.get(p`/files/${id}`),
   /** URL usable in <img src>/<a href> (same-origin cookie auth). */

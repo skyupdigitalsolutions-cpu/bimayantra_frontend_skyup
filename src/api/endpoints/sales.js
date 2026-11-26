@@ -66,6 +66,8 @@ export const documents = {
   upload: (body, opts) => http.post('/documents', body, opts), // links an uploaded file (POST /files) to a person
   get: (id) => http.get(p`/documents/${id}`),
   confirm: (id, body) => http.post(p`/documents/${id}/confirm`, body),
+  /** Aadhaar: read the back of the card (address) → { values: { address?, aadhaar? }, message } */
+  readBack: (id, fileId) => http.post(p`/documents/${id}/back`, { fileId }),
   setLabel: (id, body) => http.patch(p`/documents/${id}/label`, body),
   accountTypes: () => http.get('/account/document-types'),
   addAccountType: (body) => http.post('/account/document-types', body),
