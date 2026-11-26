@@ -21,12 +21,14 @@ export function FamilyDialog({ customerId, member, onClose }) {
     name: member?.name ?? '', relationship: member?.relationship ?? '', dob: member?.dob?.slice(0, 10) ?? '', gender: member?.gender ?? '',
     mobile: member?.mobile ? fmtMobile(member.mobile) : '', email: member?.email ?? '', anniversary: member?.anniversary?.slice(0, 10) ?? '',
   }))
+  // The wedding anniversary is optional and hidden until asked for (shown at once when the member already has one).
+  const [withAnniversary, setWithAnniversary] = useState(() => !!member?.anniversary)
   const set = (k) => (v) => setF((s) => ({ ...s, [k]: v }))
   const { act, busy, error, fieldErrors } = useAct()
   const save = () => {
     const body = {
       name: f.name.trim(), relationship: f.relationship, dob: toApi(f.dob), gender: toApi(f.gender),
-      mobile: cleanMobile(f.mobile) || null, email: f.email.trim() || null, anniversary: toApi(f.anniversary),
+      mobile: cleanMobile(f.mobile) || null, email: f.email.trim() || null, anniversary: withAnniversary ? toApi(f.anniversary) : null,
     }
     return act(
       () => {
@@ -57,7 +59,8 @@ export function FamilyDialog({ customerId, member, onClose }) {
         <Field label="Mobile" type="mobile" value={f.mobile} onChange={set('mobile')} placeholder="Optional" error={fieldErrors.mobile} hint={editing && cleanMobile(member.mobile) !== cleanMobile(f.mobile) ? 'Changing the number resets WhatsApp and SMS consent for this person.' : undefined} />
         <Field label="Email" value={f.email} onChange={set('email')} error={fieldErrors.email} />
       </div>
-      <Field label="Wedding anniversary" type="date" value={f.anniversary} onChange={set('anniversary')} error={fieldErrors.anniversary} />
+      <Field type="checkbox" label="Add wedding anniversary (optional)" value={withAnniversary} onChange={setWithAnniversary} />
+      {withAnniversary && <Field label="Wedding anniversary" type="date" value={f.anniversary} onChange={set('anniversary')} error={fieldErrors.anniversary} />}
     </ActionDialog>
   )
 }
@@ -126,15 +129,17 @@ export function AddDocumentDialog({ customer, people, presetPersonKey, onClose }
 }
 
 const VERIFY_FIELDS = {
-  Aadhaar: [['name', 'Name as printed *'], ['aadhaar', 'Aadhaar number (12 digits) *'], ['dob', 'Date of birth', 'date'], ['gender', 'Gender', 'gender']],
+  Aadhaar: [['name', 'Name as printed *'], ['aadhaar', 'Aadhaar number (12 digits) *'], ['dob', 'Date of birth', 'date'], ['gender', 'Gender', 'gender'], ['address', 'Address (as printed)', 'textarea']],
   PAN: [['name', 'Name as printed *'], ['pan', 'PAN *'], ['fatherName', "Father's name"], ['dob', 'Date of birth', 'date']],
-  'Old policy': [['insurerId', 'Insurer *', 'insurer'], ['policyNumber', 'Policy number *'], ['productName', 'Product name'], ['startDate', 'Start date', 'date'], ['endDate', 'End date', 'date'], ['sumInsured', 'Sum insured (₹)', 'number'], ['premium', 'Premium (₹)', 'number']],
+  'Old policy': [['policyNumber', 'Policy number *'], ['typeId', 'Category', 'type'], ['insurerId', 'Company *', 'insurer'], ['productName', 'Product'], ['variantName', 'Variant'],
+    ['startDate', 'Valid from', 'date'], ['endDate', 'Valid until', 'date'], ['issueDate', 'Issue date', 'date'], ['sumInsured', 'Sum insured (₹)', 'number'], ['premium', 'Premium (₹)', 'number']],
 }
 
 /** PD1 · Check document values. Reading runs in the background (CFG-38); if it fails the values are typed by hand (DOC-10). */
 export function VerifyDialog({ documentId, customerId, onClose }) {
   const q = useQuery(['document', documentId], () => api.documents.get(documentId))
   const insurers = useQuery('insurer-catalogue', () => api.myInsurers.catalogue({}))
+  const types = useQuery('own-product-types', () => api.myProducts.types())
   const d = q.data
   // The reading is still running: ask again every 2 seconds until it is done or has failed.
   useEffect(() => {
@@ -146,7 +151,10 @@ export function VerifyDialog({ documentId, customerId, onClose }) {
   const [done, setDone] = useState(null)
   const { act, busy, error, fieldErrors } = useAct()
   const fields = VERIFY_FIELDS[d?.type] ?? []
-  const current = useMemo(() => vals ?? (d ? Object.fromEntries(Object.entries(d.readValues ?? {}).map(([k, v]) => [k, v ?? ''])) : {}), [vals, d])
+  // Dates read before Nov 2026 came as DD-MM-YYYY, which the date fields cannot show: turn them into YYYY-MM-DD.
+  const asIso = (v) => (typeof v === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(v) ? v.split('-').reverse().join('-') : v)
+  const current = useMemo(() => vals ?? (d ? Object.fromEntries(Object.entries(d.readValues ?? {}).map(([k, v]) => [k, asIso(v) ?? ''])) : {}), [vals, d])
+  const notRead = new Set(d?.readStatus === 'DONE' ? d?.missing ?? [] : [])
   const set = (k) => (v) => setVals({ ...current, [k]: v })
 
   if (!d) return <ActionDialog title="Check the document" icon="file" body={q.error ? q.error.message : 'Opening the document…'} onClose={onClose} />
@@ -165,20 +173,28 @@ export function VerifyDialog({ documentId, customerId, onClose }) {
     if (v === '' || v === undefined || v === null) continue
     body[k] = kind === 'number' ? Number(v) : v
   }
+  // The product and variant matched in the catalogue travel with the names (Record as existing policy uses them).
+  for (const k of ['productId', 'variantId']) if (current[k] && d.type === 'Old policy') body[k] = current[k]
   if (d.type === 'Aadhaar' && body.aadhaar) body.aadhaar = String(body.aadhaar).replace(/\s/g, '')
   const confirm = () => act(() => api.documents.confirm(documentId, { rev: d.rev, values: body }), {
     invalidates: ['documents', 'document', 'customer', 'customers', 'activity'], quiet: true, onDone: (r) => setDone(r.data),
   })
   return (
     <ActionDialog title={`Check the ${label(d.type)} values`} icon="file" confirm="Confirm values" busy={busy || reading} error={error} onConfirm={confirm} onClose={onClose} width={640} disabled={reading}
-      body={reading ? 'Reading the document… this takes a few seconds. You can also wait here.' : d.message}>
+      body={reading ? 'Reading the document… this takes a few seconds. You can also wait here.' : d.messageId === 'DOC-04' ? d.message : undefined}>
+      {!reading && d.message && d.messageId !== 'DOC-04' && (
+        <p className={`rounded-[14px] px-3.5 py-3 text-[13px] font-semibold ${d.messageId === 'DOC-13' || d.messageId === 'DOC-10' ? 'bg-[#fff7f7] text-[#b4323c]' : 'bg-[#fbf1e1] text-[#8a5a12]'}`}>{d.message}</p>
+      )}
       {d.file && <a href={api.files.url(d.file.id)} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-[13px] font-semibold text-blue"><Icon name="file" size={15} />Open the uploaded file</a>}
       <div className="grid grid-cols-2 gap-3">
         {fields.map(([k, lbl, kind]) => (
           <Field key={k} label={lbl} value={current[k] ?? ''} onChange={set(k)} error={fieldErrors[k]} disabled={reading}
-            type={kind === 'date' ? 'date' : kind === 'number' ? 'number' : kind ? 'select' : 'text'}
+            className={kind === 'textarea' ? 'col-span-2' : ''}
+            hint={!fieldErrors[k] && notRead.has(k) && !(vals && vals[k]) ? 'Not found on the document. Type it in.' : undefined}
+            type={kind === 'date' ? 'date' : kind === 'number' ? 'number' : kind === 'textarea' ? 'textarea' : kind ? 'select' : 'text'}
             options={kind === 'gender' ? ['', ...(['MALE', 'FEMALE', 'TRANSGENDER', 'PREFER_NOT_TO_SAY'])].map((g) => ({ value: g, label: g ? label(g) : 'Not given' }))
-              : kind === 'insurer' ? [{ value: '', label: 'Choose an insurer' }, ...((insurers.data ?? []).map((i) => ({ value: i.id, label: i.name })))] : undefined} />
+              : kind === 'insurer' ? [{ value: '', label: 'Choose an insurer' }, ...((insurers.data ?? []).map((i) => ({ value: i.id, label: i.name })))]
+              : kind === 'type' ? [{ value: '', label: 'Choose a category' }, ...((types.data ?? []).map((t) => ({ value: t.id, label: t.name })))] : undefined} />
         ))}
       </div>
       <p className="text-[12px] font-medium text-muted">Nothing read from a document is used anywhere until you confirm it.</p>
@@ -293,4 +309,3 @@ export function UnlinkButton({ customer, link }) {
       onClick={() => act(() => api.customers.removeLink(customer.id, link.id), { invalidates: ['links', 'activity'] })}>Remove link</button>
   )
 }
-

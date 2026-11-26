@@ -57,6 +57,8 @@ export const proposals = {
 export const policies = {
   list: (query) => http.get('/policies', query),
   recordExisting: (body, opts) => http.post('/policies/existing', body, opts),
+  /** Read an uploaded policy document (POLICY_DOCUMENT file) → { values, missing, message } to fill Record existing policy */
+  readExisting: (fileId) => http.post('/policies/existing/read', { fileId }),
   get: (id) => http.get(p`/policies/${id}`),
   issue: (id, body, opts) => http.post(p`/policies/${id}/issue`, body, opts),
   setNominees: (id, body) => http.put(p`/policies/${id}/nominees`, body),

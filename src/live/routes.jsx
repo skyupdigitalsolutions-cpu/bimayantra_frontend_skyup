@@ -25,7 +25,7 @@ import LiveDocumentsLibrary from './DocumentsLibrary'
 import LiveFeatureTable from './FeatureTable'
 import { PublicConsent, PublicQuotation, PublicReferral } from './PublicPages'
 import LiveReferrerDashboard from './Referrer'
-import { LiveAddProduct, LivePriceVersions, LiveCompareVariants } from './MyProducts'
+import { LiveAddProduct, LiveEditProduct, LivePriceVersions, LiveCompareVariants } from './MyProducts'
 import { LiveComparisons, LiveNewComparison, LiveComparison, PublicComparison } from './Comparisons'
 import { LiveCampaignSetup } from './CampaignSetup'
 import PublicWebsiteForm from './PublicForm'
@@ -72,6 +72,7 @@ export const LIVE_ROUTES = [
   { path: '/products', element: <LiveProducts />, roles: ADVISOR },
   { path: '/products/feature-table', element: <LiveFeatureTable />, roles: ADVISOR },
   { path: '/products/new', element: <LiveAddProduct />, roles: ['ADV'] },
+  { path: '/products/:id/edit', element: <LiveEditProduct />, roles: ['ADV'] },
   { path: '/products/:id/prices', element: <LivePriceVersions />, roles: ['ADV'] },
   { path: '/products/:id/variants', element: <LiveCompareVariants />, roles: ADVISOR },
   { path: '/products/:id', element: <LiveProductDetail />, roles: ADVISOR },

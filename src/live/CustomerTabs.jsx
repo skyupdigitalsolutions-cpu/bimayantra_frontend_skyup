@@ -481,7 +481,7 @@ function VehiclesTab({ id, live }) {
   const [dlg, setDlg] = useState(null)
   const q = useQuery(['vehicles', id], () => api.customers.vehicles(id))
   const rows = q.data?.vehicles || []
-  const minPhotos = q.data?.rules?.minPhotos ?? 4
+  const minPhotos = q.data?.rules?.minPhotos ?? 0
   const slots = q.data?.rules?.slots ?? ['Front', 'Rear', 'Left', 'Right', 'Odometer']
   const checklist = [['folder', 'RC'], ...slots.map((s) => ['eye', s])]
   const first = live.name.split(' ')[0]
@@ -509,7 +509,7 @@ function VehiclesTab({ id, live }) {
           <section className={cx('flex flex-col items-center gap-3.5 rounded-[24px] bg-white px-5 py-8 md:rounded-[32px] md:p-10', CARD_SHADOW)}>
             <span className="flex size-[84px] items-center justify-center rounded-full bg-linear-to-r from-[#d9eafd] to-[#c2dbfb] text-blue"><Icon name="car" size={38} /></span>
             <p className="text-[20px] font-bold text-ink">No vehicles yet</p>
-            <p className="w-full max-w-[440px] text-center text-[14px] leading-[22px] font-medium text-muted">Add a vehicle with its RC and at least {minPhotos} photos to quote motor insurance for {first}.</p>
+            <p className="w-full max-w-[440px] text-center text-[14px] leading-[22px] font-medium text-muted">Add a vehicle to quote motor insurance for {first}. The RC and photos are optional{minPhotos > 0 ? `, but ${minPhotos} photos are needed` : ''}.</p>
             {live.active && <PillButton variant="pink" icon="plus" onClick={() => setDlg({ kind: 'add' })}>Add vehicle</PillButton>}
           </section>
         )}
@@ -526,7 +526,7 @@ function VehiclesTab({ id, live }) {
             </div>
           ))}
         </div>
-        <p className="text-[12px] leading-[18px] font-medium text-muted">RC plus {minPhotos} photos minimum. Registration number checked against the RC format.</p>
+        <p className="text-[12px] leading-[18px] font-medium text-muted">RC and photos are optional{minPhotos > 0 ? ` (${minPhotos} photos needed)` : ''}. Registration number checked against the RC format.</p>
       </section>
 
       {dlg?.kind === 'add' && <AddVehicleDialog customer={live.raw} rules={q.data?.rules} tooFewPhotosMessage={q.data?.tooFewPhotosMessage} onClose={() => setDlg(null)} />}

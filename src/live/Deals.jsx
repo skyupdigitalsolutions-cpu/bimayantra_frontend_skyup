@@ -22,6 +22,7 @@ export { LiveProducts } from './ProductsLibrary'
 /* ═════════════ 10c · Product detail ═════════════ */
 export function LiveProductDetail() {
   const { id } = useParams()
+  const { user: me } = useAuth()
   const q = useQuery(['product', id], () => api.products.get(id))
   const comm = useQuery(['product', id, 'commercials'], () => api.products.commercials(id))
   const [variant, setVariant] = useState(0)
@@ -48,6 +49,7 @@ export function LiveProductDetail() {
         subtitle={`${p.insurer ?? ''} · ${p.type ?? ''} · ${p.kind === 'OWN' ? 'My product' : 'Verified by SkyUp'}`}
         actions={<>
           {p.kind === 'VERIFIED' && <HeadButton variant="white" icon="edit" onClick={() => setDlg('correction')}>Suggest a correction</HeadButton>}
+          {p.kind === 'OWN' && me?.role === 'ADV' && <HeadButton variant="white" icon="edit" to={`/products/${id}/edit`}>Edit product</HeadButton>}
           <HeadButton icon="quote" to="/quotations/new">New quotation</HeadButton>
         </>} />
       {p.variants?.length > 1 && <SegTabs className="mt-[13px]" items={p.variants.map((x, i) => ({ key: i, label: x.name }))} value={variant} onChange={setVariant} />}
@@ -137,6 +139,14 @@ export function LiveQuotations() {
   const meta = list.meta || {}
   const counts = meta.counts || {}
   const rows = (list.data || []).map((x) => ({ ...x, cname: x.customer?.name ?? '—' }))
+  // Client change (Nov 2026): Revise from the list. The row's latest version is read first, so a stale list cannot revise an old one.
+  const navigate = useNavigate()
+  const { act, busy } = useAct()
+  const revise = (e, r) => {
+    e.preventDefault(); e.stopPropagation()
+    act(async () => { const cur = (await api.quotations.get(r.id)).data; return api.quotations.revise(r.id, cur.version) },
+      { invalidates: ['quotations', 'quotation'], onDone: (res) => navigate(`/quotations/${res?.data?.id ?? r.id}`) })
+  }
   const columns = [
     { key: 'q', label: 'Quotation', width: 250, render: (r) => <IdCell initials={initials(r.cname)} bg={avatarClass(r.cname)} title={r.number ?? 'Draft'} sub={r.cname} /> },
     { key: 'product', label: 'Product', width: 260, render: (r) => <span className="truncate">{[r.insurerName, r.productName].filter(Boolean).join(' · ') || '—'}</span> },
@@ -144,6 +154,8 @@ export function LiveQuotations() {
     { key: 'valid', label: 'Valid till', width: 120, render: (r) => (r.validUntil ? fmtDate(r.validUntil, { year: false }) : '—') },
     { key: 'updated', label: 'Updated', width: 130, render: (r) => fmtDate(r.updatedAt, { year: false }) },
     { key: 'status', label: 'Status', width: 110, render: (r) => <StatusChip tone={Q_TONE[r.status]}>{label(r.status)}</StatusChip> },
+    { key: 'revise', label: '', width: 100, render: (r) => (['READY', 'SHARED'].includes(r.status)
+      ? <SmallButton variant="outline" icon="refresh" disabled={busy} onClick={(e) => revise(e, r)}>Revise</SmallButton> : null) },
     { key: 'go', label: '', width: 40, className: 'justify-end', render: (_r, hot) => <RowChevron on={hot} /> },
   ]
   if (list.error && !list.data) return <ErrorPanel active="quotations" error={list.error} />
@@ -186,6 +198,7 @@ export function LiveQuotations() {
               <div className="flex items-center gap-2">
                 <span className="text-[12px] font-semibold text-ink">{fmtMoney(r.premium)}</span>
                 <StatusChip tone={Q_TONE[r.status]}>{label(r.status)}</StatusChip>
+                {['READY', 'SHARED'].includes(r.status) && <button type="button" disabled={busy} onClick={(e) => revise(e, r)} className="ml-auto rounded-[12px] border border-line px-2.5 py-1 text-[11px] font-semibold text-ink">Revise</button>}
               </div>
             </div>
             <RowChevron />

@@ -208,11 +208,31 @@ function ExistingForm({ c }) {
   const [f, setF] = useState({
     insurerId: '', typeId: '', productId: '', productName: '', insured: [`C:${c.id}`], soldByMe: false,
     policyNumber: '', issueDate: '', startDate: '', endDate: '', endTouched: false, frequency: 'Yearly', nextDueDate: '',
-    premium: '', sumInsured: '', documentFileId: null, documentName: '', notes: '',
+    premium: '', sumInsured: '', documentFileId: null, documentName: '', notes: '', variantId: '',
   })
+  // Client change (Nov 2026): fill the form from the policy document (OCR), then check and save.
+  const [readState, setReadState] = useState(null) // { busy } | { message, tone, missing }
+  const readFromDocument = async (file) => {
+    setReadState({ busy: true })
+    try {
+      const up = (await api.files.upload(file, 'POLICY_DOCUMENT')).data
+      const r = (await api.policies.readExisting(up.id)).data
+      const v = r.values ?? {}
+      const pick = (k) => (v[k] === undefined || v[k] === null || v[k] === '' ? undefined : v[k])
+      const patch = Object.fromEntries(Object.entries({
+        insurerId: pick('insurerId'), typeId: pick('typeId'), productId: pick('productId') ?? (pick('productName') ? '' : undefined), productName: pick('productId') ? '' : pick('productName'), variantId: pick('variantId'),
+        policyNumber: pick('policyNumber'), startDate: pick('startDate'), endDate: pick('endDate'), issueDate: pick('issueDate'),
+        premium: pick('premium') !== undefined ? String(pick('premium')).replace(/,/g, '') : undefined, sumInsured: pick('sumInsured') !== undefined ? String(pick('sumInsured')).replace(/,/g, '') : undefined,
+      }).filter(([, x]) => x !== undefined))
+      set({ ...patch, documentFileId: up.id, documentName: file.name, ...(patch.endDate ? { endTouched: true } : {}) })
+      setReadState({ message: r.message, tone: r.messageId === 'POL-20' ? 'green' : ['POL-22', 'POL-23'].includes(r.messageId) ? 'red' : 'amber', missing: r.missing ?? [] })
+    } catch (e) { setReadState({ message: e.message, tone: 'red', missing: [] }) }
+  }
   const set = (patch) => setF((s) => ({ ...s, ...patch }))
   const products = useQuery(['products', 'existing', f.typeId], () => api.products.list({ typeId: f.typeId }), { enabled: !!f.typeId })
   const productOpts = (products.data ?? []).filter((x) => x.insurerId === f.insurerId)
+  const product = useQuery(['product', f.productId], () => api.products.get(f.productId), { enabled: !!f.productId })
+  const variantOpts = product.data?.variants ?? []
   const [expired, setExpired] = useState(null) // POL-08: the policy already ended; record it as expired?
   const { busy, error, fe, run, setError } = useRun()
   const people = useMemo(() => [
@@ -224,7 +244,7 @@ function ExistingForm({ c }) {
   const save = (confirmExpired = false) => run(async () => {
     try {
       const r = await api.policies.recordExisting({
-        ...fieldsBody(f), customerId: c.id, insurerId: f.insurerId, typeId: f.typeId, productId: f.productId || null,
+        ...fieldsBody(f), customerId: c.id, insurerId: f.insurerId, typeId: f.typeId, productId: f.productId || null, variantId: (f.productId && f.variantId) || null,
         productName: f.productId ? null : f.productName.trim() || null, soldByMe: f.soldByMe, insured: f.insured, ...(confirmExpired ? { confirmExpired: true } : {}),
       })
       invalidate(...INVALIDATES)
@@ -242,8 +262,17 @@ function ExistingForm({ c }) {
       <Header back={`/customers/${c.id}/policies`} breadcrumb={`POLICY HOLDERS  /  ${c.name.toUpperCase()}  /  EXISTING POLICY`} title="Record existing policy" subtitle={`${c.name} · a policy bought before Bimayantra`} />
       <div className="mt-6 flex items-start gap-6">
         <div className="flex w-[756px] flex-col gap-5">
+          <Panel className="flex flex-col gap-3">
+            <PanelHead title="Fill from the policy document" subtitle="Upload the policy schedule (PDF or photo). Policy number, category, company, product, variant and validity are read for you to check." />
+            <label className={cx('flex h-[56px] cursor-pointer items-center justify-center gap-2.5 rounded-[18px] border-2 border-dashed border-line text-[14px] font-semibold text-ink hover:bg-panel-2', readState?.busy && 'pointer-events-none opacity-60')}>
+              <Icon name="folder" size={18} />{readState?.busy ? 'Reading the policy document…' : 'Choose the policy document'}
+              <input type="file" accept={api.files.accept('POLICY_DOCUMENT')} className="hidden" onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; if (file) readFromDocument(file) }} />
+            </label>
+            {api.files.hint('POLICY_DOCUMENT') && !readState && <span className="text-[11px] font-medium text-muted">{api.files.hint('POLICY_DOCUMENT')}</span>}
+            {readState?.message && <p className={cx('rounded-[14px] px-3.5 py-3 text-[13px] font-semibold', readState.tone === 'green' ? 'bg-[#e7f4ee] text-[#127650]' : readState.tone === 'red' ? 'bg-[#fff7f7] text-[#b4323c]' : 'bg-[#fbf1e1] text-[#8a5a12]')}>{readState.message}</p>}
+          </Panel>
           <Panel className="flex flex-col gap-4">
-            <PanelHead title="Policy details" subtitle="Copy from the policy schedule" />
+            <PanelHead title="Policy details" subtitle="Copy from the policy schedule, or fill them from the document above" />
             <div className="flex gap-3">
               <Field label="Insurer *" type="select" value={f.insurerId} onChange={(v) => set({ insurerId: v, productId: '' })} error={fe.insurerId}
                 options={[{ value: '', label: insurers.loading ? 'Loading…' : 'Choose an insurer' }, ...(insurers.data ?? []).map((i) => ({ value: i.id, label: i.name }))]} />
@@ -251,9 +280,11 @@ function ExistingForm({ c }) {
                 options={[{ value: '', label: types.loading ? 'Loading…' : 'Choose a type' }, ...(types.data ?? []).map((t) => ({ value: t.id, label: t.name }))]} />
             </div>
             <div className="flex gap-3">
-              <Field label="Product *" type="select" value={f.productId} onChange={(v) => set({ productId: v })} error={fe.productId} disabled={!f.insurerId || !f.typeId}
+              <Field label="Product *" type="select" value={f.productId} onChange={(v) => set({ productId: v, variantId: '' })} error={fe.productId} disabled={!f.insurerId || !f.typeId}
                 options={[{ value: '', label: productOpts.length ? 'Not in the list · type its name' : 'Type the product name' }, ...productOpts.map((x) => ({ value: x.id, label: x.name }))]} />
               {!f.productId && <Field label="Product name *" value={f.productName} onChange={(v) => set({ productName: v })} error={fe.productName} placeholder="As on the policy" />}
+              {f.productId && variantOpts.length > 0 && <Field label="Variant" type="select" value={f.variantId} onChange={(v) => set({ variantId: v })} error={fe.variantId}
+                options={[{ value: '', label: 'Default variant' }, ...variantOpts.map((x) => ({ value: x.id, label: x.name }))]} />}
             </div>
             <div className="flex flex-col gap-2">
               <span className="text-[13px] font-semibold text-ink">Insured people *</span>

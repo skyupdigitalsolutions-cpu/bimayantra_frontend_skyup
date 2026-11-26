@@ -13,13 +13,13 @@ function FileBox({ text, fileId, onChange }) {
       <span className="flex h-[46px] items-center gap-2.5 rounded-[16px] bg-panel px-4 text-[13px] font-semibold text-ink">
         <Icon name={fileId ? 'check' : 'folder'} size={16} className={fileId ? 'text-[#127650]' : 'text-muted'} />
         <span className="flex-1 truncate">{busy ? 'Uploading…' : fileId ? 'Attached' : text}</span>
-        <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={async (e) => {
+        <input type="file" accept={api.files.accept('CUSTOMER_DOCUMENT')} className="hidden" onChange={async (e) => {
           const f = e.target.files?.[0]; if (!f) return
           setBusy(true); setErr(null)
           try { onChange((await api.files.upload(f, 'CUSTOMER_DOCUMENT')).data.id) } catch (x) { setErr(x.message) } finally { setBusy(false) }
         }} />
       </span>
-      {err && <span className="text-[12px] font-medium text-[#b4323c]">{err}</span>}
+      {err ? <span className="text-[12px] font-medium text-[#b4323c]">{err}</span> : api.files.hint('CUSTOMER_DOCUMENT') && !fileId && <span className="text-[11px] font-medium text-muted">{api.files.hint('CUSTOMER_DOCUMENT')}</span>}
     </label>
   )
 }
@@ -39,12 +39,12 @@ export function AddVehicleDialog({ customer, rules, tooFewPhotosMessage, onClose
   const set = (k) => (v) => setF((s) => ({ ...s, [k]: v }))
   const photoCount = Object.values(photos).filter(Boolean).length
   const save = () => act(() => api.customers.addVehicle(customer.id, {
-    ...f, registration: f.registration.trim(), make: f.make.trim(), model: f.model.trim(), year: Number(f.year), rcFileId: rc,
+    ...f, registration: f.registration.trim(), make: f.make.trim(), model: f.model.trim(), year: Number(f.year), rcFileId: rc || null,
     photos: Object.entries(photos).filter(([, id]) => id).map(([slot, fileId]) => ({ slot, fileId })),
   }), { invalidates: ['vehicles', 'activity'], quiet: true, onDone: onClose })
   return (
     <ActionDialog title="Add vehicle" icon="car" confirm="Add vehicle" busy={busy} error={error} onConfirm={save} onClose={onClose} width={640}
-      disabled={!f.registration.trim() || !f.make.trim() || !f.model.trim() || !f.year || !rc || photoCount < minPhotos}>
+      disabled={!f.registration.trim() || !f.make.trim() || !f.model.trim() || !f.year || photoCount < minPhotos}>
       <div className="flex gap-3">
         <Field label="Registration number *" value={f.registration} onChange={set('registration')} placeholder="KA01AB1234" error={fieldErrors.registration} />
         <Field label="Vehicle type *" type="select" value={f.vehicleType} onChange={set('vehicleType')} options={TYPES} error={fieldErrors.vehicleType} />
@@ -57,7 +57,7 @@ export function AddVehicleDialog({ customer, rules, tooFewPhotosMessage, onClose
         <Field label="Year of manufacture *" type="number" value={f.year} onChange={set('year')} error={fieldErrors.year} />
         <Field label="Fuel *" type="select" value={f.fuel} onChange={set('fuel')} options={FUELS} error={fieldErrors.fuel} />
       </div>
-      <div className="flex flex-col gap-2"><span className="text-[13px] font-semibold text-ink">RC (registration certificate) *</span><FileBox text="Choose the RC file" fileId={rc} onChange={setRc} /></div>
+      <div className="flex flex-col gap-2"><span className="text-[13px] font-semibold text-ink">RC (registration certificate) <span className="font-medium text-muted">(optional)</span></span><FileBox text="Choose the RC file" fileId={rc} onChange={setRc} /></div>
       {fieldErrors.rcFileId && <p className="text-[12px] font-semibold text-[#b4323c]">{fieldErrors.rcFileId}</p>}
       {slots.length > 0 && (
         <div className="flex flex-col gap-2">
@@ -66,7 +66,7 @@ export function AddVehicleDialog({ customer, rules, tooFewPhotosMessage, onClose
             {minPhotos > 0 && <span className={photoCount >= minPhotos ? 'text-[12px] text-[#127650]' : 'text-[12px] text-muted'}>{photoCount} of {minPhotos} added</span>}
           </span>
           <div className="grid grid-cols-2 gap-2">{slots.map((s) => <div key={s} className="flex flex-col gap-1"><span className="text-[11px] font-semibold text-muted">{s}</span><FileBox text="Add photo" fileId={photos[s]} onChange={(id) => setPhotos((p) => ({ ...p, [s]: id }))} /></div>)}</div>
-          {(fieldErrors.photos || (photoCount < minPhotos && tooFewPhotosMessage && rc)) && <p className="text-[12px] font-semibold text-[#b4323c]">{fieldErrors.photos || tooFewPhotosMessage}</p>}
+          {(fieldErrors.photos || (photoCount < minPhotos && tooFewPhotosMessage && photoCount > 0)) && <p className="text-[12px] font-semibold text-[#b4323c]">{fieldErrors.photos || tooFewPhotosMessage}</p>}
         </div>
       )}
     </ActionDialog>

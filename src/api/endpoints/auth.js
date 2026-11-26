@@ -49,9 +49,35 @@ export const kyc = {
   adminDecide: (accountId, body, opts) => http.post(p`/admin/kyc/${accountId}/decision`, body, opts),
 }
 
+// Formats and size limit per upload purpose, from /reference (fileRules). Set once the reference lists load.
+let FILE_RULES = {}
+const orList = (l) => (l.length <= 1 ? l.join('') : `${l.slice(0, -1).join(', ')} or ${l[l.length - 1]}`)
+const ruleOf = (purpose) => FILE_RULES[purpose] ?? null
+
 export const files = {
+  setRules: (rules) => { FILE_RULES = rules || {} },
+  /** "JPG, JPEG or PNG, up to 2 MB" for the hint under an upload box (empty until the rules have loaded). */
+  hint: (purpose) => { const r = ruleOf(purpose); return r ? `${orList(r.types)}, up to ${r.maxMb} MB` : '' },
+  /** The accept attribute for <input type="file">. */
+  accept: (purpose) => { const r = ruleOf(purpose); return r ? r.types.map((t) => `.${t.toLowerCase()}`).join(',') : '.pdf,.jpg,.jpeg,.png' },
+  /** A clear message before uploading (format, then size), or null. The server checks the same again. */
+  check: (file, purpose) => {
+    const r = ruleOf(purpose)
+    if (!r || !file) return null
+    const ext = String(file.name || '').split('.').pop().toUpperCase()
+    const types = r.types.map((t) => t.toUpperCase())
+    if (ext && !types.includes(ext) && !(ext === 'JPEG' && types.includes('JPG')) && !(ext === 'JPG' && types.includes('JPEG'))) {
+      return `This file is a ${ext}. Upload a ${orList(r.types)} file of up to ${r.maxMb} MB.`
+    }
+    if (file.size > r.maxMb * 1024 * 1024) return `This file is ${(file.size / 1024 / 1024).toFixed(1)} MB. The largest allowed is ${r.maxMb} MB (${orList(r.types)}). Upload a smaller file.`
+    return null
+  },
   /** purpose: PROFILE_PHOTO | BUSINESS_LOGO | KYC_PAN | KYC_LICENCE | APPOINTMENT_LETTER | CUSTOMER_DOCUMENT | BROCHURE | POLICY_DOCUMENT */
-  upload: (file, purpose) => http.raw('/files', file, { purpose }),
+  upload: (file, purpose) => {
+    const problem = files.check(file, purpose)
+    if (problem) return Promise.reject(Object.assign(new Error(problem), { status: 400, fieldErrors: { file: problem } }))
+    return http.raw('/files', file, { purpose })
+  },
   open: (id) => http.get(p`/files/${id}`),
   /** URL usable in <img src>/<a href> (same-origin cookie auth). */
   url: (id) => `${import.meta.env.VITE_API_BASE || '/v1'}/files/${encodeURIComponent(id)}`,

@@ -31,7 +31,7 @@ export function AuthProvider({ children }) {
   const loadExtras = useCallback(async () => {
     const [f, r] = await Promise.allSettled([api.flags.mine(), api.reference.get()])
     if (f.status === 'fulfilled') setFlags(f.value.data || {})
-    if (r.status === 'fulfilled') setReference(r.value.data)
+    if (r.status === 'fulfilled') { setReference(r.value.data); api.files.setRules(r.value.data?.fileRules) }
   }, [])
 
   const refreshMe = useCallback(async () => {
@@ -49,7 +49,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     refreshMe().then((u) => u && loadExtras())
     // reference lists are public: load them for the sign-up form too
-    api.reference.get().then((r) => setReference(r.data)).catch(() => {})
+    api.reference.get().then((r) => { setReference(r.data); api.files.setRules(r.data?.fileRules) }).catch(() => {})
   }, [refreshMe, loadExtras])
 
   useEffect(() => onSessionEnded((err) => {

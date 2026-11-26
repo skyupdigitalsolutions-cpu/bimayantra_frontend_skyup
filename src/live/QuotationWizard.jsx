@@ -295,8 +295,10 @@ function Wizard({ initial, presetCustomer, presetInputs }) {
             </>
           )}
 
-          {step === 3 && <ListStep title="Which insurer?" items={choices.data?.insurers} empty="No insurer with an active agent code yet. Add the insurers you sell for, with your agent code, in My insurers." emptyAction={{ label: 'Open My insurers', to: '/settings/insurers' }} value={inputs.insurerId} onPick={(i) => set({ insurerId: i.id, productId: undefined, variantId: null })} loading={choices.loading} />}
-          {step === 4 && <ListStep title="Which product?" items={choices.data?.products} empty="No quotable product for this insurer and type." value={inputs.productId} onPick={(p) => set({ productId: p.id, variantId: null, riders: [], sumInsured: undefined, policyTerm: undefined })} loading={choices.loading} sub={(p) => label(p.pricingMode)} />}
+          {step === 3 && <ListStep title="Which insurer?" items={choices.data?.insurers} empty="No company found for this insurance type. Add the company and its product on the Products page, and make sure you have an active agent code for it in My insurers." emptyAction={{ label: 'Add product', to: '/products/new' }}
+            missingNote="Company not in the list? Add the company and its product on the Products page first." value={inputs.insurerId} onPick={(i) => set({ insurerId: i.id, productId: undefined, variantId: null })} loading={choices.loading} />}
+          {step === 4 && <ListStep title="Which product?" items={choices.data?.products} empty="No product found for this company and insurance type. Add the product on the Products page, then come back to this quotation." emptyAction={{ label: 'Add product', to: '/products/new' }}
+            missingNote="Product not in the list? Add it on the Products page first." value={inputs.productId} onPick={(p) => set({ productId: p.id, variantId: null, riders: [], sumInsured: undefined, policyTerm: undefined })} loading={choices.loading} sub={(p) => label(p.pricingMode)} />}
           {step === 5 && <DetailsStep people={people} product={product} inputs={inputs} set={set} errors={fieldErrors} />}
           {step === 6 && <RidersStep product={product} inputs={inputs} set={set} />}
           {step === 7 && <PremiumStep b={b} product={product} inputs={inputs} set={set} busy={busy} onRecalc={calculate} errors={fieldErrors} />}
@@ -386,7 +388,7 @@ function CustomerStep({ customerId, onPick, locked }) {
   )
 }
 
-function ListStep({ title, items, empty, emptyAction, value, onPick, loading, sub }) {
+function ListStep({ title, items, empty, emptyAction, value, onPick, loading, sub, missingNote }) {
   return (
     <>
       <p className="text-[17px] font-bold text-ink">{title}</p>
@@ -400,6 +402,14 @@ function ListStep({ title, items, empty, emptyAction, value, onPick, loading, su
         </div>
       )}
       {loading && !items && <p className="text-[13px] font-medium text-muted">Loading…</p>}
+      {/* Client change (Nov 2026): when the company or product is not listed, say where to add it */}
+      {missingNote && !loading && (items ?? []).length > 0 && (
+        <div className="flex items-center gap-3 rounded-[16px] border border-line bg-panel px-4 py-3">
+          <Icon name="alert" size={16} className="shrink-0 text-muted" />
+          <p className="flex-1 text-[13px] font-medium text-ink-2">{missingNote}</p>
+          <Link to="/products/new" className="shrink-0 rounded-[12px] border border-line bg-white px-3 py-1.5 text-[12px] font-semibold text-ink hover:bg-panel-2">Add product</Link>
+        </div>
+      )}
     </>
   )
 }

@@ -290,14 +290,14 @@ function FilePick({ label: lbl, purpose, value, onChange }) {
       <span className="text-[13px] font-semibold text-ink">{lbl}</span>
       <span className="flex h-[50px] items-center gap-2.5 rounded-[16px] bg-panel px-4 text-[13px] font-semibold text-ink">
         <Icon name={value ? 'check' : 'folder'} size={16} className={value ? 'text-[#127650]' : 'text-muted'} />
-        <span className="flex-1 truncate">{busy ? 'Uploading…' : value ? 'File attached' : 'Choose a file (PDF, JPG, PNG)'}</span>
-        <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={async (e) => {
+        <span className="flex-1 truncate">{busy ? 'Uploading…' : value ? 'File attached' : 'Choose a file'}</span>
+        <input type="file" accept={api.files.accept(purpose)} className="hidden" onChange={async (e) => {
           const f = e.target.files?.[0]; if (!f) return
           setBusy(true); setErr(null)
           try { const r = await api.files.upload(f, purpose); onChange(r.data.id) } catch (x) { setErr(x.message) } finally { setBusy(false) }
         }} />
       </span>
-      {err && <span className="text-[12px] font-medium text-[#b4323c]">{err}</span>}
+      {err ? <span className="text-[12px] font-medium text-[#b4323c]">{err}</span> : api.files.hint(purpose) && <span className="text-[11px] font-medium text-muted">{api.files.hint(purpose)}</span>}
     </label>
   )
 }

@@ -41,11 +41,21 @@ function toFeatureValue(f, dataType) {
 }
 const nums = (v) => String(v ?? '').split(',').map((x) => Number(x.trim().replace(/[₹,\s]/g, ''))).filter((n) => n > 0)
 
+/* ═════════════ Edit my product (client change, Nov 2026): the same steps, opened on the product's values ═════════════ */
+export function LiveEditProduct() {
+  const { id } = useParams()
+  return <LiveAddProduct editId={id} />
+}
+
 /* ═════════════ AP1–AP7 · Add my product ═════════════ */
-export function LiveAddProduct() {
+export function LiveAddProduct({ editId = null }) {
   const navigate = useNavigate()
   const { toast } = useToast()
-  const [step, setStep] = useState(0)
+  const [step, setStep] = useState(editId ? 3 : 0)
+  // Edit: the category and company stay as they are (PUT /my-products/:id changes the values, variants and features).
+  const editing = useQuery(['product', editId], () => api.products.get(editId), { enabled: !!editId })
+  const [loaded, setLoaded] = useState(!editId)
+  const [initialVariants, setInitialVariants] = useState(null)
   const types = useQuery('my-products:types', () => api.myProducts.types())
   const [typeId, setTypeId] = useState('')
   const tpl = useQuery(['my-products:template', typeId], () => api.myProducts.typeTemplate(typeId), { enabled: !!typeId })
@@ -153,6 +163,24 @@ export function LiveAddProduct() {
   const feats = tpl.data?.features ?? []
   const form = tpl.data?.form ?? null
   const ages = form?.entryAges ?? 'ADULT_CHILD'
+  const ep = editing.data
+  useEffect(() => {
+    if (!editId || loaded || !ep) return
+    if (ep.kind !== 'OWN') { navigate(`/products/${editId}`); return }
+    if (typeId !== ep.typeId) { setTypeId(ep.typeId); setInsurerId(ep.insurerId); setCode(ep.code ?? ''); return }
+    if (!tpl.data) return // the category's form is needed to read the details back
+    const x = ep.publishedVersion?.entered ?? {}
+    setD((s) => ({ ...s, ...Object.fromEntries(['name', 'uin', 'adultMin', 'adultMax', 'childMin', 'childMax', 'pricingMode', 'taxPercent', 'gracePeriodDays', 'nomineeRequired', 'brochureFileId', 'sourceLink'].filter((k) => x[k] != null).map((k) => [k, x[k]])),
+      launchDate: x.launchDate ? isoDay(x.launchDate) : '', coversChildren: !!x.coversChildren,
+      siOptions: x.sumInsured?.options?.join(', ') ?? '', siMin: x.sumInsured?.min ?? '', siMax: x.sumInsured?.max ?? '', policyTerms: (x.policyTerms ?? []).join(', ') }))
+    setFeatures(Object.fromEntries(Object.entries(x.features ?? {}).map(([k, f]) => [k, f && typeof f === 'object' ? f : { value: f }])))
+    if (x.details) setDetails(detailsFromData(form, x.details))
+    if (x.customFeatures?.length) setD((s) => ({ ...s, _customFeatures: x.customFeatures }))
+    const vs = (ep.variants ?? []).map((v) => ({ name: v.name ?? '', coverType: v.coverType ?? 'INDIVIDUAL', sumInsuredMin: v.sumInsuredMin ?? '', sumInsuredMax: v.sumInsuredMax ?? '' }))
+    if (vs.length) setVariants(vs)
+    setInitialVariants(JSON.stringify(vs))
+    setLoaded(true)
+  }, [editId, loaded, ep, typeId, tpl.data]) // eslint-disable-line react-hooks/exhaustive-deps
   const L = form?.labels ?? { sumInsured: 'Sum insured', policyTerms: 'Policy terms (years)', adultEntryAge: 'Adult entry age' }
   const canRead = tpl.data?.brochureReading !== false
   const detailsMissing = missingRequired(form, details)
@@ -178,7 +206,14 @@ export function LiveAddProduct() {
     },
     variants: variants.filter((v) => v.name.trim()).map((v) => ({ name: v.name.trim(), coverType: (form?.variantCoverTypes !== false && v.coverType) || undefined, ...(v.sumInsuredMin ? { sumInsuredMin: Number(v.sumInsuredMin) } : {}), ...(v.sumInsuredMax ? { sumInsuredMax: Number(v.sumInsuredMax) } : {}), ...(v.features ? { features: v.features } : {}) })),
   })
-  const publish = () => act(() => api.myProducts.create(body()), { invalidates: ['products'], quiet: true, success: 'Product published in your account.', onDone: (r) => navigate(`/products/${r.data.id}`) })
+  const publish = () => {
+    if (!editId) return act(() => api.myProducts.create(body()), { invalidates: ['products'], quiet: true, success: 'Product published in your account.', onDone: (r) => navigate(`/products/${r.data.id}`) })
+    const b = body()
+    // Variants left as they were are not sent, so their own feature values carry over unchanged.
+    const sameVariants = initialVariants === JSON.stringify(variants.map((v) => ({ name: v.name ?? '', coverType: v.coverType ?? 'INDIVIDUAL', sumInsuredMin: v.sumInsuredMin ?? '', sumInsuredMax: v.sumInsuredMax ?? '' })))
+    return act(() => api.myProducts.update(editId, { version: ep.version, data: b.data, ...(sameVariants ? {} : { variants: b.variants }) }),
+      { invalidates: ['products', 'product'], quiet: true, success: 'Product changes saved. Quotations from now on use the new values.', onDone: () => navigate(`/products/${editId}`) })
+  }
   const addCategory = () => {
     const name = newCat.trim()
     if (!name || busy || sameCat) return
@@ -194,16 +229,18 @@ export function LiveAddProduct() {
     step >= 5 && feats.length ? `${filledFeatures} of ${feats.length}` : null,
   ]
 
+  if (editId && editing.error) return <ErrorPanel active="products" error={editing.error} />
+  if (editId && !loaded) return <LoadingPanel active="products" />
   return (
     <AppLayout active="products">
       <Header
-        back="/products"
-        breadcrumb={'PRODUCTS  /  NEW PRODUCT'}
-        title="New product"
-        titleExtra={<Chip tone="green" icon="check">Draft saved</Chip>}
-        subtitle="Add a product the catalogue does not have"
+        back={editId ? `/products/${editId}` : '/products'}
+        breadcrumb={editId ? 'PRODUCTS  /  EDIT PRODUCT' : 'PRODUCTS  /  NEW PRODUCT'}
+        title={editId ? `Edit ${d.name || 'product'}` : 'New product'}
+        titleExtra={editId ? null : <Chip tone="green" icon="check">Draft saved</Chip>}
+        subtitle={editId ? `${typeName ?? ''} · ${insName ?? ''}. The category and company stay as they are.` : 'Add a product the catalogue does not have'}
         search={false}
-        actions={<Btn variant="outline" icon="download" onClick={() => navigate('/products')}>Save and exit</Btn>}
+        actions={<Btn variant="outline" icon={editId ? 'x' : 'download'} onClick={() => navigate(editId ? `/products/${editId}` : '/products')}>{editId ? 'Cancel' : 'Save and exit'}</Btn>}
       />
       <FlowStepper current={step + 1} />
       <div className="mt-[35px] mb-5 flex items-start gap-5">
@@ -249,10 +286,15 @@ export function LiveAddProduct() {
                 </div>
                 <div className="flex items-end gap-3">
                   <FlowField label="New category name *" className="flex-1">
-                    <TextInput tone="white" placeholder="e.g. Pet insurance" value={newCat} onChange={(e) => setNewCat(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addCategory()} />
+                    <TextInput tone="white" placeholder={typeId ? 'A category is chosen above' : 'e.g. Pet insurance'} value={newCat} disabled={!!typeId} className="disabled:cursor-not-allowed disabled:opacity-60"
+                      onChange={(e) => setNewCat(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addCategory()} />
                   </FlowField>
-                  <Btn icon="plus" disabled={!newCat.trim() || busy || !!sameCat} onClick={addCategory} className="disabled:cursor-not-allowed disabled:opacity-50">Add category</Btn>
+                  <Btn icon="plus" disabled={!!typeId || !newCat.trim() || busy || !!sameCat} onClick={addCategory} className="disabled:cursor-not-allowed disabled:opacity-50">Add category</Btn>
                 </div>
+                {typeId && (
+                  <p className="text-[12px] font-medium text-muted">You chose {typeName} above, so adding a new category is off.{' '}
+                    <button type="button" className="font-semibold text-blue underline" onClick={() => pickType('')}>Clear the choice</button> to add one.</p>
+                )}
                 {sameCat && (
                   <p className="flex items-center gap-2 text-[12px] font-semibold text-[#8a5a12]">
                     <Icon name="alert" size={14} />“{sameCat.name}” is already a category.
@@ -285,8 +327,12 @@ export function LiveAddProduct() {
               <Dropdown value={insurerId} onChange={setInsurerId} placeholder={insurers.loading && !insurers.data ? 'Loading companies…' : 'Choose a company'} options={I.map((i) => ({ value: i.id, label: `${i.name}${i.private ? ' (mine)' : ''}` }))} />
               {insurers.error && <ErrorNote error={insurers.error} />}
               {insurers.data && !I.length && <p className="text-[13px] font-medium text-muted">No companies sell {typeName} yet. Add one below.</p>}
-              <div className="flex items-end gap-3"><Field label="Add a company" value={newCo} onChange={setNewCo} />
-                <SmallButton variant="outline" icon="plus" className="mb-[7px]" disabled={!newCo.trim() || busy} onClick={() => act(() => api.myProducts.createInsurer({ name: newCo.trim() }), { invalidates: ['my-products'], onDone: (r) => { setInsurerId(r.data.id); setNewCo('') } })}>Add</SmallButton></div>
+              <div className="flex items-end gap-3"><Field label="Add a company" value={newCo} onChange={setNewCo} disabled={!!insurerId} placeholder={insurerId ? 'A company is chosen above' : 'Company not listed? Type its name'} />
+                <SmallButton variant="outline" icon="plus" className="mb-[7px]" disabled={!!insurerId || !newCo.trim() || busy} onClick={() => act(() => api.myProducts.createInsurer({ name: newCo.trim() }), { invalidates: ['my-products'], onDone: (r) => { setInsurerId(r.data.id); setNewCo('') } })}>Add</SmallButton></div>
+              {insurerId && (
+                <p className="text-[12px] font-medium text-muted">You chose {insName} above, so adding a new company is off.{' '}
+                  <button type="button" className="font-semibold text-blue underline" onClick={() => setInsurerId('')}>Clear the choice</button> to add one.</p>
+              )}
             </Panel>
           )}
           {step === 2 && (
@@ -543,10 +589,10 @@ export function LiveAddProduct() {
             </Panel>
           )}
           {step > 0 && <div className="flex justify-between">
-            <SmallButton variant="outline" disabled={step === 0} onClick={() => setStep(step - 1)}>Back</SmallButton>
+            <SmallButton variant="outline" disabled={step === 0 || (!!editId && step <= 2)} onClick={() => setStep(step - 1)}>Back</SmallButton>
             {step === 2 && readingNow ? <SmallButton variant="navy" disabled className="disabled:cursor-not-allowed disabled:opacity-50">Reading the brochure…</SmallButton>
               : step < 6 ? <SmallButton variant="navy" icon="arrow" disabled={!canNext} onClick={() => setStep(step + 1)}>{step === 2 && !job && !d.brochureFileId ? 'Skip' : 'Next'}</SmallButton>
-              : <SmallButton variant="navy" icon="check" disabled={busy} onClick={publish}>{busy ? 'Publishing…' : 'Publish product'}</SmallButton>}
+              : <SmallButton variant="navy" icon="check" disabled={busy} onClick={publish}>{busy ? (editId ? 'Saving…' : 'Publishing…') : editId ? 'Save changes' : 'Publish product'}</SmallButton>}
           </div>}
         </div>
         <PreviewCard values={preview} />
