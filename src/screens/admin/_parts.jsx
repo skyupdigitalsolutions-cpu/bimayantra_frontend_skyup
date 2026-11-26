@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { Link, NavLink } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { cx } from '../../components/ui'
+import { useAuth } from '../../auth/AuthProvider'
 import logo from '../../assets/logo-mark.png'
 import { PANEL_SCRIM, PANEL_X, DIALOG_MAX, useFitTop, useLockScroll } from '../sales/_overlay'
 
@@ -89,6 +90,7 @@ function RailArrow({ dir, show, onClick }) {
 /** Figma "Sidebar (Admin)": 84px icon rail on a violet gradient. 868px tall per Figma; on short
  *  viewports it shrinks and the icon list scrolls, with up/down arrows when more items exist. */
 export function AdminRail({ active }) {
+  const auth = useAuth()
   const { ref, more, scrollBy } = useRailScroll(active)
   return (
     <aside className="flex w-[100px] shrink-0 flex-col gap-4">
@@ -126,9 +128,9 @@ export function AdminRail({ active }) {
           <span className="flex size-12 items-center justify-center rounded-[24px] border-2 border-white bg-violet-100 text-[15px] font-bold text-navy">
             MI
           </span>
-          <Link to="/login" aria-label="Log out" className="text-white/60 hover:text-white">
+          <button type="button" onClick={() => auth?.logout?.()} aria-label="Log out" className="text-white/60 hover:text-white">
             <Icon name="logout" size={24} />
-          </Link>
+          </button>
         </div>
       </nav>
     </aside>

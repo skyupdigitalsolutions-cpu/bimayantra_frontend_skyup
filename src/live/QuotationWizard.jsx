@@ -97,18 +97,34 @@ export default function LiveQuotationWizard({ mode = 'new' }) {
   if (mode === 'edit' && existing.error) return <ErrorPanel active="quotations" error={existing.error} back="/quotations" />
   if (mode === 'edit' && !existing.data) return <LoadingPanel active="quotations" />
   if (mode === 'edit' && existing.data.status !== 'DRAFT') return <ErrorPanel active="quotations" error={{ message: 'Only a draft can be edited here. Open the quotation and choose Edit to make a new draft from it.' }} back={`/quotations/${id}`} />
-  return <Wizard key={id ?? 'new'} initial={existing.data ?? null} presetCustomer={sp.get('customerId')} />
+  return <Wizard key={id ?? `new:${sp.toString()}`} initial={existing.data ?? null} presetCustomer={sp.get('customerId')} presetInputs={mode === 'new' ? presetFrom(sp) : null} />
 }
 
-function Wizard({ initial, presetCustomer }) {
+/**
+ * Best fit → Create quotation opens /quotations/new?customerId=…&typeId=…&insurerId=…&productId=…&variantId=…&people=C:…,F:…&sumInsured=…
+ * Those answers pre-fill the wizard. The server checks every one of them when the first step is saved.
+ */
+function presetFrom(sp) {
+  const out = {}
+  for (const k of ['typeId', 'insurerId', 'productId', 'variantId']) if (sp.get(k)) out[k] = sp.get(k)
+  const people = (sp.get('people') || '').split(',').map((x) => x.trim()).filter(Boolean)
+  if (people.length) out.people = people
+  const si = Number(sp.get('sumInsured'))
+  if (si > 0) out.sumInsured = si
+  return Object.keys(out).length ? out : null
+}
+
+function Wizard({ initial, presetCustomer, presetInputs }) {
   const navigate = useNavigate()
   const { toast, toastError } = useToast()
   const { can } = useAuth()
   const [q, setQ] = useState(initial)
   const [customerId, setCustomerId] = useState(initial?.customerId ?? presetCustomer ?? null)
-  const [inputs, setInputs] = useState(initial?.inputs ?? {})
+  const [inputs, setInputs] = useState(initial?.inputs ?? presetInputs ?? {})
   // Map the server's 1-based step to the 0-based 10-step UI. The backend stores the highest confirmed step (1–10).
-  const [step, setStep] = useState(initial ? Math.max(0, Math.min(9, (initial.step ?? 2) - 1)) : presetCustomer ? 0 : 0)
+  // From Best fit (customer, type, insurer and product known) the wizard opens on Details.
+  const fromBestFit = !initial && !!(presetCustomer && presetInputs?.typeId && presetInputs?.insurerId && presetInputs?.productId)
+  const [step, setStep] = useState(initial ? Math.max(0, Math.min(9, (initial.step ?? 2) - 1)) : fromBestFit ? 5 : 0)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(null)
   const [quoteType, setQuoteType] = useState('single')
@@ -266,7 +282,7 @@ function Wizard({ initial, presetCustomer }) {
                 <div className="grid grid-cols-4 gap-3.5">
                   {choices.data.types.map((t) => {
                     const m = typeMeta(t.name)
-                    return <InsuranceTypeTile key={t.id} on={inputs.typeId === t.id} onClick={() => set({ typeId: t.id, insurerId: undefined, productId: undefined })} icon={m.icon} title={t.name} bg={m.bg} />
+                    return <InsuranceTypeTile key={t.id} on={inputs.typeId === t.id} onClick={() => set({ typeId: t.id, insurerId: undefined, productId: undefined, variantId: null })} icon={m.icon} title={t.name} bg={m.bg} />
                   })}
                 </div>
               )}
@@ -279,8 +295,8 @@ function Wizard({ initial, presetCustomer }) {
             </>
           )}
 
-          {step === 3 && <ListStep title="Which insurer?" items={choices.data?.insurers} empty="No insurer with an active agent code yet. Add the insurers you sell for, with your agent code, in My insurers." emptyAction={{ label: 'Open My insurers', to: '/settings/insurers' }} value={inputs.insurerId} onPick={(i) => set({ insurerId: i.id, productId: undefined })} loading={choices.loading} />}
-          {step === 4 && <ListStep title="Which product?" items={choices.data?.products} empty="No quotable product for this insurer and type." value={inputs.productId} onPick={(p) => set({ productId: p.id, riders: [], sumInsured: undefined, policyTerm: undefined })} loading={choices.loading} sub={(p) => label(p.pricingMode)} />}
+          {step === 3 && <ListStep title="Which insurer?" items={choices.data?.insurers} empty="No insurer with an active agent code yet. Add the insurers you sell for, with your agent code, in My insurers." emptyAction={{ label: 'Open My insurers', to: '/settings/insurers' }} value={inputs.insurerId} onPick={(i) => set({ insurerId: i.id, productId: undefined, variantId: null })} loading={choices.loading} />}
+          {step === 4 && <ListStep title="Which product?" items={choices.data?.products} empty="No quotable product for this insurer and type." value={inputs.productId} onPick={(p) => set({ productId: p.id, variantId: null, riders: [], sumInsured: undefined, policyTerm: undefined })} loading={choices.loading} sub={(p) => label(p.pricingMode)} />}
           {step === 5 && <DetailsStep people={people} product={product} inputs={inputs} set={set} errors={fieldErrors} />}
           {step === 6 && <RidersStep product={product} inputs={inputs} set={set} />}
           {step === 7 && <PremiumStep b={b} product={product} inputs={inputs} set={set} busy={busy} onRecalc={calculate} errors={fieldErrors} />}
@@ -333,8 +349,10 @@ function Wizard({ initial, presetCustomer }) {
 
 function clean(i) {
   const out = {}
-  for (const k of ['typeId', 'insurerId', 'productId', 'people', 'sumInsured', 'policyTerm', 'startDate', 'answers', 'riders', 'override', 'discount', 'manual', 'typedBasePremium']) {
+  for (const k of ['typeId', 'insurerId', 'productId', 'variantId', 'people', 'sumInsured', 'policyTerm', 'startDate', 'answers', 'riders', 'override', 'discount', 'manual', 'typedBasePremium']) {
     const v = i[k]
+    // variantId: null is sent on purpose: it clears the variant on the server when the product changes
+    if (v === null && k === 'variantId') { out[k] = null; continue }
     if (v === undefined || v === null || v === '' || (Array.isArray(v) && !v.length && k !== 'riders')) continue
     out[k] = v
   }
