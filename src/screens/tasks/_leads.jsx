@@ -27,10 +27,10 @@ export function PageHeading({ crumb, title, extra, sub }) {
 /* ───────────────────────── Lead source menu (F1b select + 02c filter) ───────────────────────── */
 
 /** mode 'select': single choice with a tick (F1b) · mode 'filter': checkboxes + Clear/Apply (02c) */
-export function SourceMenu({ mode = 'select', selected, onPick, onApply, onClear, className = '' }) {
+export function SourceMenu({ mode = 'select', selected, onPick, onApply, onClear, className = '', groups = sourceGroups }) {
   return (
     <div className={cx('z-30 flex w-[340px] flex-col gap-0.5 rounded-[18px] bg-white p-2 shadow-[0px_24px_48px_-10px_rgba(19,41,75,0.2)]', className)}>
-      {sourceGroups.map((g) => (
+      {groups.map((g) => (
         <div key={g.group} className="flex flex-col gap-0.5">
           <p className="px-2.5 pt-2 pb-1 text-[10px] font-bold tracking-[0.6px] text-muted">{g.group}</p>
           {g.options.map((o) => {
@@ -132,7 +132,7 @@ const PAGE = 8
 /** API source code → the design's source key (filters) */
 export const SOURCE_KEY = {
   META_ADS: 'meta', GOOGLE_ADS: 'google', LINKEDIN_ADS: 'other', WEBSITE: 'website', WEBSITE_FORM: 'website', SOCIAL_MEDIA: 'social',
-  REFERRED_BY_CLIENT: 'ref-client', REFERRED_BY_REFERRER: 'ref-referrer', WALK_IN: 'walkin', CAMPAIGN: 'campaign', MANUAL_ENTRY: 'manual', OTHER: 'other', PAID_ADS: 'other',
+  REFERRED_BY_CLIENT: 'ref-client', REFERRED_BY_REFERRER: 'ref-referrer', REFERRED_BY_OTHER: 'ref-other', WALK_IN: 'walkin', CAMPAIGN: 'campaign', MANUAL_ENTRY: 'manual', OTHER: 'other', PAID_ADS: 'other',
 }
 const asKeys = (v) => (v ? v.split(',').map((x) => SOURCE_KEY[x] ?? x) : [])
 

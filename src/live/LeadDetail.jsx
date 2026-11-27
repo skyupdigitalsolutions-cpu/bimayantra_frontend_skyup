@@ -38,7 +38,7 @@ const atIst = (date, time) => (date && time ? `${date}T${time}:00+05:30` : null)
 function leadView(l, timeline) {
   const d = l.nextFollowUpAt ? daysFromToday(l.nextFollowUpAt) : null
   const followChip = d === null ? null : d < 0 ? { tone: 'red', icon: 'alert', label: `Overdue ${-d} day${d === -1 ? '' : 's'}` } : d === 0 ? { tone: 'amber', icon: 'clock', label: 'Today' } : { tone: 'blue', icon: 'clock', label: `In ${d} day${d === 1 ? '' : 's'}` }
-  const sourceExtra = l.referrer ? ` · ${l.referrer.name}` : l.referredBy ? ` · ${l.referredBy.name}` : l.campaign ? ` · ${l.campaign}` : ''
+  const sourceExtra = l.referrer ? ` · ${l.referrer.name}` : l.referredBy ? ` · ${l.referredBy.name}` : l.referredByPerson ? ` · ${l.referredByPerson.name}` : l.campaign ? ` · ${l.campaign}` : ''
   const contactRows = (l.contacts || []).map((c) => ({ at: c.at, icon: c.outcome === 'SPOKE_TO_CUSTOMER' ? 'phone' : 'chat', bg: '#fde8c9', title: `${c.channelLabel ? `${c.channelLabel}: ` : 'Contact logged: '}${c.outcomeLabel}`, meta: `${fmtDateTime(c.at)} · ${c.by ?? '—'}`, note: c.note }))
   const stageRows = (l.stageHistory || []).map((h) => ({ at: h.at, icon: h.from ? 'refresh' : 'user-plus', bg: h.from ? '#e9e3fc' : '#d4f1e7', title: h.from ? `Moved to ${h.toLabel}` : 'Lead created', meta: `${fmtDateTime(h.at)} · ${h.by ?? '—'}`, note: h.note || h.reason || null }))
   const ICON = { FOLLOW_UP: ['calendar', '#fde8c9'], TASK: ['check', '#e7f4ee'], MESSAGE: ['chat', '#d4f1e7'], QUOTATION: ['quote', '#e9e3fc'], CALL: ['phone', '#d9eafd'] }
@@ -61,6 +61,7 @@ function leadView(l, timeline) {
       ['Source', l.source],
       ...(l.referrer ? [['Referrer', l.referrer.name]] : []),
       ...(l.referredBy ? [['Referred by', `${l.referredBy.name} (${l.referredBy.number})`]] : []),
+      ...(l.referredByPerson ? [['Referred by', `${l.referredByPerson.name}${l.referredByPerson.mobile ? ` · ${fmtMobile(l.referredByPerson.mobile)}` : ''}`]] : []),
       ...(l.campaign ? [['Campaign', l.campaign]] : []),
       ['Insurance interest', l.interests?.length ? l.interests.join(', ') : '—'],
     ],
@@ -117,7 +118,7 @@ export default function LiveLeadDetail() {
   const props = { lead: l, onClose: close }
   const overlay = dialog && {
     status: <ChangeStatusDialog {...props} preset={dialog.to} onLost={() => setDialog({ kind: 'lost' })} />,
-    contact: <LogContactDrawer {...props} />,
+    contact: <CallUpdateDialog {...props} />,
     lost: <MarkLostDialog {...props} />,
     reopen: <ReopenDialog {...props} />,
     reschedule: <RescheduleDialog {...props} />,
@@ -183,7 +184,113 @@ function ChangeStatusDialog({ lead, onClose, preset, onLost }) {
   )
 }
 
-/* ───────── LS2 · Log contact ───────── */
+/* ───────── Update after call (client change, Nov 2026; replaces Log contact) ───────── */
+// What each outcome does is decided by the API (CALL_OUTCOMES); `then` here only tells the advisor before saving.
+const CALL = {
+  true: [
+    { key: 'INTERESTED', label: 'Interested', sub: 'Moves to Qualified', then: 'Lead moves to Qualified.', tone: 'green', follow: 'OPTIONAL' },
+    { key: 'CALL_BACK', label: 'Call back', sub: 'Follow-up date needed', then: 'Lead moves to Follow-up with a call-back task.', tone: 'blue', follow: 'REQUIRED' },
+    { key: 'WANTS_QUOTATION', label: 'Wants a quotation', sub: 'Moves to Qualified', then: 'Lead moves to Qualified. Next: New quotation.', tone: 'green', follow: 'OPTIONAL' },
+    { key: 'NOT_INTERESTED', label: 'Not interested', sub: 'Marked Lost', then: 'Lead is marked Lost: Not interested.', tone: 'red', follow: 'NONE' },
+    { key: 'ALREADY_INSURED', label: 'Already insured', sub: 'Lost, optional reminder', then: 'Lead is marked Lost: Already insured. A date sets a reminder to call again.', tone: 'amber', follow: 'OPTIONAL' },
+    { key: 'WRONG_PERSON', label: 'Wrong person', sub: 'Marked Lost', then: 'Lead is marked Lost: Wrong person.', tone: 'red', follow: 'NONE' },
+  ],
+  false: [
+    { key: 'BUSY', label: 'Busy', sub: 'Retry later', then: 'Status stays (a new lead becomes Contacted). Retry task created.', tone: 'amber', follow: 'REQUIRED' },
+    { key: 'NO_ANSWER', label: 'Ringing, no answer', sub: 'Retry later', then: 'Status stays (a new lead becomes Contacted). Retry task created.', tone: 'amber', follow: 'REQUIRED' },
+    { key: 'SWITCHED_OFF', label: 'Switched off', sub: 'Retry later', then: 'Status stays (a new lead becomes Contacted). Retry task created.', tone: 'amber', follow: 'REQUIRED' },
+    { key: 'NOT_REACHABLE', label: 'Not reachable', sub: 'Retry later', then: 'Status stays (a new lead becomes Contacted). Retry task created.', tone: 'amber', follow: 'REQUIRED' },
+    { key: 'INVALID_NUMBER', label: 'Invalid number', sub: 'Marked Lost', then: 'Lead is marked Lost: Invalid number. Fix the mobile to reopen.', tone: 'red', follow: 'NONE' },
+    { key: 'WRONG_NUMBER', label: 'Wrong number', sub: 'Marked Lost', then: 'Lead is marked Lost: Wrong number.', tone: 'red', follow: 'NONE' },
+  ],
+}
+const CALL_TONE = { green: 'bg-[#e7f4ee] text-[#127650]', blue: 'bg-[#e8f0fd] text-[#1f5fd6]', amber: 'bg-[#fbf1e1] text-[#8a5a12]', red: 'bg-[#fbebec] text-[#b4323c]' }
+const QUICK_NOTES = { true: ['Asked for premium', 'Discuss with family', 'Send brochure'], false: ['Try evening', 'Try other number', 'Send WhatsApp'] }
+const plusDays = (n) => istDay(new Date(Date.now() + n * 86_400_000))
+
+function CallUpdateDialog({ lead, onClose }) {
+  const [answered, setAnswered] = useState(true)
+  const [outcome, setOutcome] = useState('INTERESTED')
+  const [remark, setRemark] = useState('')
+  const [date, setDate] = useState('')
+  const [time, setTime] = useState('11:00')
+  const w = useLeadWrite(lead, onClose)
+  const fe = w.fieldErrors
+  const list = CALL[answered]
+  const cur = list.find((o) => o.key === outcome) ?? list[0]
+  const [localErr, setLocalErr] = useState(null)
+  const pickAnswered = (a) => { setAnswered(a); setOutcome(a ? 'INTERESTED' : 'BUSY'); setLocalErr(null); if (!a) setTime('18:00') }
+  const save = () => {
+    if (cur.follow === 'REQUIRED' && !date) { setLocalErr('Choose the next follow-up date.'); return }
+    setLocalErr(null)
+    w.run((o) => api.leads.recordCall(lead.id, { version: lead.version, answered, outcome: cur.key, remark: remark.trim() || null, ...(cur.follow !== 'NONE' && date ? { nextFollowUpAt: atIst(date, time) } : {}) }, o))
+  }
+  const quick = [['Today', 0], ['Tomorrow', 1], ['In 3 days', 3], ['Next week', 7]]
+  return (
+    <>
+      <Scrim onClose={onClose} />
+      <Dialog top={60} className="max-h-[calc(100vh-48px)] overflow-y-auto">
+        <DialogTitle>Update after call</DialogTitle>
+        <DialogText>{lead.name} · {fmtMobile(lead.mobile)} · now {LEAD_STATUS_LABEL[lead.status]}</DialogText>
+        <div className="flex flex-col gap-2.5">
+          <FieldLabel>Did the customer answer? *</FieldLabel>
+          <div className="grid grid-cols-2 gap-2.5">
+            {[[true, 'Answered'], [false, 'Not answered']].map(([a, l]) => (
+              <button key={l} type="button" onClick={() => pickAnswered(a)}
+                className={cx('flex h-[52px] items-center justify-center gap-2 rounded-[18px] border-2 text-[14px] font-bold', answered === a ? 'border-navy bg-navy text-white' : 'border-line bg-white text-ink hover:bg-tile')}>
+                <Icon name="phone" size={17} />{l}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-col gap-2.5">
+          <FieldLabel>{answered ? 'What did they say?' : 'Why not answered?'} *</FieldLabel>
+          <div className="grid grid-cols-2 gap-2">
+            {list.map((o) => (
+              <button key={o.key} type="button" onClick={() => { setOutcome(o.key); setLocalErr(null) }}
+                className={cx('flex flex-col items-start gap-0.5 rounded-[16px] border-2 px-3.5 py-2.5 text-left', cur.key === o.key ? 'border-blue bg-[#f5f9ff]' : 'border-line bg-white hover:bg-tile')}>
+                <span className="text-[13px] font-bold text-ink">{o.label}</span>
+                <span className="text-[11px] font-medium text-muted">{o.sub}</span>
+              </button>
+            ))}
+          </div>
+          {fe.outcome && <p className="text-[12px] font-semibold text-[#b4323c]">{fe.outcome}</p>}
+        </div>
+        <div className={cx('flex items-center gap-2.5 rounded-[16px] px-3.5 py-3 text-[13px] font-semibold', CALL_TONE[cur.tone])}><Icon name="arrow" size={15} />{cur.then}</div>
+        <div className="flex flex-col gap-2">
+          <AreaField label="Remark" value={remark} onChange={setRemark} error={fe.remark} />
+          <div className="flex flex-wrap gap-1.5">
+            {QUICK_NOTES[answered].map((n) => (
+              <button key={n} type="button" onClick={() => setRemark((r) => `${r ? `${r.trim()} ` : ''}${n}.`)} className="rounded-[14px] border border-line bg-white px-2.5 py-1.5 text-[12px] font-semibold text-ink-2 hover:bg-tile">+ {n}</button>
+            ))}
+          </div>
+        </div>
+        {cur.follow !== 'NONE' && (
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-3">
+              <TextField label={`Next follow-up${cur.follow === 'REQUIRED' ? ' *' : ' (optional)'}`} type="date" min={istDay()} value={date} onChange={(v) => { setDate(v); setLocalErr(null) }} className="min-w-0 flex-1 basis-0" error={localErr ?? fe.nextFollowUpAt} />
+              <SelectField label="Time" value={time} onChange={setTime} options={TIME_OPTIONS} className="min-w-0 flex-1 basis-0" />
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {quick.map(([l, n]) => (
+                <button key={l} type="button" onClick={() => { setDate(plusDays(n)); setLocalErr(null) }}
+                  className={cx('rounded-[14px] border px-3 py-1.5 text-[12px] font-semibold', date === plusDays(n) ? 'border-blue bg-[#e8f0fd] text-blue' : 'border-line bg-white text-ink-2 hover:bg-tile')}>{l}</button>
+              ))}
+            </div>
+            <p className="text-[12px] font-medium text-muted">A follow-up task is created for you with this date and time.</p>
+          </div>
+        )}
+        <ErrorNote error={w.error} />
+        <div className="flex gap-2.5">
+          <FootButton onClick={onClose}>Cancel</FootButton>
+          <FootButton variant="navy" icon="check" disabled={w.busy} onClick={save}>{w.busy ? 'Saving…' : 'Save update'}</FootButton>
+        </div>
+      </Dialog>
+    </>
+  )
+}
+
+/* ───────── LS2 · Log contact (kept for reference; the lead screens open Update after call) ───────── */
 function LogContactDrawer({ lead, onClose }) {
   const { toast, toastError } = useToast()
   const [channel, setChannel] = useState('Call')
@@ -388,7 +495,7 @@ export function LeadQuickUpdate({ leadId, preset, onClose }) {
     const props = { lead: l, onClose }
     return {
       status: <ChangeStatusDialog {...props} preset={preset} onLost={() => setKind('lost')} />,
-      contact: <LogContactDrawer {...props} />,
+      contact: <CallUpdateDialog {...props} />,
       lost: <MarkLostDialog {...props} />,
       reopen: <ReopenDialog {...props} />,
       reschedule: <RescheduleDialog {...props} />,
@@ -447,7 +554,7 @@ export function LeadQuickUpdate({ leadId, preset, onClose }) {
         <p className="text-[12px] font-bold tracking-wide text-muted uppercase">Update</p>
         <div className="grid grid-cols-2 gap-2.5">
           {open && moves.length > 0 && <QuickAction tone="primary" icon="refresh" title="Change status" sub={`Now ${LEAD_STATUS_LABEL[l.status]}`} onClick={() => setKind('status')} />}
-          {open && <QuickAction icon="phone" title="Log contact" sub="Call, WhatsApp, meeting" onClick={() => setKind('contact')} />}
+          {open && <QuickAction icon="phone" title="Update after call" sub="Answered or not, remark, follow-up" onClick={() => setKind('contact')} />}
           {open && l.nextFollowUpAt && <QuickAction icon="calendar" title="Reschedule" sub="Move the follow-up" onClick={() => setKind('reschedule')} />}
           {l.followUpTask && <QuickAction icon="check" title="Follow-up done" sub={l.followUpTask.title ?? 'Close the task'} disabled={busy} onClick={followUpDone} />}
           {l.canConvert && <QuickAction icon="user-plus" title="Convert" sub="Make them a customer" onClick={() => navigate(`/leads/${l.id}/convert`)} />}

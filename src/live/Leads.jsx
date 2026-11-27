@@ -9,6 +9,7 @@ import { LeadQuickUpdate } from './LeadDetail'
 import { DatePicker } from '../components/pickers'
 import { matchesQuery, useHeaderSearch, NoMatches } from '../screens/tasks/_filter'
 import { LeadsListScreen, SOURCE_KEY, SourceMenu, PageHeading, F, SelectBox, CARD, box, inp } from '../screens/tasks/_leads'
+import { sourceGroups } from '../data/tasks'
 import { Chip, PriorityTabs, SH_CARD, SH_NAVY } from '../screens/tasks/_parts'
 import { api, useQuery, useMutation, useDebounced, invalidate, ApiError } from '../api'
 import { avatarClass, cleanMobile, daysFromToday, fmtMobile, fmtShortWhen, initials, istDay, titleCase, LEAD_STATUS_LABEL, STAGE_TO_STATUS, typeMobile } from '../api/format'
@@ -143,7 +144,7 @@ function Column({ stage, items, dragId, setDragId, onDrop, pipelineId, onOpen })
 }
 
 /* ───────────────────────── 02b · List ───────────────────────── */
-const STYLE_OF = { meta: 'meta', google: 'google', website: 'website', social: 'social', 'ref-client': 'referral', 'ref-referrer': 'referral', walkin: 'walkin', campaign: 'campaign', manual: 'campaign', other: 'campaign' }
+const STYLE_OF = { meta: 'meta', google: 'google', website: 'website', social: 'social', 'ref-client': 'referral', 'ref-referrer': 'referral', 'ref-other': 'referral', walkin: 'walkin', campaign: 'campaign', manual: 'campaign', other: 'campaign' }
 
 export function LiveLeadsList() {
   const [quick, setQuick] = useState(null) // lead id in the quick-update popup
@@ -172,7 +173,12 @@ export function LiveLeadsList() {
 }
 
 /* ───────────────────────── F1b · New lead / LE1 · Edit lead ───────────────────────── */
-const KEY_TO_CODE = { meta: 'META_ADS', google: 'GOOGLE_ADS', website: 'WEBSITE', social: 'SOCIAL_MEDIA', 'ref-client': 'REFERRED_BY_CLIENT', 'ref-referrer': 'REFERRED_BY_REFERRER', walkin: 'WALK_IN', campaign: 'CAMPAIGN', manual: 'MANUAL_ENTRY', other: 'OTHER' }
+// The new-lead form shows one "Referral" choice; "Referral from" then picks which of the three it is (Nov 2026)
+const REF_KINDS = [['ref-client', 'Existing client', 'A policy holder of yours'], ['ref-referrer', 'Referrer', 'Someone in your referrers list'], ['ref-other', 'Someone else', 'Type their name']]
+const FORM_SOURCE_GROUPS = sourceGroups.map((g) => (g.group === 'REFERRAL'
+  ? { ...g, options: [{ key: 'referral', label: 'Referral', sub: 'From a client, a referrer or someone else', icon: 'link', cls: 'bg-[#e7f4ee] text-[#127650]' }] }
+  : g))
+const KEY_TO_CODE = { meta: 'META_ADS', google: 'GOOGLE_ADS', website: 'WEBSITE', social: 'SOCIAL_MEDIA', 'ref-client': 'REFERRED_BY_CLIENT', 'ref-referrer': 'REFERRED_BY_REFERRER', 'ref-other': 'REFERRED_BY_OTHER', walkin: 'WALK_IN', campaign: 'CAMPAIGN', manual: 'MANUAL_ENTRY', other: 'OTHER' }
 const TIMES = ['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00', '18:00']
 const t12 = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}` }
 const err = (m) => (m ? <span className="text-[12px] font-medium text-[#b4323c]">{m}</span> : null)
@@ -203,6 +209,7 @@ function LeadFormInner({ lead, presetPipeline }) {
     name: lead?.name ?? '', pipelineId: lead?.pipelineId ?? presetPipeline ?? '', mobile: lead ? fmtMobile(lead.mobile) : '', altMobile: lead?.altMobile ? fmtMobile(lead.altMobile) : '',
     email: lead?.email ?? '', source: lead ? (SOURCE_KEY[lead.sourceCode] ?? 'other') : 'walkin', referrerId: lead?.referrer?.id ?? '',
     referredBy: lead?.referredBy ? { id: lead.referredBy.id, name: lead.referredBy.name } : null, campaign: lead?.campaign ?? '',
+    referredByName: lead?.referredByPerson?.name ?? '', referredByMobile: lead?.referredByPerson?.mobile ? fmtMobile(lead.referredByPerson.mobile) : '',
     priority: lead ? titleCase(lead.priority) : 'Medium', interests: lead?.interests ?? [], date: lead?.nextFollowUpAt ? istDay(lead.nextFollowUpAt) : '',
     time: '11:00', notes: lead?.notes ?? '',
   }))
@@ -220,6 +227,7 @@ function LeadFormInner({ lead, presetPipeline }) {
   const dq = useDebounced(clientQ, 300)
   const [clientHits, setClientHits] = useState([])
   const code = KEY_TO_CODE[f.source]
+  const isReferral = String(f.source).startsWith('ref-')
   const needs = (reference?.leadSourceOptions ?? []).find((o) => o.code === code) ?? {}
 
   useEffect(() => { if (!f.pipelineId && pipes.data?.[0]) set('pipelineId')(pipes.data[0].id) }, [pipes.data]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -242,7 +250,8 @@ function LeadFormInner({ lead, presetPipeline }) {
     const body = {
       pipelineId: f.pipelineId, name: f.name.trim(), mobile: digits(f.mobile), altMobile: digits(f.altMobile) || null,
       email: f.email.trim() || null, source: code, referrerId: needs.needs === 'REFERRER' ? f.referrerId || null : null,
-      referredByCustomerId: needs.needs === 'CLIENT' ? f.referredBy?.id ?? null : null, campaign: needs.campaignName ? f.campaign.trim() || null : null,
+      referredByCustomerId: needs.needs === 'CLIENT' ? f.referredBy?.id ?? null : null,
+      ...(needs.needs === 'PERSON' ? { referredByName: f.referredByName.trim() || null, referredByMobile: digits(f.referredByMobile) || null } : {}), campaign: needs.campaignName ? f.campaign.trim() || null : null,
       interests: f.interests, priority: f.priority.toUpperCase(), nextFollowUpAt: f.date ? `${f.date}T${f.time}:00+05:30` : null,
       notes: f.notes.trim() || null, confirm,
     }
@@ -278,6 +287,8 @@ function LeadFormInner({ lead, presetPipeline }) {
     if (f.email.trim() && !EMAIL_RE.test(f.email.trim())) e.email = 'Enter a valid email, e.g. name@example.com.'
     if (needs.needs === 'REFERRER' && !f.referrerId) e.referrerId = 'Choose a referrer.'
     if (needs.needs === 'CLIENT' && !f.referredBy) e.referredByCustomerId = 'Choose the client who referred this lead.'
+    if (needs.needs === 'PERSON' && !f.referredByName.trim()) e.referredByName = 'Enter the name of the person who referred this lead.'
+    if (needs.needs === 'PERSON' && digits(f.referredByMobile) && !MOBILE_RE.test(digits(f.referredByMobile))) e.referredByMobile = 'Mobile must be 10 digits starting with 6, 7, 8 or 9.'
     if (needs.campaignName === 'REQUIRED' && !f.campaign.trim()) e.campaign = 'Enter the campaign name.'
     if (f.date && f.date < istDay()) e.nextFollowUpAt = 'Follow-up date can’t be in the past.'
     return e
@@ -352,7 +363,9 @@ function LeadFormInner({ lead, presetPipeline }) {
                   <span className="flex-1 truncate">{sourceLabel}</span><Icon name="chev-down" size={18} className="text-muted" />
                 </button>
                 {err(fe.source)}
-                {open && <SourceMenu mode="select" selected={f.source} onPick={(k) => { if (offered.size && !offered.has(KEY_TO_CODE[k])) return; set('source')(k); setOpen(false) }} className="absolute top-[82px] left-0 max-md:right-0 max-md:w-auto" />}
+                {open && <SourceMenu mode="select" groups={FORM_SOURCE_GROUPS} selected={isReferral ? 'referral' : f.source} onPick={(k) => {
+                  if (k === 'referral') { set('source')(isReferral ? f.source : (REF_KINDS.find(([key]) => !offered.size || offered.has(KEY_TO_CODE[key]))?.[0] ?? 'ref-client')); setOpen(false); return }
+                  if (offered.size && !offered.has(KEY_TO_CODE[k])) return; set('source')(k); setOpen(false) }} className="absolute top-[82px] left-0 max-md:right-0 max-md:w-auto" />}
               </div>
               {needs.needs === 'REFERRER' && (
                 <F label="Referrer *">
@@ -382,6 +395,30 @@ function LeadFormInner({ lead, presetPipeline }) {
               )}
               <div className="flex min-w-0 flex-1 flex-col gap-2"><span className="text-[13px] font-semibold text-ink">Priority</span><PriorityTabs value={f.priority} onChange={set('priority')} /></div>
             </div>
+            {/* Client change (Nov 2026): a referral says who it came from: a client, a referrer or someone else */}
+            {isReferral && (
+              <div className="flex flex-col gap-3.5 rounded-[20px] border border-[#dcd2fb] bg-[#faf8ff] p-4">
+                <span className="text-[13px] font-semibold text-ink">Referral from *</span>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  {REF_KINDS.filter(([k]) => !offered.size || offered.has(KEY_TO_CODE[k])).map(([k, l, sub]) => (
+                    <button key={k} type="button" onClick={() => set('source')(k)}
+                      className={cx('flex flex-col items-start gap-0.5 rounded-[16px] border-2 bg-white px-3.5 py-2.5 text-left', f.source === k ? 'border-[#5b3fb8]' : 'border-line hover:bg-tile')}>
+                      <span className="text-[13px] font-bold text-ink">{l}</span><span className="text-[11px] font-medium text-muted">{sub}</span>
+                    </button>
+                  ))}
+                </div>
+                {needs.needs === 'PERSON' && (
+                  <div className="flex flex-col gap-3.5 md:flex-row">
+                    <F label="Referred by (name) *">
+                      <div className={cx(box, 'bg-white', errBox(fe.referredByName))}><input value={f.referredByName} onChange={(e) => set('referredByName')(e.target.value)} placeholder="e.g. Suresh Rao" className={inp} /></div>{err(fe.referredByName)}
+                    </F>
+                    <F label="Their mobile">
+                      <div className={cx(box, 'bg-white', errBox(fe.referredByMobile))}><input value={f.referredByMobile} onChange={(e) => set('referredByMobile')(e.target.value)} inputMode="numeric" placeholder="Optional" className={inp} /></div>{err(fe.referredByMobile)}
+                    </F>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="flex flex-col gap-2">
               <span className="text-[13px] font-semibold text-ink">Insurance interest</span>
               <div className="flex flex-wrap gap-2">

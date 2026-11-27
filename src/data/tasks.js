@@ -237,6 +237,7 @@ export const sourceGroups = [
   { group: 'REFERRAL', options: [
     { key: 'ref-client', label: 'Referred by a client', sub: 'Pick the client', icon: 'link', cls: 'bg-[#e7f4ee] text-[#127650]' },
     { key: 'ref-referrer', label: 'Referred by a referrer', sub: 'Pick the referrer', icon: 'link', cls: 'bg-[#e7f4ee] text-[#127650]' },
+    { key: 'ref-other', label: 'Referred by someone else', sub: 'Name typed', icon: 'link', cls: 'bg-[#e7f4ee] text-[#127650]' },
   ] },
   { group: 'OFFLINE AND OTHER', options: [
     { key: 'walkin', label: 'Walk-in or personal contact', icon: 'user-plus', cls: 'bg-[#fbf1e1] text-[#8a5a12]' },

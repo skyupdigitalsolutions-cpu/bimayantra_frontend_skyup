@@ -46,7 +46,7 @@ export default function LeadDetailBase({ state: stateProp = 'open', links = fals
     <>
       <PillButton variant="outline" icon="refresh" {...act('status', '/leads')}>Change status</PillButton>
       {(!data || data.canConvert) && <PillButton variant="pink" icon="user-plus" {...(on?.convert ? { onClick: on.convert } : { to: '/leads' })}>Convert to customer</PillButton>}
-      <PillButton variant="navy" icon="phone" {...act('contact', '/leads')}>Log contact</PillButton>
+      <PillButton variant="navy" icon="phone" {...act('contact', '/leads')}>Update after call</PillButton>
     </>
   )
 
@@ -130,7 +130,7 @@ export default function LeadDetailBase({ state: stateProp = 'open', links = fals
             ) : (
               <>
                 <SCardHead title="Next follow-up" right={done ? <SChip tone="green" icon="check">Done</SChip> : overdue} />
-                <FollowRow icon="calendar" big={data ? data.follow?.big ?? 'Not set' : '24 Oct 2026'} small={data ? data.follow?.small ?? 'Set one with Change status or Log contact' : '11:00 AM · Call back'} strike={done} />
+                <FollowRow icon="calendar" big={data ? data.follow?.big ?? 'Not set' : '24 Oct 2026'} small={data ? data.follow?.small ?? 'Set one with Update after call' : '11:00 AM · Call back'} strike={done} />
               </>
             )}
             {!converted && (

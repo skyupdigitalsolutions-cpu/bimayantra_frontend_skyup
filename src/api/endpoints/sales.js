@@ -14,6 +14,8 @@ export const leads = {
   update: (id, body) => http.patch(p`/leads/${id}`, body), // { version, …fields, confirm? }
   changeStatus: (id, body, opts) => http.post(p`/leads/${id}/status`, body, opts), // { version, status, nextFollowUpAt?, lostReason?, note? }
   logContact: (id, body, opts) => http.post(p`/leads/${id}/contacts`, body, opts), // { outcome, channel?: CALL|WHATSAPP|EMAIL|MEETING, note? }
+  // Update after call (Nov 2026): { version, answered, outcome, remark?, nextFollowUpAt? } → the lead
+  recordCall: (id, body, opts) => http.post(p`/leads/${id}/calls`, body, opts),
   convert: (id, body, opts) => http.post(p`/leads/${id}/convert`, body, opts), // { version, mode: CREATE|LINK, customerId?, customer?, confirm? }
   // Q97: the person withdrew their ad form — keep the lead, or remove it with its tasks (advisor only)
   keepAfterWithdrawal: (id, version) => http.post(p`/leads/${id}/withdrawal/keep`, { version }),
