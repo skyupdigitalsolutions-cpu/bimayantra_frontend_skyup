@@ -239,8 +239,9 @@ function CallUpdateDialog({ lead, onClose, fullDetails = false }) {
   return (
     <>
       <Scrim onClose={onClose} />
-      <Dialog top={60} className="max-h-[calc(100vh-48px)] overflow-y-auto">
-        <div className="flex items-center gap-3">
+      {/* Pinned header and footer; only the middle scrolls, inside the rounded box (UI fix, Nov 2026) */}
+      <Dialog top={60} className="gap-0! overflow-hidden! p-0!">
+        <div className="flex shrink-0 items-center gap-3 border-b border-line px-5 pt-5 pb-4 md:px-[30px] md:pt-[26px]">
           <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#fde8c9] text-[14px] font-bold text-navy">{initials(lead.name)}</span>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <p className="truncate text-[19px] font-bold tracking-[-0.2px] text-ink">{lead.name}</p>
@@ -250,12 +251,13 @@ function CallUpdateDialog({ lead, onClose, fullDetails = false }) {
           {tel && <a href={`https://wa.me/91${tel}`} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp ${lead.name}`} className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#e7f4ee] text-[#127650] hover:brightness-95"><Icon name="chat" size={17} /></a>}
           <button type="button" onClick={onClose} aria-label="Close" className="flex size-10 shrink-0 items-center justify-center rounded-full bg-panel text-ink hover:bg-line"><Icon name="x" size={16} /></button>
         </div>
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-4 md:px-[30px]">
         <div className="flex flex-col gap-2.5">
           <FieldLabel>Did the customer answer? *</FieldLabel>
           <div className="grid grid-cols-2 gap-2.5">
             {[[true, 'Answered'], [false, 'Not answered']].map(([a, l]) => (
               <button key={l} type="button" onClick={() => pickAnswered(a)}
-                className={cx('flex h-[52px] items-center justify-center gap-2 rounded-[18px] border-2 text-[14px] font-bold', answered === a ? 'border-navy bg-navy text-white' : 'border-line bg-white text-ink hover:bg-tile')}>
+                className={cx('flex h-[46px] items-center justify-center gap-2 rounded-[16px] border-2 text-[14px] font-bold', answered === a ? 'border-navy bg-navy text-white' : 'border-line bg-white text-ink hover:bg-tile')}>
                 <Icon name="phone" size={17} />{l}
               </button>
             ))}
@@ -266,7 +268,7 @@ function CallUpdateDialog({ lead, onClose, fullDetails = false }) {
           <div className="grid grid-cols-2 gap-2">
             {list.map((o) => (
               <button key={o.key} type="button" onClick={() => { setOutcome(o.key); setLocalErr(null) }}
-                className={cx('flex flex-col items-start gap-0.5 rounded-[16px] border-2 px-3.5 py-2.5 text-left', cur.key === o.key ? 'border-blue bg-[#f5f9ff]' : 'border-line bg-white hover:bg-tile')}>
+                className={cx('flex min-w-0 flex-col items-start gap-0.5 rounded-[14px] border-2 px-3 py-2 text-left', cur.key === o.key ? 'border-blue bg-[#f5f9ff]' : 'border-line bg-white hover:bg-tile')}>
                 <span className="text-[13px] font-bold text-ink">{o.label}</span>
                 <span className="text-[11px] font-medium text-muted">{o.sub}</span>
               </button>
@@ -305,7 +307,8 @@ function CallUpdateDialog({ lead, onClose, fullDetails = false }) {
           </div>
         )}
         <ErrorNote error={w.error} />
-        <div className="flex items-center gap-2.5">
+        </div>
+        <div className="flex shrink-0 items-center gap-2.5 border-t border-line px-5 py-4 md:px-[30px] max-md:pb-[max(16px,env(safe-area-inset-bottom))]">
           {fullDetails && <button type="button" onClick={() => { onClose(); navigate(`/leads/${lead.id}`) }} className="shrink-0 px-1 text-[13px] font-bold text-blue hover:underline">Full details</button>}
           <FootButton onClick={onClose}>Cancel</FootButton>
           <FootButton variant="navy" icon="check" disabled={w.busy} onClick={save}>{w.busy ? 'Saving…' : canOfferConvert && convert ? 'Save and convert' : 'Save update'}</FootButton>
