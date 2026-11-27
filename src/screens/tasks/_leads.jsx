@@ -78,7 +78,20 @@ function SourceTag({ r, withIcon = true }) {
   )
 }
 
-const COLS = ['w-[250px]', 'w-[90px]', 'w-[120px]', 'w-[210px]', 'w-[180px]', 'w-[90px]', 'w-[30px]']
+const COLS = ['w-[250px]', 'w-[90px]', 'w-[120px]', 'w-[210px]', 'w-[160px]', 'w-[90px]', 'w-[84px]', 'w-[30px]']
+
+/** Call and WhatsApp from a lead row or card (Nov 2026): they work without opening the lead. */
+function ContactButtons({ r, size = 34 }) {
+  if (!r.tel) return null
+  const go = (url, tab) => (e) => { e.preventDefault(); e.stopPropagation(); if (tab) window.open(url, '_blank', 'noopener'); else window.location.href = url }
+  const cls = 'flex shrink-0 items-center justify-center rounded-full border border-line bg-white text-[#127650] hover:bg-[#e7f4ee]'
+  return (
+    <span className="flex items-center gap-1.5">
+      <button type="button" aria-label={`Call ${r.name}`} title="Call" onClick={go(`tel:+91${r.tel}`)} className={cls} style={{ width: size, height: size }}><Icon name="phone" size={15} /></button>
+      <button type="button" aria-label={`WhatsApp ${r.name}`} title="WhatsApp" onClick={go(`https://wa.me/91${r.tel}`, true)} className={cls} style={{ width: size, height: size }}><Icon name="chat" size={15} /></button>
+    </span>
+  )
+}
 
 function LeadRow({ r, filtered, onOpen }) {
   // In 02b the two Meta Ads rows carry the campaign under the chip; the Figma frame lets that cell hug its
@@ -101,6 +114,7 @@ function LeadRow({ r, filtered, onOpen }) {
       </span>
       <span className={cx('text-[13px]', r.overdue ? 'font-bold text-[#b4323c]' : 'font-medium text-ink', COLS[4])}>{r.next}</span>
       <span className={COLS[5]}><Chip className={PRIORITY[r.priority]}>{r.priority}</Chip></span>
+      <span className={COLS[6]}><ContactButtons r={r} /></span>
       <Icon name="chev-right" size={18} className="text-muted" />
     </Link>
   )
@@ -112,6 +126,7 @@ function LeadCardMobile({ r, onOpen }) {
       <span className="flex items-center gap-2.5">
         <span className={cx('flex size-[34px] items-center justify-center rounded-full border-2 border-white text-[11px] font-bold text-navy', r.avBg)}>{r.initials}</span>
         <span className="min-w-0 flex-1 text-[14px] font-bold text-ink">{r.name}</span>
+        <ContactButtons r={r} size={32} />
         <Chip className={STATUS_CHIP[r.status]}>{r.status}</Chip>
       </span>
       <span className="flex h-[22px] items-center gap-2">
@@ -236,7 +251,7 @@ export function LeadsListScreen({ filtered = false, live }) {
 
         <div className={cx('mt-5 overflow-hidden rounded-[28px] bg-white', SH_CARD)}>
           <div className="flex gap-4 rounded-t-[28px] bg-[#fafbfd] px-6 py-3.5 text-[12px] font-semibold text-muted">
-            {['Lead', 'Pipeline', 'Status', 'Source', 'Next follow-up', 'Priority', ''].map((h, i) => <span key={i} className={COLS[i]}>{h}</span>)}
+            {['Lead', 'Pipeline', 'Status', 'Source', 'Next follow-up', 'Priority', 'Contact', ''].map((h, i) => <span key={i} className={COLS[i]}>{h}</span>)}
           </div>
           {visible.map((r) => (
             <div key={r.id} className="border-t border-line">

@@ -1,5 +1,5 @@
 // Leads: 02 board, 02b list, F1b new lead / LE1 edit lead, F2 convert — all on the live API.
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import AppLayout from '../components/AppLayout'
 import Icon from '../components/Icon'
@@ -160,7 +160,7 @@ export function LiveLeadsList() {
     const open = l.status !== 'CONVERTED' && l.status !== 'LOST'
     const srcKey = SOURCE_KEY[l.sourceCode] ?? 'other'
     return {
-      id: l.id, to: `/leads/${l.id}`, initials: initials(l.name), avBg: avatarClass(l.name), name: l.name, mobile: fmtMobile(l.mobile),
+      id: l.id, to: `/leads/${l.id}`, tel: cleanMobile(l.mobile), initials: initials(l.name), avBg: avatarClass(l.name), name: l.name, mobile: fmtMobile(l.mobile),
       pipeline: names[l.pipelineId] ?? '—', status: LEAD_STATUS_LABEL[l.status], source: STYLE_OF[srcKey], srcKey, sourceLabel: l.source,
       next: l.nextFollowUpAt && open ? `${fmtShortWhen(l.nextFollowUpAt)}${d < 0 ? ' · overdue' : ''}` : '—',
       overdue: open && d !== null && d < 0, dueToday: open && d === 0, priority: titleCase(l.priority),
@@ -231,6 +231,9 @@ function LeadFormInner({ lead, presetPipeline }) {
   const [clientHits, setClientHits] = useState([])
   const code = KEY_TO_CODE[f.source]
   const isReferral = String(f.source).startsWith('ref-')
+  const refKinds = REF_KINDS.filter(([k]) => !offered.size || offered.has(KEY_TO_CODE[k]))
+  // the source to go back to when "Not referred" is picked again
+  const lastSource = useRef(isReferral ? 'walkin' : f.source)
   const needs = (reference?.leadSourceOptions ?? []).find((o) => o.code === code) ?? {}
 
   useEffect(() => { if (!f.pipelineId && pipes.data?.[0]) set('pipelineId')(pipes.data[0].id) }, [pipes.data]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -368,7 +371,7 @@ function LeadFormInner({ lead, presetPipeline }) {
                 {err(fe.source)}
                 {open && <SourceMenu mode="select" groups={FORM_SOURCE_GROUPS} selected={isReferral ? 'referral' : f.source} onPick={(k) => {
                   if (k === 'referral') { set('source')(isReferral ? f.source : (REF_KINDS.find(([key]) => !offered.size || offered.has(KEY_TO_CODE[key]))?.[0] ?? 'ref-client')); setOpen(false); return }
-                  if (offered.size && !offered.has(KEY_TO_CODE[k])) return; set('source')(k); setOpen(false) }} className="absolute top-[82px] left-0 max-md:right-0 max-md:w-auto" />}
+                  if (offered.size && !offered.has(KEY_TO_CODE[k])) return; lastSource.current = k; set('source')(k); setOpen(false) }} className="absolute top-[82px] left-0 max-md:right-0 max-md:w-auto" />}
               </div>
               {needs.needs === 'REFERRER' && (
                 <F label="Referrer *">
@@ -398,18 +401,27 @@ function LeadFormInner({ lead, presetPipeline }) {
               )}
               <div className="flex min-w-0 flex-1 flex-col gap-2"><span className="text-[13px] font-semibold text-ink">Priority</span><PriorityTabs value={f.priority} onChange={set('priority')} /></div>
             </div>
-            {/* Client change (Nov 2026): a referral says who it came from: a client, a referrer or someone else */}
-            {isReferral && (
-              <div className="flex flex-col gap-3.5 rounded-[20px] border border-[#dcd2fb] bg-[#faf8ff] p-4">
-                <span className="text-[13px] font-semibold text-ink">Referral from *</span>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                  {REF_KINDS.filter(([k]) => !offered.size || offered.has(KEY_TO_CODE[k])).map(([k, l, sub]) => (
-                    <button key={k} type="button" onClick={() => set('source')(k)}
-                      className={cx('flex flex-col items-start gap-0.5 rounded-[16px] border-2 bg-white px-3.5 py-2.5 text-left', f.source === k ? 'border-[#5b3fb8]' : 'border-line hover:bg-tile')}>
-                      <span className="text-[13px] font-bold text-ink">{l}</span><span className="text-[11px] font-medium text-muted">{sub}</span>
-                    </button>
-                  ))}
+            {/* Client change (Nov 2026): always visible, so a referral is never missed. Picking who referred sets the
+                lead source; "Not referred" puts back the source chosen before. */}
+            {refKinds.length > 0 && (
+              <div className={cx('flex flex-col gap-3.5 rounded-[20px] border p-4', isReferral ? 'border-[#dcd2fb] bg-[#faf8ff]' : 'border-line bg-panel-2')}>
+                <span className="text-[13px] font-semibold text-ink">Referral{isReferral ? ' from *' : ''}</span>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {[['none', 'Not referred', 'Came another way'], ...refKinds].map(([k, l, sub]) => {
+                    const on = k === 'none' ? !isReferral : f.source === k
+                    return (
+                      <button key={k} type="button" onClick={() => {
+                        if (k === 'none') { if (isReferral) set('source')(lastSource.current) }
+                        else { if (!isReferral) lastSource.current = f.source; set('source')(k) }
+                      }}
+                        className={cx('flex flex-col items-start gap-0.5 rounded-[16px] border-2 bg-white px-3.5 py-2.5 text-left', on ? 'border-[#5b3fb8]' : 'border-line hover:bg-tile')}>
+                        <span className="text-[13px] font-bold text-ink">{l}</span><span className="text-[11px] font-medium text-muted">{sub}</span>
+                      </button>
+                    )
+                  })}
                 </div>
+                {isReferral && needs.needs === 'CLIENT' && <p className="text-[12px] font-medium text-muted">Choose the policy holder in “Referred by client” above.</p>}
+                {isReferral && needs.needs === 'REFERRER' && <p className="text-[12px] font-medium text-muted">Choose the referrer in “Referrer” above.</p>}
                 {needs.needs === 'PERSON' && (
                   <div className="flex flex-col gap-3.5 md:flex-row">
                     <F label="Referred by (name) *">
