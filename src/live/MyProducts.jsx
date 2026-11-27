@@ -251,6 +251,9 @@ export function LiveAddProduct({ editId = null }) {
   const groups = [...new Set(feats.map((f) => f.group || 'Features'))]
   const pickType = (id) => { if (id !== typeId) { setInsurerId(''); setDetails({}); setFeatures({}) } setTypeId(id) }
 
+  const customKeys = new Set((d._customFeatures || []).map((c) => c.key))
+  const keptAddOn = (f) => !!f && !f.notStated && f.value !== '' && f.value != null
+  const addOnsKept = (d._customFeatures || []).filter((c) => keptAddOn(features[c.key]))
   const body = () => ({
     insurerId, typeId, code: code.trim(), ...(ocrJobId ? { ocrJobId } : {}),
     data: {
@@ -262,7 +265,12 @@ export function LiveAddProduct({ editId = null }) {
       policyTerms: nums(d.policyTerms), pricingMode: d.pricingMode, taxPercent: Number(d.taxPercent), gracePeriodDays: Number(d.gracePeriodDays), nomineeRequired: !!d.nomineeRequired,
       ...(d.brochureFileId ? { brochureFileId: d.brochureFileId } : {}), ...(d.sourceLink ? { sourceLink: d.sourceLink } : {}),
       details: detailsBody(form, details),
-      features: Object.fromEntries(Object.entries(features).filter(([, f]) => f && (f.notStated || (f.value !== '' && f.value != null))).map(([k, f]) => [k, toFeatureValue(f, feats.find((x) => x.key === k)?.dataType)])),
+      // Template features: only what has a value or "Not stated" (the rest are optional and left out). Add-on
+      // features from the brochure: only the ones still ticked, saved with their names as printed (Nov 2026).
+      features: Object.fromEntries(Object.entries(features)
+        .filter(([k, f]) => f && (customKeys.has(k) ? keptAddOn(f) : (f.notStated || (f.value !== '' && f.value != null))))
+        .map(([k, f]) => [k, toFeatureValue(f, feats.find((x) => x.key === k)?.dataType)])),
+      ...(addOnsKept.length ? { customFeatures: addOnsKept.map((c) => ({ key: c.key, name: c.name, origin: c.origin ?? 'AI_SUGGESTED', ...(c.dataType ? { dataType: c.dataType } : {}) })) } : {}),
     },
     variants: variants.filter((v) => v.name.trim()).map((v) => ({ name: v.name.trim(), coverType: (form?.variantCoverTypes !== false && v.coverType) || undefined, ...(v.sumInsuredMin ? { sumInsuredMin: Number(v.sumInsuredMin) } : {}), ...(v.sumInsuredMax ? { sumInsuredMax: Number(v.sumInsuredMax) } : {}), ...(v.features ? { features: v.features } : {}) })),
   })
@@ -659,13 +667,13 @@ export function LiveAddProduct({ editId = null }) {
             const vNames = variants.filter((v) => v.name).map((v) => v.name)
             return (
             <Panel className="flex flex-col gap-4">
-              <PanelHead title="6 · Features" subtitle={`Standard features are included. ${ocrJobId ? 'Tick the AI suggestions this product offers, and add your own.' : 'Fill in or tick "Not stated".'}`} right={ocrJobId && <Chip tone="violet" icon="sparkle">Auto-filled from brochure</Chip>} />
+              <PanelHead title="6 · Features" subtitle={ocrJobId ? 'Features found in the brochure are ticked and saved with its own words. The rest are optional: fill them in or leave them out.' : 'All optional: fill in what the brochure states, or tick "Not stated".'} right={ocrJobId && <Chip tone="violet" icon="sparkle">Auto-filled from brochure</Chip>} />
               {ocrJobId && (
                 <div className="flex items-center gap-3 rounded-[18px] bg-[linear-gradient(to_right,#f0ecfb,#e6dffb)] px-4 py-3">
                   <span className="flex size-10 items-center justify-center rounded-full bg-white text-[#5b3fb8]"><Icon name="sparkle" size={18} /></span>
                   <div className="flex flex-1 flex-col gap-0.5">
                     <p className="text-[13px] font-bold text-ink">{filled} of {total} ticked</p>
-                    <p className="text-[12px] font-medium text-[#5b3fb8]">Tick a box to add the feature. Fix anything wrong; add your own at the bottom.</p>
+                    <p className="text-[12px] font-medium text-[#5b3fb8]">Ticked: found in the brochure. Unticked ones are optional and can be left out; you can publish without them.</p>
                   </div>
                 </div>
               )}
@@ -691,20 +699,25 @@ export function LiveAddProduct({ editId = null }) {
                     return (
                       <div key={f.key} className={cx('flex items-center gap-3 rounded-[16px] border py-2.5 pr-2.5 pl-3',
                         hasAiValue ? 'border-[#c9daf8] bg-[#f5f9ff]' : cur.notStated ? 'border-[#f1d9a8] bg-[#fff9ef]' : 'border-line bg-white')}>
-                        {ocrJobId && <input type="checkbox" checked={hasSomething} onChange={(e) => { if (!e.target.checked) setF({ value: null, notStated: false }); }} className="size-[18px] shrink-0 accent-[#13294b]" />}
+                        {ocrJobId && <input type="checkbox" checked={hasSomething} onChange={(e) => { if (!e.target.checked) setF({ value: null, notStated: false, asPrinted: null, printedName: null }); }} className="size-[18px] shrink-0 accent-[#13294b]" />}
                         <div className="flex w-[232px] shrink-0 flex-col gap-[3px]">
-                          <span className={cx('text-[13px] leading-4 font-bold', hasSomething ? 'text-ink' : 'text-ink-2')}>{f.name}{f.requiredToPublish ? ' *' : ''}</span>
+                          <span className={cx('text-[13px] leading-4 font-bold', hasSomething ? 'text-ink' : 'text-ink-2')}>{f.name}</span>
                           {hasAiValue && (
                             <span className="flex h-[14px] items-center gap-1 text-[11px] font-semibold text-[#5b3fb8]">
-                              <Icon name="sparkle" size={11} />AI suggestion{cur.page != null ? ` \u00b7 p${cur.page}` : ''}
+                              <Icon name="sparkle" size={11} />From brochure{cur.page != null ? ` · p${cur.page}` : ''}
                             </span>
                           )}
+                          {cur.printedName && cur.printedName.toLowerCase() !== f.name.toLowerCase() && <span className="text-[11px] font-medium text-muted">In the brochure: {cur.printedName}</span>}
                           {!hasAiValue && !ocrJobId && <span className="text-[11px] font-medium text-muted">{f.dataType}</span>}
                         </div>
-                        <div className="flex flex-1 items-center gap-2">
+                        <div className="flex min-w-0 flex-1 flex-col gap-1">
+                          <div className="flex items-center gap-2">
                           {f.dataType === 'Yes/No'
                             ? <Dropdown className="flex-1" buttonClassName="h-[34px]" value={cur.value === true ? 'yes' : cur.value === false ? 'no' : ''} disabled={cur.notStated} onChange={(v) => setF({ value: v === '' ? null : v === 'yes' })} options={[['', '\u2014'], ['yes', 'Yes'], ['no', 'No']]} />
                             : <input value={cur.value ?? ''} disabled={cur.notStated} inputMode={NUMERIC_TYPES.has(f.dataType) ? 'decimal' : undefined} onChange={(e) => setF({ value: e.target.value })} className={cx(inputCls, 'h-[34px] flex-1 rounded-[10px] border border-line bg-white px-2.5 text-[13px] font-semibold')} placeholder={f.help ?? UNIT_HINT[f.dataType] ?? ''} />}
+                          </div>
+                          {/* the brochure's own words, saved with the value (Nov 2026) */}
+                          {cur.asPrinted && hasSomething && <p className="line-clamp-2 text-[11px] font-medium text-muted italic" title={cur.asPrinted}>“{cur.asPrinted}”</p>}
                         </div>
                         <label className="flex shrink-0 items-center gap-1.5 text-[12px] font-semibold text-muted"><input type="checkbox" checked={!!cur.notStated} onChange={(e) => setF({ notStated: e.target.checked, value: e.target.checked ? null : cur.value })} className="accent-[#13294b]" />Not stated</label>
                       </div>
@@ -726,7 +739,7 @@ export function LiveAddProduct({ editId = null }) {
                     <div className="flex items-center gap-2.5">
                       <div className="flex flex-1 flex-col gap-0.5">
                         <p className="text-[14px] font-bold text-ink">Add-on features from brochure</p>
-                        <p className="text-[12px] font-medium text-muted">Suggested by AI. Not in the standard template. Untick to remove.</p>
+                        <p className="text-[12px] font-medium text-muted">Other benefits the brochure states, in its own words. Untick to leave one out.</p>
                       </div>
                       <span className="text-[13px] font-bold text-[#5b3fb8]">{addOnFeatures.length} of {customs.length} included</span>
                     </div>

@@ -57,12 +57,23 @@ export function LiveProductDetail() {
         <div className="flex w-[756px] flex-col gap-5">
           <Panel className="flex flex-col gap-3">
             <PanelHead title="Features" subtitle={v ? v.name : 'Published version'} />
-            {(p.features || []).map((f) => (
-              <div key={f.key} className="flex items-center gap-4 border-t border-line pt-3 first:border-0 first:pt-0">
-                <p className="w-[260px] shrink-0 text-[13px] font-semibold text-muted">{f.name ?? f.label ?? f.key}</p>
-                <p className="flex-1 text-[14px] font-semibold text-ink">{featureValue(f.key)}</p>
-              </div>
-            ))}
+            {(p.features || []).map((f) => {
+              // The brochure's own words, when the value was read from it (Nov 2026)
+              const x = v?.features?.[f.key] ?? d.features?.[f.key]
+              const printed = x && typeof x === 'object' ? x : {}
+              return (
+                <div key={f.key} className="flex items-start gap-4 border-t border-line pt-3 first:border-0 first:pt-0">
+                  <div className="flex w-[260px] shrink-0 flex-col gap-0.5">
+                    <p className="text-[13px] font-semibold text-muted">{f.name ?? f.label ?? f.key}</p>
+                    {printed.printedName && printed.printedName.toLowerCase() !== String(f.name ?? '').toLowerCase() && <p className="text-[11px] font-medium text-muted">In the brochure: {printed.printedName}</p>}
+                  </div>
+                  <div className="flex flex-1 flex-col gap-0.5">
+                    <p className="text-[14px] font-semibold text-ink">{featureValue(f.key)}</p>
+                    {printed.asPrinted && <p className="text-[12px] font-medium text-muted italic">“{printed.asPrinted}”{printed.page ? ` · page ${printed.page}` : ''}</p>}
+                  </div>
+                </div>
+              )
+            })}
             {(p.customFeatures || []).map((f, i) => (
               <div key={`c${i}`} className="flex items-center gap-4 border-t border-line pt-3"><p className="w-[260px] shrink-0 text-[13px] font-semibold text-muted">{f.name ?? f.label}</p><p className="flex-1 text-[14px] font-semibold text-ink">{String(f.value ?? '—')}</p></div>
             ))}
