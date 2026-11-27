@@ -1,5 +1,5 @@
 // Shared Lead detail layout (Figma 8:809) — reused by the LS1–LS6 lead-lifecycle states.
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import AppLayout from '../../components/AppLayout'
 import Icon from '../../components/Icon'
 import { PageHeader, cx } from '../../components/ui'
@@ -17,6 +17,41 @@ import { useCtrlK } from '../tasks/_filter'
  * Live mode (src/live/LeadDetail.jsx): `data` is the lead view model (same keys as the mock plus status chip,
  * follow-up / lost / converted cards) and `on` holds the action handlers. Without them the Figma mock renders.
  */
+/** ⋯ on the lead page: the less frequent actions (Nov 2026). */
+function MoreMenu({ on }) {
+  const [open, setOpen] = useState(false)
+  useEffect(() => {
+    if (!open) return undefined
+    const close = () => setOpen(false)
+    window.addEventListener('click', close)
+    return () => window.removeEventListener('click', close)
+  }, [open])
+  const items = [
+    ['edit', 'edit', 'Edit details', 'Name, mobile, source, priority', true],
+    ['reschedule', 'calendar', 'Reschedule follow-up', 'Move the date and time', on.canReschedule],
+    ['status', 'refresh', 'Change status', 'Only to correct a stage', on.canChangeStatus],
+    ['lost', 'x', 'Mark lost', 'For a reason a call does not cover', on.canLose],
+  ].filter((x) => x[4] && on[x[0]])
+  return (
+    <div className="relative">
+      <button type="button" aria-label="More actions" onClick={(e) => { e.stopPropagation(); setOpen((o) => !o) }}
+        className={cx('flex size-[46px] items-center justify-center rounded-full border border-line bg-white text-ink hover:bg-tile', open && 'bg-tile')}>
+        <Icon name="more" size={18} />
+      </button>
+      {open && (
+        <div onClick={(e) => e.stopPropagation()} className="absolute top-[54px] right-0 z-40 flex w-[260px] flex-col gap-0.5 rounded-[18px] bg-white p-1.5 shadow-[0px_24px_48px_-10px_rgba(19,41,75,0.22)]">
+          {items.map(([key, icon, label, sub]) => (
+            <button key={key} type="button" onClick={() => { setOpen(false); on[key]() }} className="flex items-center gap-2.5 rounded-[12px] px-2.5 py-2 text-left hover:bg-[#f3f7ff]">
+              <span className={cx('flex size-[28px] shrink-0 items-center justify-center rounded-full', key === 'lost' ? 'bg-[#fbebec] text-[#b4323c]' : 'bg-panel text-ink')}><Icon name={icon} size={13} /></span>
+              <span className="flex flex-col"><span className={cx('text-[13px] font-bold', key === 'lost' ? 'text-[#b4323c]' : 'text-ink')}>{label}</span><span className="text-[11px] font-medium text-muted">{sub}</span></span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function LeadDetailBase({ state: stateProp = 'open', links = false, lostChip = 'closed', overlay, toast, data, on, extra }) {
   useCtrlK()
   const [doneMock, setDone] = useState(false)
@@ -44,9 +79,13 @@ export default function LeadDetailBase({ state: stateProp = 'open', links = fals
     <PillButton variant="navy" icon="arrow" to={data?.customerTo ?? '/customers/1'}>Open policy holder</PillButton>
   ) : (
     <>
-      <PillButton variant="outline" icon="refresh" {...act('status', '/leads')}>Change status</PillButton>
+      {/* Client change (Nov 2026): Call and WhatsApp here; Edit details, Reschedule, Change status (corrections) and
+          Mark lost in the ⋯ menu; the status otherwise follows Update after call */}
+      {data?.tel && <PillButton variant="outline" icon="phone" href={`tel:+91${data.tel}`}>Call</PillButton>}
+      {data?.tel && <PillButton variant="outline" icon="chat" href={`https://wa.me/91${data.tel}`} target="_blank" rel="noopener noreferrer">WhatsApp</PillButton>}
       {(!data || data.canConvert) && <PillButton variant="pink" icon="user-plus" {...(on?.convert ? { onClick: on.convert } : { to: '/leads' })}>Convert to customer</PillButton>}
-      <PillButton variant="navy" icon="phone" {...act('contact', '/leads')}>Update after call</PillButton>
+      <PillButton variant="navy" icon="edit" {...act('contact', '/leads')}>Update after call</PillButton>
+      {on && <MoreMenu on={on} />}
     </>
   )
 

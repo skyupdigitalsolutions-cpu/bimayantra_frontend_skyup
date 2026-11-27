@@ -1,4 +1,5 @@
 // Shared building blocks for the Sales section (leads, customers, best fit, quotations, proposals).
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { cx } from '../../components/ui'
@@ -64,6 +65,7 @@ export function PillButton({ variant = 'outline', size = 'md', icon, iconRight, 
     </>
   )
   if (to) return <Link to={to} className={cls} {...rest}>{inner}</Link>
+  if (rest.href) return <a className={cls} {...rest}>{inner}</a> // tel:, wa.me and other plain links
   return <button type="button" className={cls} {...rest}>{inner}</button>
 }
 
@@ -133,7 +135,85 @@ export function Dot({ initials, bg = '#fde8c9', size = 38, font = 12, border = 2
 /* ───────────── Lead Card (Figma Components › Lead Card 8:387 — Default / Hover) ───────────── */
 
 /** onOpen(lead): a plain click opens a quick-update popup instead of the lead page (Ctrl/⌘-click still opens the page). */
-export function LeadCard({ lead, to = "/leads/1" /* only one lead-detail design exists */, draggable, onDragStart, onDragEnd, dragging, onOpen }) {
+/**
+ * Live board card (client change, Nov 2026): a click opens Update after call; Call and WhatsApp work straight from the
+ * card; the ⋯ menu holds Convert, Open full details and Mark lost. Ctrl/⌘-click opens the lead page.
+ */
+function LiveLeadCard({ lead, to, draggable, onDragStart, onDragEnd, dragging, onOpen, onAction }) {
+  const [menu, setMenu] = useState(false)
+  useEffect(() => {
+    if (!menu) return undefined
+    const close = () => setMenu(false)
+    window.addEventListener('click', close)
+    return () => window.removeEventListener('click', close)
+  }, [menu])
+  const tel = String(lead.raw?.mobile ?? '').replace(/\D/g, '').slice(-10)
+  const status = lead.raw?.status ?? lead.status
+  const open = status !== 'LOST' && status !== 'CONVERTED'
+  const canConvert = lead.raw?.canConvert ?? ['NEW', 'CONTACTED', 'QUALIFIED', 'FOLLOW_UP'].includes(status)
+  const canLose = (lead.allowedMoves || []).includes('LOST')
+  const stop = (fn) => (e) => { e.preventDefault(); e.stopPropagation(); fn?.() }
+  const item = (key, icon, label, sub, cls, danger) => (
+    <button key={key} type="button" onClick={stop(() => { setMenu(false); onAction(key) })} className="flex w-full items-center gap-2.5 rounded-[12px] px-2.5 py-2 text-left hover:bg-[#f3f7ff]">
+      <span className={cx('flex size-[28px] shrink-0 items-center justify-center rounded-full', cls)}><Icon name={icon} size={13} /></span>
+      <span className="flex min-w-0 flex-col"><span className={cx('text-[13px] font-bold', danger ? 'text-[#b4323c]' : 'text-ink')}>{label}</span><span className="text-[11px] font-medium text-muted">{sub}</span></span>
+    </button>
+  )
+  return (
+    <div
+      onClick={(e) => { if (e.metaKey || e.ctrlKey) { window.open(to, '_blank'); return } onOpen?.(lead) }}
+      title="Click to update after a call · Ctrl-click to open the lead page"
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      className={cx(
+        'relative flex w-[252px] shrink-0 cursor-grab flex-col items-start gap-3 rounded-[22px] bg-white p-4 transition active:cursor-grabbing',
+        'shadow-[0px_6px_16px_-8px_rgba(19,41,75,0.1)] hover:shadow-[0px_16px_30px_-10px_rgba(19,41,75,0.18)]',
+        dragging && 'opacity-40', menu && 'z-30',
+      )}
+    >
+      <div className="flex w-full items-center gap-2.5">
+        <Dot initials={lead.initials} bg={lead.avatar} />
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5 whitespace-nowrap">
+          <Link to={to} onClick={(e) => e.stopPropagation()} className="truncate text-[14px] font-bold text-ink hover:underline">{lead.name}</Link>
+          <p className="text-[12px] font-medium text-muted">{lead.phone}</p>
+        </div>
+        <button type="button" aria-label={`More actions for ${lead.name}`} onClick={stop(() => setMenu((m) => !m))}
+          className={cx('flex size-7 items-center justify-center rounded-full text-muted hover:bg-panel hover:text-ink', menu && 'bg-panel text-ink')}>
+          <Icon name="more" size={18} />
+        </button>
+      </div>
+      {menu && (
+        <div onClick={(e) => e.stopPropagation()} className="absolute top-[52px] right-3 z-40 flex w-[236px] cursor-default flex-col gap-0.5 rounded-[16px] bg-white p-1.5 shadow-[0px_24px_48px_-10px_rgba(19,41,75,0.22)]">
+          {open && canConvert && item('convert', 'user-plus', 'Convert to customer', 'Make them a policy holder', 'bg-[#e7f4ee] text-[#127650]')}
+          {item('details', 'eye', 'Open full details', 'History, edit details', 'bg-[#e8f0fd] text-[#1f5fd6]')}
+          {canLose && item('lost', 'x', 'Mark lost', 'Bought elsewhere, premium too high…', 'bg-[#fbebec] text-[#b4323c]', true)}
+          {status === 'LOST' && item('reopen', 'refresh', 'Reopen', 'Bring the lead back', 'bg-[#f0ecfb] text-[#5b3fb8]')}
+        </div>
+      )}
+      <p className="w-full text-[12px] leading-[18px] font-medium text-slate">{lead.note}</p>
+      <div className="flex gap-1.5">
+        {lead.chips.map((c) => (
+          <SChip key={c.label} tone={c.tone} icon={c.icon}>{c.label}</SChip>
+        ))}
+      </div>
+      <span className={cx('inline-flex items-center gap-[5px] rounded-[12px] py-1 pr-2.5 pl-2 text-[11px] font-bold whitespace-nowrap', STONE[lead.source.tone])}>
+        <Icon name="link" size={14} />
+        {lead.source.label}
+      </span>
+      {open && (
+        <div className="grid w-full grid-cols-[38px_38px_minmax(0,1fr)] gap-1.5">
+          {tel ? <a href={`tel:+91${tel}`} onClick={(e) => e.stopPropagation()} aria-label={`Call ${lead.name}`} className="flex h-[36px] items-center justify-center rounded-[18px] border border-line text-[#127650] hover:bg-tile"><Icon name="phone" size={15} /></a> : <span />}
+          {tel ? <a href={`https://wa.me/91${tel}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} aria-label={`WhatsApp ${lead.name}`} className="flex h-[36px] items-center justify-center rounded-[18px] border border-line text-[#127650] hover:bg-tile"><Icon name="chat" size={15} /></a> : <span />}
+          <button type="button" onClick={stop(() => onOpen?.(lead))} className="flex h-[36px] items-center justify-center gap-1.5 rounded-[18px] bg-navy text-[12px] font-bold text-white hover:bg-navy-700"><Icon name="edit" size={13} />Update after call</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function LeadCard({ lead, to = "/leads/1" /* only one lead-detail design exists */, draggable, onDragStart, onDragEnd, dragging, onOpen, onAction }) {
+  if (onAction) return <LiveLeadCard {...{ lead, to, draggable, onDragStart, onDragEnd, dragging, onOpen, onAction }} />
   return (
     <Link
       to={to}

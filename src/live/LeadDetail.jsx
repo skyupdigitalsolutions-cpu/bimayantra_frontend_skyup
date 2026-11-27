@@ -1,7 +1,7 @@
 // 03 · Lead detail (Figma 8:809) with the LS1–LS6 actions as real dialogs:
 //   GET /leads/:id, GET /leads/:id/timeline, POST /leads/:id/status, POST /leads/:id/contacts, PATCH /leads/:id,
 //   POST /tasks/:id/done (follow-up task). Convert opens /leads/:id/convert, Edit opens /leads/:id/edit.
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import Icon from '../components/Icon'
 import { cx } from '../components/ui'
@@ -112,6 +112,9 @@ export default function LiveLeadDetail() {
     reopen: () => setDialog({ kind: 'reopen' }),
     reschedule: () => setDialog({ kind: 'reschedule' }),
     edit: () => navigate(`/leads/${id}/edit`),
+    canLose: (l.allowedMoves || []).includes('LOST'),
+    canReschedule: !!l.nextFollowUpAt,
+    canChangeStatus: (l.allowedMoves || []).some((m) => m !== 'LOST'),
     convert: () => navigate(`/leads/${id}/convert`),
     followUpDone,
   }
@@ -208,13 +211,17 @@ const CALL_TONE = { green: 'bg-[#e7f4ee] text-[#127650]', blue: 'bg-[#e8f0fd] te
 const QUICK_NOTES = { true: ['Asked for premium', 'Discuss with family', 'Send brochure'], false: ['Try evening', 'Try other number', 'Send WhatsApp'] }
 const plusDays = (n) => istDay(new Date(Date.now() + n * 86_400_000))
 
-function CallUpdateDialog({ lead, onClose }) {
+function CallUpdateDialog({ lead, onClose, fullDetails = false }) {
+  const navigate = useNavigate()
   const [answered, setAnswered] = useState(true)
   const [outcome, setOutcome] = useState('INTERESTED')
   const [remark, setRemark] = useState('')
   const [date, setDate] = useState('')
   const [time, setTime] = useState('11:00')
-  const w = useLeadWrite(lead, onClose)
+  // Interested / Wants a quotation: "Convert to customer after saving" (on by default), then the convert form opens
+  const [convert, setConvert] = useState(true)
+  const goConvert = useRef(false)
+  const w = useLeadWrite(lead, () => { onClose(); if (goConvert.current) navigate(`/leads/${lead.id}/convert`) })
   const fe = w.fieldErrors
   const list = CALL[answered]
   const cur = list.find((o) => o.key === outcome) ?? list[0]
@@ -223,15 +230,26 @@ function CallUpdateDialog({ lead, onClose }) {
   const save = () => {
     if (cur.follow === 'REQUIRED' && !date) { setLocalErr('Choose the next follow-up date.'); return }
     setLocalErr(null)
+    goConvert.current = canOfferConvert && convert
     w.run((o) => api.leads.recordCall(lead.id, { version: lead.version, answered, outcome: cur.key, remark: remark.trim() || null, ...(cur.follow !== 'NONE' && date ? { nextFollowUpAt: atIst(date, time) } : {}) }, o))
   }
   const quick = [['Today', 0], ['Tomorrow', 1], ['In 3 days', 3], ['Next week', 7]]
+  const canOfferConvert = answered && (cur.key === 'INTERESTED' || cur.key === 'WANTS_QUOTATION') && lead.status !== 'CONVERTED'
+  const tel = cleanMobile(lead.mobile)
   return (
     <>
       <Scrim onClose={onClose} />
       <Dialog top={60} className="max-h-[calc(100vh-48px)] overflow-y-auto">
-        <DialogTitle>Update after call</DialogTitle>
-        <DialogText>{lead.name} · {fmtMobile(lead.mobile)} · now {LEAD_STATUS_LABEL[lead.status]}</DialogText>
+        <div className="flex items-center gap-3">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#fde8c9] text-[14px] font-bold text-navy">{initials(lead.name)}</span>
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <p className="truncate text-[19px] font-bold tracking-[-0.2px] text-ink">{lead.name}</p>
+            <p className="text-[12px] font-medium text-muted">{fmtMobile(lead.mobile)} · {lead.number} · now {LEAD_STATUS_LABEL[lead.status]}</p>
+          </div>
+          {tel && <a href={`tel:+91${tel}`} aria-label={`Call ${lead.name}`} className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#e7f4ee] text-[#127650] hover:brightness-95"><Icon name="phone" size={17} /></a>}
+          {tel && <a href={`https://wa.me/91${tel}`} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp ${lead.name}`} className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#e7f4ee] text-[#127650] hover:brightness-95"><Icon name="chat" size={17} /></a>}
+          <button type="button" onClick={onClose} aria-label="Close" className="flex size-10 shrink-0 items-center justify-center rounded-full bg-panel text-ink hover:bg-line"><Icon name="x" size={16} /></button>
+        </div>
         <div className="flex flex-col gap-2.5">
           <FieldLabel>Did the customer answer? *</FieldLabel>
           <div className="grid grid-cols-2 gap-2.5">
@@ -257,6 +275,12 @@ function CallUpdateDialog({ lead, onClose }) {
           {fe.outcome && <p className="text-[12px] font-semibold text-[#b4323c]">{fe.outcome}</p>}
         </div>
         <div className={cx('flex items-center gap-2.5 rounded-[16px] px-3.5 py-3 text-[13px] font-semibold', CALL_TONE[cur.tone])}><Icon name="arrow" size={15} />{cur.then}</div>
+        {canOfferConvert && (
+          <label className="flex cursor-pointer items-center gap-3 rounded-[16px] border border-[#c9e7d8] bg-[#f3fbf7] px-3.5 py-3">
+            <input type="checkbox" checked={convert} onChange={(e) => setConvert(e.target.checked)} className="size-[18px] shrink-0 accent-[#13294b]" />
+            <span className="flex flex-col gap-0.5"><span className="text-[13px] font-bold text-ink">Convert to customer after saving</span><span className="text-[12px] font-medium text-muted">Opens the convert form with their name and mobile filled in.</span></span>
+          </label>
+        )}
         <div className="flex flex-col gap-2">
           <AreaField label="Remark" value={remark} onChange={setRemark} error={fe.remark} />
           <div className="flex flex-wrap gap-1.5">
@@ -281,9 +305,10 @@ function CallUpdateDialog({ lead, onClose }) {
           </div>
         )}
         <ErrorNote error={w.error} />
-        <div className="flex gap-2.5">
+        <div className="flex items-center gap-2.5">
+          {fullDetails && <button type="button" onClick={() => { onClose(); navigate(`/leads/${lead.id}`) }} className="shrink-0 px-1 text-[13px] font-bold text-blue hover:underline">Full details</button>}
           <FootButton onClick={onClose}>Cancel</FootButton>
-          <FootButton variant="navy" icon="check" disabled={w.busy} onClick={save}>{w.busy ? 'Saving…' : 'Save update'}</FootButton>
+          <FootButton variant="navy" icon="check" disabled={w.busy} onClick={save}>{w.busy ? 'Saving…' : canOfferConvert && convert ? 'Save and convert' : 'Save update'}</FootButton>
         </div>
       </Dialog>
     </>
@@ -478,11 +503,15 @@ function QuickAction({ icon, title, sub, onClick, tone = 'default', disabled }) 
   )
 }
 
-export function LeadQuickUpdate({ leadId, preset, onClose }) {
+/**
+ * From the board or list (client change, Nov 2026): a card click opens Update after call directly; the card's ⋯ menu
+ * opens Mark lost or Reopen; dragging a card to Follow-up still asks for the date (Change status with a preset).
+ */
+export function LeadQuickUpdate({ leadId, preset, start, onClose }) {
   const navigate = useNavigate()
   const { toast, toastError } = useToast()
   const q = useQuery(['lead', leadId], () => api.leads.get(leadId))
-  const [kind, setKind] = useState(preset ? 'status' : null)
+  const [kind, setKind] = useState(preset ? 'status' : start ?? 'contact')
   const [busy, setBusy] = useState(false)
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose() }
@@ -495,11 +524,11 @@ export function LeadQuickUpdate({ leadId, preset, onClose }) {
     const props = { lead: l, onClose }
     return {
       status: <ChangeStatusDialog {...props} preset={preset} onLost={() => setKind('lost')} />,
-      contact: <CallUpdateDialog {...props} />,
+      contact: <CallUpdateDialog {...props} fullDetails />,
       lost: <MarkLostDialog {...props} />,
       reopen: <ReopenDialog {...props} />,
       reschedule: <RescheduleDialog {...props} />,
-    }[kind]
+    }[kind] ?? <CallUpdateDialog {...props} fullDetails />
   }
 
   const followUpDone = async () => {

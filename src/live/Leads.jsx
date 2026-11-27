@@ -54,6 +54,7 @@ function ViewToggle() {
 }
 
 export function LiveLeadsBoard() {
+  const navigate = useNavigate()
   const { toast, toastError } = useToast()
   const pipes = useQuery('pipelines', () => api.pipelines.list())
   const leads = useAllLeads({ status: 'NEW,CONTACTED,QUALIFIED,FOLLOW_UP' })
@@ -90,7 +91,7 @@ export function LiveLeadsBoard() {
   if (pipes.error || leads.error) return <ErrorPanel active="leads" error={pipes.error || leads.error} />
   return (
     <AppLayout active="leads" responsive mobileTitle="Leads" panelClass="pb-7!">
-      <PageHeader title="Leads" subtitle="Click a card to update it here, or drag it to an allowed stage."
+      <PageHeader title="Leads" subtitle="Click a card to record a call, or drag it to an allowed stage."
         actions={<><span className="hidden md:block"><ViewToggle /></span><PillButton variant="pink" icon="plus" to="/leads/new" className="max-md:h-9 max-md:rounded-[18px] max-md:pr-3.5 max-md:pl-3 max-md:text-[13px]">New lead</PillButton></>} />
       <div className="mt-[30px] flex gap-2.5 max-xl:overflow-x-auto max-xl:[scrollbar-width:none] max-xl:[&::-webkit-scrollbar]:hidden max-md:mt-4 max-md:gap-2">
         {tabs.map((p) => {
@@ -111,16 +112,18 @@ export function LiveLeadsBoard() {
         {leads.loading && !leads.data && <p className="mb-4 text-[13px] font-medium text-muted">Loading leads…</p>}
         <div className="flex gap-3 overflow-x-auto pb-2 md:gap-5">
           {leadStages.map((s) => (
-            <Column key={s.key} stage={s} items={shown.filter((l) => l.stage === s.key)} dragId={dragId} setDragId={setDragId} onDrop={move} pipelineId={pipeId} onOpen={(l) => setQuick({ id: l.id })} />
+            <Column key={s.key} stage={s} items={shown.filter((l) => l.stage === s.key)} dragId={dragId} setDragId={setDragId} onDrop={move} pipelineId={pipeId}
+              onOpen={(l) => setQuick({ id: l.id, start: 'contact' })}
+              onAction={(l, k) => (k === 'convert' ? navigate(`/leads/${l.id}/convert`) : k === 'details' ? navigate(`/leads/${l.id}`) : setQuick({ id: l.id, start: k }))} />
           ))}
         </div>
       </div>
-      {quick && <LeadQuickUpdate key={`${quick.id}${quick.preset ?? ''}`} leadId={quick.id} preset={quick.preset} onClose={closeQuick} />}
+      {quick && <LeadQuickUpdate key={`${quick.id}${quick.preset ?? ''}${quick.start ?? ''}`} leadId={quick.id} preset={quick.preset} start={quick.start} onClose={closeQuick} />}
     </AppLayout>
   )
 }
 
-function Column({ stage, items, dragId, setDragId, onDrop, pipelineId, onOpen }) {
+function Column({ stage, items, dragId, setDragId, onDrop, pipelineId, onOpen, onAction }) {
   const [over, setOver] = useState(false)
   return (
     <div onDragOver={(e) => { e.preventDefault(); setOver(true) }} onDragLeave={() => setOver(false)} onDrop={(e) => { e.preventDefault(); setOver(false); onDrop(stage.key) }}
@@ -133,7 +136,7 @@ function Column({ stage, items, dragId, setDragId, onDrop, pipelineId, onOpen })
         <span className="rounded-[10px] bg-white px-2.5 py-[3px] text-[12px] font-bold" style={{ color: stage.ink }}>{items.length}</span>
       </div>
       {items.map((l) => (
-        <LeadCard key={l.id} lead={l} to={`/leads/${l.id}`} draggable dragging={dragId === l.id} onOpen={onOpen}
+        <LeadCard key={l.id} lead={l} to={`/leads/${l.id}`} draggable dragging={dragId === l.id} onOpen={onOpen} onAction={(k) => onAction(l, k)}
           onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; setDragId(l.id) }} onDragEnd={() => setDragId(null)} />
       ))}
       <Link to={`/leads/new?pipelineId=${pipelineId ?? ''}`} className="flex h-[46px] w-full shrink-0 items-center justify-center gap-2 rounded-[20px] border border-dashed text-[13px] font-semibold hover:bg-white/40" style={{ borderColor: stage.dash, color: stage.ink }}>
