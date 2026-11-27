@@ -64,14 +64,18 @@ export function LiveAddProduct({ editId = null }) {
   const [insurerId, setInsurerId] = useState('')
   const [code, setCode] = useState('')
   const [d, setD] = useState({ name: '', uin: '', launchDate: '', adultMin: 18, adultMax: 65, coversChildren: false, childMin: '', childMax: '', siOptions: '', siMin: '', siMax: '', policyTerms: '1', pricingMode: 'MANUAL_ENTRY', taxPercent: 18, gracePeriodDays: 30, nomineeRequired: true, brochureFileId: null, sourceLink: '' })
-  const set = (k) => (v) => setD((s) => ({ ...s, [k]: v }))
+  const set = (k) => (v) => { clearErr(k); setD((s) => ({ ...s, [k]: v })) }
   const [features, setFeatures] = useState({}) // key → { value, notStated }
   const [details, setDetails] = useState({}) // the category's own product details (Home: covers, perils…)
   const [variants, setVariants] = useState([{ name: 'Standard', coverType: 'INDIVIDUAL', sumInsuredMin: '', sumInsuredMax: '' }])
   const [ocrJobId, setOcrJobId] = useState(null)
   const [newCat, setNewCat] = useState('')
   const [newCo, setNewCo] = useState('')
-  const { act, busy, error, fieldErrors: fe } = useAct()
+  const { act, busy, error, fieldErrors: feApi } = useAct()
+  // Problems found when Next is pressed (Nov 2026: Next used to stay greyed out with no reason given)
+  const [stepErr, setStepErr] = useState({})
+  const fe = { ...feApi, ...stepErr }
+  const clearErr = (k) => setStepErr((x) => (x[k] ? Object.fromEntries(Object.entries(x).filter(([key]) => key !== k)) : x))
 
   // brochure reading (AP2b–AP2d, OC1)
   const [job, setJob] = useState(null)
@@ -110,6 +114,10 @@ export function LiveAddProduct({ editId = null }) {
     } finally { setReading(false) }
   }
   const [readStartedAt, setReadStartedAt] = useState(null)
+  const [launchFromBrochure, setLaunchFromBrochure] = useState(false)
+  // The sheet with everything read from the brochure opens by itself when the reading is done (once per reading)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [sheetShownFor, setSheetShownFor] = useState(null)
   const [, setTick] = useState(0) // moves the progress bar between server updates
   // The brochure looks like another category (OCR-09) but the advisor is sure: read the same file anyway
   const readAnyway = async () => {
@@ -157,6 +165,15 @@ export function LiveAddProduct({ editId = null }) {
           _open: false, // collapsed by default since they're auto-filled
         })))
       }
+      // Product code and launch date come from the brochure too (client request, Nov 2026): the code from the UIN
+      // (unique, letters and digits), else the product name's initials; the launch date when the brochure prints one,
+      // else today (marked under the field).
+      const uin = String(x.uin ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+      const initials = String(x.name ?? '').split(/\s+/).filter((w) => /^[A-Za-z]/.test(w)).map((w) => w[0].toUpperCase()).join('').slice(0, 6)
+      setCode((c) => c.trim() || (uin.length >= 2 ? uin.slice(0, 20) : initials.length >= 2 ? `${initials}-01` : c))
+      setLaunchFromBrochure(!!x.launchDate)
+      if (!x.launchDate) setD((s) => ({ ...s, launchDate: s.launchDate || new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) })) // YYYY-MM-DD, today in IST
+      setSheetOpen(false); setStepErr({})
       toast('All values from the brochure are filled in. Review each step and fix anything wrong.')
       setStep(3)
     } catch (e) { setReadErr(e) }
@@ -167,6 +184,9 @@ export function LiveAddProduct({ editId = null }) {
     const t = setInterval(() => setTick((n) => n + 1), 1000)
     return () => clearInterval(t)
   }, [readingNow])
+  useEffect(() => {
+    if (step === 2 && readyToUse && job && sheetShownFor !== job.id) { setSheetOpen(true); setSheetShownFor(job.id) }
+  }, [step, readyToUse, job, sheetShownFor])
 
   // ── derived constants (must come before body() and JSX) ──
   const T = (types.data || [])
@@ -197,6 +217,35 @@ export function LiveAddProduct({ editId = null }) {
   const detailsMissing = missingRequired(form, details)
   const typeName = T.find((t) => t.id === typeId)?.name
   const insName = I.find((t) => t.id === insurerId)?.name
+  // Next checks the step and marks what is missing, instead of staying greyed out without a reason.
+  const stepProblems = () => {
+    const e = {}
+    if (step === 0 && !typeId) e._ = 'Choose a category to continue.'
+    if (step === 1 && !insurerId) e._ = 'Choose a company, or add one, to continue.'
+    if (step === 3) {
+      const c = code.trim().toUpperCase()
+      if (!c) e.code = 'Enter a product code (2 to 20 letters, digits or hyphens).'
+      else if (c.length < 2 || c.length > 20 || !/^[A-Z0-9-]+$/.test(c)) e.code = 'Use 2 to 20 letters, digits or hyphens, e.g. FS-01.'
+      if (!String(d.name ?? '').trim()) e.name = 'Enter the product name as printed on the brochure.'
+      if (!String(d.uin ?? '').trim()) e.uin = 'Enter the IRDAI product UIN as printed on the brochure.'
+      if (!d.launchDate) e.launchDate = 'Choose the launch date.'
+      if (ages !== 'NONE' && Number(d.adultMin) > Number(d.adultMax)) e.adultMax = 'The highest entry age must be at least the lowest.'
+      for (const f of detailsMissing) e[`details.${f.key}`] = `Enter ${String(f.label).toLowerCase()}.`
+    }
+    if (step === 4 && !variants.some((v) => v.name.trim())) e._ = 'Add at least one variant with a name.'
+    return e
+  }
+  const goNext = () => {
+    const e = stepProblems()
+    setStepErr(e)
+    if (Object.keys(e).length) {
+      const n = Object.keys(e).filter((k) => k !== '_').length
+      toast(e._ ?? `Fill in the ${n === 1 ? 'field' : `${n} fields`} marked in red to continue.`, 'error')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+    setStep(step + 1)
+  }
   const canNext = [!!typeId, !!insurerId, true, !!code.trim() && !!d.name && !!d.uin && !detailsMissing.length, variants.some((v) => v.name.trim()), true, true][step]
   const sameCat = newCat.trim() ? T.find((t) => categoryKey(t.name) === categoryKey(newCat)) : null
   const groups = [...new Set(feats.map((f) => f.group || 'Features'))]
@@ -333,7 +382,7 @@ export function LiveAddProduct({ editId = null }) {
               <StepFooter
                 back="/products"
                 backLabel="Cancel"
-                next={<Btn icon="arrow" disabled={!canNext} onClick={() => setStep(1)} className="disabled:cursor-not-allowed disabled:opacity-50">Next: Company</Btn>}
+                next={<Btn icon="arrow" onClick={goNext}>Next: Company</Btn>}
               />
             </StepCard>
           )}
@@ -445,7 +494,10 @@ export function LiveAddProduct({ editId = null }) {
                     ))}
                   </div>
                   {problems}
-                  {footer(<Btn icon="arrow" disabled={!done} className="disabled:cursor-not-allowed disabled:opacity-50" onClick={useReading}>Review filled details</Btn>)}
+                  {footer(<>
+                    {done && <Btn variant="outline" icon="list" onClick={() => setSheetOpen(true)}>All fetched details</Btn>}
+                    <Btn icon="arrow" disabled={!done} className="disabled:cursor-not-allowed disabled:opacity-50" onClick={useReading}>Review filled details</Btn>
+                  </>)}
                 </StepCard>
               )
             }
@@ -514,7 +566,7 @@ export function LiveAddProduct({ editId = null }) {
                     <span className="flex size-9 items-center justify-center rounded-full bg-white text-[#5b3fb8]"><Icon name="sparkle" size={17} /></span>
                     <div className="flex flex-1 flex-col gap-0.5">
                       <p className="text-[13px] font-bold text-ink">Read by AI from the brochure. Check each value.</p>
-                      <p className="text-[12px] font-medium text-[#5b3fb8]">Fix anything that\u2019s wrong before you continue.</p>
+                      <p className="text-[12px] font-medium text-[#5b3fb8]">Fix anything that’s wrong before you continue.</p>
                     </div>
                     <Chip tone="violet" icon="sparkle">Auto-filled</Chip>
                   </div>
@@ -523,8 +575,8 @@ export function LiveAddProduct({ editId = null }) {
               <div className="grid grid-cols-2 gap-x-3.5 gap-y-[18px]">
                 <Field label="Product name *" value={d.name} onChange={set('name')} error={(fe.name ?? fe['data.name'])} />
                 <Field label="IRDAI product UIN *" value={d.uin} onChange={set('uin')} error={(fe.uin ?? fe['data.uin'])} hint="Printed on every quotation" />
-                <Field label="Product code" value={code} onChange={setCode} error={fe.code} hint="Your own short code, e.g. FS-01" />
-                <Field label="Launch date *" type="date" value={d.launchDate} onChange={set('launchDate')} error={(fe.launchDate ?? fe['data.launchDate'])} />
+                <Field label="Product code *" value={code} onChange={(v) => { clearErr('code'); setCode(v) }} error={fe.code} hint={ocrJobId ? 'Made from the UIN on the brochure; change it if you like' : 'Your own short code, e.g. FS-01'} />
+                <Field label="Launch date *" type="date" value={d.launchDate} onChange={set('launchDate')} error={(fe.launchDate ?? fe['data.launchDate'])} hint={ocrJobId ? (launchFromBrochure ? 'Read from the brochure' : 'Not printed in the brochure: set to today. Change it if you know the launch date.') : undefined} />
               </div>
               {ages !== 'NONE' && <div className="flex gap-3"><Field label={`${L.adultEntryAge} from`} type="number" value={d.adultMin} onChange={set('adultMin')} /><Field label="to" type="number" value={d.adultMax} onChange={set('adultMax')} error={(fe.adultMax ?? fe['data.adultMax'])} /></div>}
               {ages === 'ADULT_CHILD' && <Field type="checkbox" label="Covers children" value={d.coversChildren} onChange={set('coversChildren')} />}
@@ -548,7 +600,7 @@ export function LiveAddProduct({ editId = null }) {
                   <span className="flex size-10 items-center justify-center rounded-full bg-white text-[#5b3fb8]"><Icon name="sparkle" size={18} /></span>
                   <div className="flex flex-1 flex-col gap-0.5">
                     <p className="text-[13px] font-bold text-ink">Read by AI from the brochure. Check each value.</p>
-                    <p className="text-[12px] font-medium text-[#5b3fb8]">Compare with the highlighted page on the right. Fix anything that\u2019s wrong.</p>
+                    <p className="text-[12px] font-medium text-[#5b3fb8]">Compare with the highlighted page on the right. Fix anything that’s wrong.</p>
                   </div>
                   <span className="text-[13px] font-bold text-[#5b3fb8]">{vNames.length} of {variants.length} checked</span>
                 </div>
@@ -718,11 +770,12 @@ export function LiveAddProduct({ editId = null }) {
           {step > 0 && step !== 2 && <div className="flex justify-between">
             <SmallButton variant="outline" disabled={step === 0 || (!!editId && step <= 2)} onClick={() => setStep(step - 1)}>Back</SmallButton>
             {step === 2 && readingNow ? <SmallButton variant="navy" disabled className="disabled:cursor-not-allowed disabled:opacity-50">Reading the brochure…</SmallButton>
-              : step < 6 ? <SmallButton variant="navy" icon="arrow" disabled={!canNext} onClick={() => setStep(step + 1)}>{step === 2 && !job && !d.brochureFileId ? 'Skip' : 'Next'}</SmallButton>
+              : step < 6 ? <SmallButton variant="navy" icon="arrow" onClick={goNext}>{step === 2 && !job && !d.brochureFileId ? 'Skip' : 'Next'}</SmallButton>
               : <SmallButton variant="navy" icon="check" disabled={busy} onClick={publish}>{busy ? (editId ? 'Saving…' : 'Publishing…') : editId ? 'Save changes' : 'Publish product'}</SmallButton>}
           </div>}
         </div>
         <PreviewCard values={preview} sparkle={previewSparkle} />
+        {sheetOpen && job && <FetchedSheet job={job} features={feats} brochureName={brochureName} onUse={useReading} onClose={() => setSheetOpen(false)} />}
       </div>
     </AppLayout>
   )
@@ -831,5 +884,60 @@ export function LiveCompareVariants() {
         {vs.length < 2 && <p className="mt-3 text-[13px] font-medium text-muted">This product has a single variant.</p>}
       </Panel>
     </AppLayout>
+  )
+}
+
+
+/**
+ * Everything read from the brochure, in one sheet (client request, Nov 2026): opens by itself when the reading is
+ * done. "Use these details" fills the Product, Variants and Features steps; every value can still be changed there.
+ */
+function FetchedSheet({ job, features, brochureName, onUse, onClose }) {
+  const [busy, setBusy] = useState(false)
+  const DETAIL = { name: 'Product name', uin: 'IRDAI product UIN', launchDate: 'Launch date', adultMin: 'Adult entry age from', adultMax: 'Adult entry age to', policyTerms: 'Policy terms (years)', sumInsuredOptions: 'Sum insured options (₹)', gracePeriodDays: 'Grace period (days)' }
+  const details = (job.details ?? []).filter((x) => x.value)
+  const rows = job.rows ?? []
+  const byKey = new Map(rows.map((x) => [x.key, x]))
+  const found = rows.filter((x) => x.found).length
+  const variants = (job.variants ?? []).map((v) => v.value ?? v.label).filter(Boolean)
+  const extra = (job.suggestions ?? []).filter((x) => x.value)
+  const Row = ({ label, value, page, muted }) => (
+    <div className="flex items-start gap-3 border-b border-line py-2.5 last:border-b-0">
+      <span className="w-[42%] shrink-0 text-[13px] font-medium text-muted">{label}</span>
+      <span className={cx('flex-1 text-[13px] font-semibold break-words', muted ? 'text-muted' : 'text-ink')}>{value}</span>
+      {page != null && <span className="shrink-0 rounded-[10px] bg-panel px-2 py-0.5 text-[11px] font-semibold text-muted">p. {page}</span>}
+    </div>
+  )
+  const Section = ({ title, sub, children }) => (
+    <div className="flex flex-col">
+      <div className="mb-1 flex items-baseline gap-2"><p className="text-[14px] font-bold text-ink">{title}</p>{sub && <span className="text-[12px] font-medium text-muted">{sub}</span>}</div>
+      <div className="rounded-[16px] bg-[#fafbfd] px-3.5">{children}</div>
+    </div>
+  )
+  const show = (v) => (v === 'Yes' || v === 'No' ? v : String(v))
+  return (
+    <ActionDialog title="Fetched from the brochure" icon="sparkle" width={720} confirm="Use these details" busy={busy}
+      body={`${brochureName || 'The brochure'}: ${details.length} product details, ${variants.length} variant${variants.length === 1 ? '' : 's'} and ${found} of ${features.length} features. Check them here; you can change any value in the next steps.`}
+      onConfirm={async () => { setBusy(true); try { await onUse() } finally { setBusy(false) } }} onClose={onClose}>
+      <div className="flex max-h-[56vh] flex-col gap-4 overflow-y-auto pr-1">
+        <Section title="Product details">
+          {details.length ? details.map((x) => <Row key={x.key} label={DETAIL[x.key] ?? x.label ?? x.key} value={show(x.value)} page={x.page} />) : <Row label="Nothing found" value="Type the details in the next step" muted />}
+        </Section>
+        <Section title="Variants" sub={variants.length ? `${variants.length} found` : null}>
+          {variants.length ? <Row label="Names" value={variants.join(', ')} /> : <Row label="None found" value="The product gets one Standard variant; add others in the Variants step" muted />}
+        </Section>
+        <Section title="Features" sub={`${found} of ${features.length} found`}>
+          {features.map((f) => {
+            const x = byKey.get(f.key)
+            return <Row key={f.key} label={f.name} value={x?.found ? show(x.value) : 'Not in the brochure'} page={x?.found ? x.page : null} muted={!x?.found} />
+          })}
+        </Section>
+        {extra.length > 0 && (
+          <Section title="Other benefits found" sub="added as your own features">
+            {extra.map((x) => <Row key={x.key} label={x.label ?? x.key} value={show(x.value)} page={x.page} />)}
+          </Section>
+        )}
+      </div>
+    </ActionDialog>
   )
 }
