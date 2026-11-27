@@ -88,26 +88,35 @@ export function LiveAddProduct({ editId = null }) {
     return () => clearTimeout(t)
   }, [job])
   const [brochureName, setBrochureName] = useState('')
-  const startReading = async (file) => {
-    setReading(true); setReadErr(null)
+  const [brochureSize, setBrochureSize] = useState(null)
+  const [uploading, setUploading] = useState(false)
+  // Figma AP2b: the file is uploaded and attached first (it stays attached even when it cannot be read) …
+  const attachBrochure = async (file) => {
+    setUploading(true); setReadErr(null); setJob(null)
     try {
-      // The PDF is attached to the product first: it stays attached even when it cannot be read.
       const fileId = (await api.files.upload(file, 'BROCHURE')).data.id
       set('brochureFileId')(fileId)
-      setBrochureName(file.name)
-      // insurerId: the company chosen in step 2; a brochure from another insurer is refused (WRONG_COMPANY, OCR-10)
-      if (canRead) setJob((await api.myProducts.startReading({ typeId, fileId, insurerId: insurerId || undefined })).data)
-    } catch (e) {
+      setBrochureName(file.name); setBrochureSize(file.size)
+    } catch (e) { setReadErr(e) } finally { setUploading(false) }
+  }
+  // … and read when the advisor presses Read brochure (AP2c). insurerId: the company chosen in step 2; a brochure
+  // from another insurer is refused (WRONG_COMPANY, OCR-10).
+  const startReading = async () => {
+    if (!d.brochureFileId) return
+    setReading(true); setReadErr(null); setReadStartedAt(Date.now())
+    try { setJob((await api.myProducts.startReading({ typeId, fileId: d.brochureFileId, insurerId: insurerId || undefined })).data) } catch (e) {
       if (e?.messageId === 'OCR-07') return // reading switched off: attached, values typed by hand
       setReadErr(e)
     } finally { setReading(false) }
   }
+  const [readStartedAt, setReadStartedAt] = useState(null)
+  const [, setTick] = useState(0) // moves the progress bar between server updates
   // The brochure looks like another category (OCR-09) but the advisor is sure: read the same file anyway
   const readAnyway = async () => {
     setReading(true); setReadErr(null)
     try { setJob((await api.myProducts.startReading({ typeId, fileId: d.brochureFileId, insurerId: insurerId || undefined, ignoreCategoryCheck: true })).data) } catch (e) { setReadErr(e) } finally { setReading(false) }
   }
-  const removeBrochure = () => { set('brochureFileId')(null); setBrochureName(''); setJob(null); setReadErr(null); setOcrJobId(null) }
+  const removeBrochure = () => { set('brochureFileId')(null); setBrochureName(''); setBrochureSize(null); setJob(null); setReadErr(null); setOcrJobId(null) }
   const chooseAnotherCompany = () => { removeBrochure(); setStep(1) }
   const readingNow = reading || (!!job && ['QUEUED', 'RUNNING', 'PENDING', 'PROCESSING'].includes(job.status))
   const readyToUse = !!job && ['REVIEW_REQUIRED', 'REVIEWED'].includes(job.status) && !ocrJobId
@@ -152,10 +161,12 @@ export function LiveAddProduct({ editId = null }) {
       setStep(3)
     } catch (e) { setReadErr(e) }
   }
-  // Auto-advance: when AI finishes reading, accept values and go to Product step (like old UI)
+  // The reading screen stays when the reading is done: "Review filled details" fills the next steps (Figma AP2c).
   useEffect(() => {
-    if (step === 2 && readyToUse && !ocrJobId) useReading()
-  }, [step, readyToUse, ocrJobId]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (!readingNow) return undefined
+    const t = setInterval(() => setTick((n) => n + 1), 1000)
+    return () => clearInterval(t)
+  }, [readingNow])
 
   // ── derived constants (must come before body() and JSX) ──
   const T = (types.data || [])
@@ -221,13 +232,18 @@ export function LiveAddProduct({ editId = null }) {
   }
   const namedVariants = variants.map((v) => v.name.trim()).filter(Boolean)
   const filledFeatures = Object.values(features).filter((f) => f && (f.notStated || (f.value !== '' && f.value != null))).length
+  // While the brochure is read (Figma AP2c) the card shows what was found, marked with a sparkle.
+  const readDone = !!job && ['REVIEW_REQUIRED', 'REVIEWED'].includes(job.status) && !ocrJobId
+  const jobName = readDone ? (job.details ?? []).find((x) => x.key === 'name')?.value : null
+  const jobVariants = readDone ? (job.variants ?? []).map((v) => v.value ?? v.label).filter(Boolean) : []
   const preview = [
     typeName,
     insName,
-    d.name,
-    step >= 4 && namedVariants.length ? `${namedVariants.length} · ${namedVariants.join(', ')}` : null,
-    step >= 5 && feats.length ? `${filledFeatures} of ${feats.length}` : null,
+    jobName || d.name,
+    jobVariants.length ? `${jobVariants.length} · ${jobVariants.join(', ')}` : step >= 4 && namedVariants.length ? `${namedVariants.length} · ${namedVariants.join(', ')}` : null,
+    readDone && feats.length ? `${(job.rows ?? []).filter((x) => x.found).length} of ${feats.length}` : step >= 5 && feats.length ? `${filledFeatures} of ${feats.length}` : null,
   ]
+  const previewSparkle = readDone || !!ocrJobId
 
   if (editId && editing.error) return <ErrorPanel active="products" error={editing.error} />
   if (editId && !loaded) return <LoadingPanel active="products" />
@@ -235,10 +251,10 @@ export function LiveAddProduct({ editId = null }) {
     <AppLayout active="products">
       <Header
         back={editId ? `/products/${editId}` : '/products'}
-        breadcrumb={editId ? 'PRODUCTS  /  EDIT PRODUCT' : 'PRODUCTS  /  NEW PRODUCT'}
-        title={editId ? `Edit ${d.name || 'product'}` : 'New product'}
-        titleExtra={editId ? null : <Chip tone="green" icon="check">Draft saved</Chip>}
-        subtitle={editId ? `${typeName ?? ''} · ${insName ?? ''}. The category and company stay as they are.` : 'Add a product the catalogue does not have'}
+        breadcrumb={editId ? 'PRODUCTS  /  EDIT PRODUCT' : 'PRODUCTS  /  ADD MY PRODUCT'}
+        title={editId ? `Edit ${d.name || 'product'}` : 'Add my product'}
+        titleExtra={editId ? null : step === 2 && readingNow ? <Chip tone="violet" icon="sparkle">Reading brochure</Chip> : <Chip tone="green" icon="check">Draft saved</Chip>}
+        subtitle={editId ? `${typeName ?? ''} · ${insName ?? ''}. The category and company stay as they are.` : typeName || 'Add a product the catalogue does not have'}
         search={false}
         actions={<Btn variant="outline" icon={editId ? 'x' : 'download'} onClick={() => navigate(editId ? `/products/${editId}` : '/products')}>{editId ? 'Cancel' : 'Save and exit'}</Btn>}
       />
@@ -335,49 +351,160 @@ export function LiveAddProduct({ editId = null }) {
               )}
             </Panel>
           )}
-          {step === 2 && (
-            <Panel className="flex flex-col gap-3">
-              <PanelHead title="3 · Brochure" subtitle={canRead ? 'Upload the PDF: it is attached to the product, and its values are read for you to check (Premium plan and trial).' : 'Attach the PDF to the product, so you and your customers can open it later.'} />
-              {!d.brochureFileId && !job && (
-                <label className="flex h-[64px] cursor-pointer items-center justify-center gap-2.5 rounded-[18px] border-2 border-dashed border-line text-[14px] font-semibold text-ink hover:bg-panel-2">
-                  <Icon name="folder" size={18} />{reading ? 'Uploading…' : canRead ? 'Choose brochure PDF' : 'Attach brochure PDF'}<input type="file" accept=".pdf" className="hidden" disabled={reading} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) startReading(f) }} />
-                </label>
-              )}
-              {d.brochureFileId && (
-                <div className="flex items-center gap-3 rounded-[16px] bg-[#eefaf3] px-4 py-3">
-                  <Icon name="check" size={16} className="text-[#127650]" />
-                  <span className="flex-1 truncate text-[13px] font-semibold text-[#127650]">Brochure attached{brochureName ? `: ${brochureName}` : ''}</span>
-                  <SmallButton variant="outline" onClick={() => window.open(api.files.url(d.brochureFileId), '_blank')}>Open</SmallButton>
-                  <SmallButton variant="ghost" onClick={removeBrochure}>Remove</SmallButton>
+          {step === 2 && (() => {
+            // Figma AP2b (upload) → AP2c (reading). Problems (failed, another category or company) keep their own rows.
+            const running = readingNow && !!job
+            const done = !!job && ['REVIEW_REQUIRED', 'REVIEWED'].includes(job.status)
+            const showReading = canRead && (running || done || (reading && !!d.brochureFileId))
+            const footer = (next) => (
+              <>
+                <div className="h-px bg-line" />
+                <div className="flex items-center gap-3">
+                  <Btn variant="outline" onClick={() => setStep(1)} disabled={!!editId}>Back</Btn>
+                  <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted"><Icon name="check" size={16} className="text-[#127650]" />Draft saved</span>
+                  <span className="flex-1" />
+                  {next}
                 </div>
-              )}
-              {d.brochureFileId && !canRead && <p className="text-[12px] font-medium text-muted">Reading brochures automatically is not set up on this server, so type the values in the next steps.</p>}
-              {readErr && <ErrorNote error={readErr} />}
-              {job && ['QUEUED', 'RUNNING', 'PENDING', 'PROCESSING'].includes(job.status) && <p className="flex items-center gap-2 text-[13px] font-semibold text-blue"><span className="size-4 animate-spin rounded-full border-2 border-blue/30 border-t-blue" />Reading the brochure…</p>}
-              {job?.status === 'FAILED' && (
-                <div className="flex items-center gap-3 rounded-[16px] bg-[#fbebec] px-4 py-3 text-[13px] font-semibold text-[#b4323c]"><Icon name="alert" size={16} /><span className="flex-1">{job.error ?? 'The brochure could not be read.'} Enter the values yourself, or try again.</span>
-                  <SmallButton variant="outline" onClick={async () => { try { setReadErr(null); setJob((await api.myProducts.readingRetry(job.id, {})).data) } catch (e) { setReadErr(e) } }}>Try again</SmallButton></div>
-              )}
-              {job?.status === 'WRONG_CATEGORY' && (
-                <div className="flex items-center gap-3 rounded-[16px] bg-[#fbebec] px-4 py-3 text-[13px] font-semibold text-[#b4323c]"><Icon name="alert" size={16} /><span className="flex-1">{job.message ?? 'This brochure does not look like this category.'}</span>
-                  <SmallButton variant="outline" disabled={reading} onClick={readAnyway}>Read anyway</SmallButton>
-                  <SmallButton variant="ghost" onClick={removeBrochure}>Upload another</SmallButton></div>
-              )}
-              {job?.status === 'WRONG_COMPANY' && (
-                <div className="flex items-center gap-3 rounded-[16px] bg-[#fbebec] px-4 py-3 text-[13px] font-semibold text-[#b4323c]"><Icon name="alert" size={16} /><span className="flex-1">{job.message ?? 'This brochure is from another company than the one you chose.'}</span>
-                  <SmallButton variant="outline" onClick={chooseAnotherCompany}>Choose another company</SmallButton>
-                  <SmallButton variant="ghost" onClick={removeBrochure}>Upload another</SmallButton></div>
-              )}
-              {job && ['REVIEW_REQUIRED', 'REVIEWED'].includes(job.status) && (
-                <div className="flex items-center gap-3 rounded-[18px] bg-[#f0ecfb] p-4">
-                  <span className="flex size-10 items-center justify-center rounded-full bg-white text-[#5b3fb8]"><Icon name="sparkle" size={20} /></span>
-                  <p className="flex-1 text-[13px] font-bold text-ink">Brochure read. Filling in the values…</p>
-                  <span className="size-4 animate-spin rounded-full border-2 border-[#5b3fb8]/30 border-t-[#5b3fb8]" />
-                </div>
-              )}
-              {!d.brochureFileId && <p className="text-[12px] font-medium text-muted">You can skip this step and type the values.</p>}
-            </Panel>
-          )}
+              </>
+            )
+            const problems = (
+              <>
+                {readErr && <ErrorNote error={readErr} />}
+                {job?.status === 'FAILED' && (
+                  <div className="flex items-center gap-3 rounded-[16px] bg-[#fbebec] px-4 py-3 text-[13px] font-semibold text-[#b4323c]"><Icon name="alert" size={16} /><span className="flex-1">{job.error ? `The brochure could not be read (${job.error}).` : 'The brochure could not be read.'} Try again, or skip and fill in manually.</span>
+                    <SmallButton variant="outline" onClick={async () => { try { setReadErr(null); setReadStartedAt(Date.now()); setJob((await api.myProducts.readingRetry(job.id, {})).data) } catch (e) { setReadErr(e) } }}>Try again</SmallButton></div>
+                )}
+                {job?.status === 'WRONG_CATEGORY' && (
+                  <div className="flex items-center gap-3 rounded-[16px] bg-[#fbebec] px-4 py-3 text-[13px] font-semibold text-[#b4323c]"><Icon name="alert" size={16} /><span className="flex-1">{job.message ?? 'This brochure does not look like this category.'}</span>
+                    <SmallButton variant="outline" disabled={reading} onClick={readAnyway}>Read anyway</SmallButton>
+                    <SmallButton variant="ghost" onClick={removeBrochure}>Upload another</SmallButton></div>
+                )}
+                {job?.status === 'WRONG_COMPANY' && (
+                  <div className="flex items-center gap-3 rounded-[16px] bg-[#fbebec] px-4 py-3 text-[13px] font-semibold text-[#b4323c]"><Icon name="alert" size={16} /><span className="flex-1">{job.message ?? 'This brochure is from another company than the one you chose.'}</span>
+                    <SmallButton variant="outline" onClick={chooseAnotherCompany}>Choose another company</SmallButton>
+                    <SmallButton variant="ghost" onClick={removeBrochure}>Upload another</SmallButton></div>
+                )}
+              </>
+            )
+
+            if (showReading) {
+              // Progress: server stage (QUEUED → READING_PAGES → EXTRACTING → done), eased between updates
+              const secs = readStartedAt ? (Date.now() - readStartedAt) / 1000 : 0
+              const stage = done ? 'DONE' : job?.stage ?? (job?.status === 'PROCESSING' ? 'READING_PAGES' : 'QUEUED')
+              const band = { QUEUED: [5, 15], READING_PAGES: [15, 50], EXTRACTING: [55, 92], DONE: [100, 100] }[stage] ?? [5, 15]
+              const pct = Math.round(Math.min(band[1], band[0] + secs * (stage === 'EXTRACTING' ? 2 : 3)))
+              const title = done ? 'Brochure read' : stage === 'EXTRACTING' ? 'Extracting variants and features…' : 'Reading the pages…'
+              const sub = [brochureName || 'brochure', job?.pageCount ? `${job.pageCount} page${job.pageCount === 1 ? '' : 's'}` : null].filter(Boolean).join(' · ')
+              const order = ['Uploaded', 'Reading pages', 'Extracting', 'Ready to review']
+              const at = done ? 4 : stage === 'EXTRACTING' ? 2 : 1
+              const stages = []
+              order.forEach((label, i) => {
+                const state = i < at ? 'done' : i === at ? 'active' : 'todo'
+                if (i > 0) stages.push(<span key={`l${i}`} className={cx('h-0.5 flex-1', state === 'todo' ? 'bg-line' : 'bg-navy')} />)
+                stages.push(
+                  <span key={label} className="flex items-center gap-2">
+                    <span className={cx('flex size-[26px] items-center justify-center rounded-full', state === 'done' && 'bg-navy text-white', state === 'active' && 'border-2 border-violet bg-white text-violet', state === 'todo' && 'bg-panel text-[11px] font-bold text-muted')}>
+                      {state === 'done' ? <Icon name="check" size={13} /> : state === 'active' ? <Icon name="clock" size={13} /> : i + 1}
+                    </span>
+                    <span className={cx('text-[12px] font-semibold', state === 'todo' ? 'text-muted' : 'text-ink')}>{label}</span>
+                  </span>,
+                )
+              })
+              const det = (k) => (job?.details ?? []).find((x) => x.key === k)?.value || null
+              const vnames = (job?.variants ?? []).map((v) => v.value ?? v.label).filter(Boolean)
+              const featFound = (job?.rows ?? []).filter((x) => x.found).length
+              const found = [
+                { label: 'Company (matches your pick)', value: job?.company?.name ?? insName, done: !!job },
+                { label: 'Product', value: det('name'), done },
+                { label: 'UIN', value: det('uin'), done },
+                { label: 'Variants', value: vnames.length ? `${vnames.length} · ${vnames.join(', ')}` : done ? 'None found' : null, done },
+                { label: 'Features', value: done ? `${featFound} of ${feats.length} template features` : null, done },
+              ]
+              return (
+                <StepCard title="3 · Reading the brochure" subtitle="Usually under a minute. You can leave this page; we’ll notify you." chip={done ? <Chip tone="green" icon="check">Read</Chip> : <Chip tone="violet" icon="clock">Reading</Chip>}>
+                  <div className="flex flex-col gap-3.5 rounded-[22px] bg-violet-cta p-5">
+                    <div className="flex items-center gap-3">
+                      <span className="flex size-12 items-center justify-center rounded-full bg-white text-violet"><Icon name="sparkle" size={22} /></span>
+                      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <p className="text-[15px] font-bold text-ink">{title}</p>
+                        <p className="truncate text-[12px] font-medium text-violet">{sub}</p>
+                      </div>
+                      <span className="w-12 text-right text-[18px] font-bold text-violet">{pct}%</span>
+                    </div>
+                    <div className="h-2 overflow-clip rounded-[4px] bg-white/70"><div className="h-full rounded-[4px] bg-violet transition-[width] duration-700" style={{ width: `${pct}%` }} /></div>
+                  </div>
+                  <div className="flex h-[26px] items-center gap-2.5">{stages}</div>
+                  <div className="flex flex-col gap-2">
+                    <p className="text-[13px] font-semibold text-ink">{done ? 'Found in the brochure' : 'Found so far'}</p>
+                    {found.map((f) => (
+                      <div key={f.label} className="flex h-[42px] items-center gap-2.5 rounded-[14px] bg-panel px-3.5">
+                        <span className={cx('flex size-[22px] items-center justify-center rounded-full', f.done && f.value ? 'bg-[#e7f4ee] text-[#127650]' : 'bg-violet-50 text-violet')}><Icon name={f.done && f.value ? 'check' : 'clock'} size={12} /></span>
+                        <span className="flex-1 text-[12px] font-medium text-muted">{f.label}</span>
+                        <span className={cx('truncate text-[13px] font-bold', f.value ? 'text-ink' : 'text-muted')}>{f.value ?? (f.done ? 'Not found: you can type it' : 'Looking…')}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {problems}
+                  {footer(<Btn icon="arrow" disabled={!done} className="disabled:cursor-not-allowed disabled:opacity-50" onClick={useReading}>Review filled details</Btn>)}
+                </StepCard>
+              )
+            }
+
+            const mb = brochureSize ? `${(brochureSize / 1048576).toFixed(1)} MB · ` : ''
+            const pick = (files) => { const f = files?.[0]; if (f) attachBrochure(f) }
+            return (
+              <StepCard title={canRead ? '3 · Upload the brochure' : '3 · Attach the brochure'} subtitle={canRead ? 'We read it and fill in the next steps for you' : 'Attached to the product, so you and your customers can open it later'}
+                chip={canRead ? <Chip tone="pink" icon="sparkle">Premium · auto-fill</Chip> : null}>
+                {/* Figma AP2b: the drop area stays; choosing another file replaces the one attached */}
+                {(
+                  <div className="flex flex-col items-center gap-2.5 rounded-[24px] border border-dashed border-[#9db8ee] bg-[#f7f9ff] p-7"
+                    onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); pick(e.dataTransfer.files) }}>
+                    <span className="flex size-16 items-center justify-center rounded-full bg-blue-50 text-blue"><Icon name="upload" size={28} /></span>
+                    <p className="text-[16px] leading-5 font-bold text-ink">{uploading ? 'Uploading…' : 'Drop the brochure here'}</p>
+                    <p className="text-[12px] leading-[15px] font-medium text-muted">{api.files.hint('BROCHURE') || 'PDF, JPG or PNG · up to 20 MB'}</p>
+                    <div className="flex gap-2">
+                      <label className={cx('inline-flex h-9 cursor-pointer items-center gap-2 rounded-[18px] bg-navy pr-3.5 pl-3 text-[13px] font-semibold text-white hover:bg-navy-700', uploading && 'pointer-events-none opacity-60')}>
+                        <Icon name="folder" size={16} />Choose file
+                        <input type="file" accept={api.files.accept('BROCHURE')} className="hidden" onChange={(e) => { const f = e.target.files; pick(f); e.target.value = '' }} />
+                      </label>
+                      <label className={cx('inline-flex h-9 cursor-pointer items-center gap-2 rounded-[18px] border border-line bg-white pr-3.5 pl-3 text-[13px] font-semibold text-ink hover:bg-tile', uploading && 'pointer-events-none opacity-60')}>
+                        <Icon name="phone" size={16} />Camera
+                        <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files; pick(f); e.target.value = '' }} />
+                      </label>
+                    </div>
+                  </div>
+                )}
+                {d.brochureFileId && (
+                  <div className="flex items-center gap-3 rounded-[18px] bg-panel p-3.5">
+                    <span className="flex h-12 w-10 items-center justify-center rounded-[12px] bg-pink-100 text-[#b4325a]"><Icon name="folder" size={18} /></span>
+                    <button type="button" className="flex min-w-0 flex-1 flex-col gap-0.5 text-left" onClick={() => window.open(api.files.url(d.brochureFileId), '_blank')}>
+                      <span className="truncate text-[14px] font-bold text-ink">{brochureName || 'Brochure'}</span>
+                      <span className="text-[12px] font-medium text-[#127650]">{mb}uploaded</span>
+                    </button>
+                    <button type="button" aria-label="Remove file" onClick={removeBrochure} className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white text-muted shadow-[0px_4px_10px_-4px_rgba(19,41,75,0.15)] hover:bg-tile"><Icon name="x" size={13} /></button>
+                  </div>
+                )}
+                {canRead && (
+                  <>
+                    <p className="text-[13px] font-semibold text-ink">We’ll fill these for you</p>
+                    <div className="flex gap-2.5">
+                      {[['list', 'Product details'], ['users', 'Variants'], ['check', 'Features']].map(([icon, l]) => (
+                        <span key={l} className="flex flex-1 items-center gap-2 rounded-[14px] bg-violet-50 px-3 py-2.5 text-[12px] font-bold text-violet"><Icon name={icon} size={14} />{l}</span>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {!canRead && d.brochureFileId && <p className="text-[12px] font-medium text-muted">Reading brochures automatically is not set up on this server, so type the values in the next steps.</p>}
+                <button type="button" onClick={() => setStep(3)} className="flex items-center gap-2 self-start text-[13px] font-bold text-blue hover:underline">
+                  <Icon name="edit" size={15} />{d.brochureFileId && !canRead ? 'Continue and fill in manually' : 'Skip and fill in manually'}
+                </button>
+                {problems}
+                {footer(canRead
+                  ? <Btn icon="sparkle" disabled={!d.brochureFileId || uploading || reading} className="disabled:cursor-not-allowed disabled:opacity-50" onClick={startReading}>{reading ? 'Starting…' : 'Read brochure'}</Btn>
+                  : <Btn icon="arrow" onClick={() => setStep(3)}>Next</Btn>)}
+              </StepCard>
+            )
+          })()}
           {step === 3 && (
             <Panel className="flex flex-col gap-4">
               <PanelHead title="4 &middot; Product details" subtitle={form ? `As printed on the insurer's brochure. ${typeName}.` : "As printed on the insurer's brochure"} />
@@ -588,14 +715,14 @@ export function LiveAddProduct({ editId = null }) {
               <ErrorNote error={error} />
             </Panel>
           )}
-          {step > 0 && <div className="flex justify-between">
+          {step > 0 && step !== 2 && <div className="flex justify-between">
             <SmallButton variant="outline" disabled={step === 0 || (!!editId && step <= 2)} onClick={() => setStep(step - 1)}>Back</SmallButton>
             {step === 2 && readingNow ? <SmallButton variant="navy" disabled className="disabled:cursor-not-allowed disabled:opacity-50">Reading the brochure…</SmallButton>
               : step < 6 ? <SmallButton variant="navy" icon="arrow" disabled={!canNext} onClick={() => setStep(step + 1)}>{step === 2 && !job && !d.brochureFileId ? 'Skip' : 'Next'}</SmallButton>
               : <SmallButton variant="navy" icon="check" disabled={busy} onClick={publish}>{busy ? (editId ? 'Saving…' : 'Publishing…') : editId ? 'Save changes' : 'Publish product'}</SmallButton>}
           </div>}
         </div>
-        <PreviewCard values={preview} />
+        <PreviewCard values={preview} sparkle={previewSparkle} />
       </div>
     </AppLayout>
   )

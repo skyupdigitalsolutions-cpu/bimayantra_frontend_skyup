@@ -128,6 +128,9 @@ function CorrectionDialog({ id, onClose }) {
 const Q_TABS = [['all', 'All'], ['DRAFT', 'Draft'], ['READY', 'Ready'], ['SHARED', 'Shared'], ['ACCEPTED', 'Accepted'], ['REJECTED', 'Rejected'], ['EXPIRED', 'Expired'], ['CANCELLED', 'Cancelled']]
 const Q_TONE = { DRAFT: 'neutral', READY: 'sky', SHARED: 'violet', ACCEPTED: 'green', REJECTED: 'rose', EXPIRED: 'amber', CANCELLED: 'neutral' }
 
+/** Chip colour for the stage after acceptance (proposal or policy status). */
+const STAGE_TONE = { DRAFT: 'amber', SUBMITTED: 'blue', DECLINED: 'rose', AWAITING_ISSUANCE: 'amber', ISSUED: 'green', RENEWED: 'green', EXPIRED: 'rose', CANCELLED: 'rose' }
+
 export function LiveQuotations() {
   const [tab, setTab] = useState('all')
   const [hq, clearQ] = useHeaderSearch()
@@ -142,20 +145,29 @@ export function LiveQuotations() {
   // Client change (Nov 2026): Revise from the list. The row's latest version is read first, so a stale list cannot revise an old one.
   const navigate = useNavigate()
   const { act, busy } = useAct()
+  // The API's rules (lifecycle.service): Revise a SHARED, EXPIRED or REJECTED quotation (not once paid); a READY one
+  // was never shared, so it is edited instead. An ACCEPTED one moves on to payment and the proposal.
+  const REVISE = ['SHARED', 'EXPIRED', 'REJECTED']
   const revise = (e, r) => {
     e.preventDefault(); e.stopPropagation()
-    act(async () => { const cur = (await api.quotations.get(r.id)).data; return api.quotations.revise(r.id, cur.version) },
-      { invalidates: ['quotations', 'quotation'], onDone: (res) => navigate(`/quotations/${res?.data?.id ?? r.id}`) })
+    act(async () => {
+      const cur = (await api.quotations.get(r.id)).data
+      return r.status === 'READY' ? api.quotations.edit(r.id, cur.version) : api.quotations.revise(r.id, cur.version)
+    }, { invalidates: ['quotations', 'quotation'], onDone: (res) => navigate(`/quotations/${res?.data?.id ?? r.id}`) })
   }
   const columns = [
     { key: 'q', label: 'Quotation', width: 215, render: (r) => <IdCell initials={initials(r.cname)} bg={avatarClass(r.cname)} title={r.number ?? 'Draft'} sub={r.cname} /> },
-    { key: 'product', label: 'Product', width: 205, render: (r) => <span className="truncate" title={[r.insurerName, r.productName].filter(Boolean).join(' · ')}>{[r.insurerName, r.productName].filter(Boolean).join(' · ') || '—'}</span> },
+    { key: 'product', label: 'Product', width: 175, render: (r) => <span className="truncate" title={[r.insurerName, r.productName].filter(Boolean).join(' · ')}>{[r.insurerName, r.productName].filter(Boolean).join(' · ') || '—'}</span> },
     { key: 'premium', label: 'Premium', width: 105, render: (r) => fmtMoney(r.premium) },
     { key: 'valid', label: 'Valid till', width: 80, render: (r) => (r.validUntil ? fmtDate(r.validUntil, { year: false }) : '—') },
     { key: 'updated', label: 'Updated', width: 80, render: (r) => fmtDate(r.updatedAt, { year: false }) },
-    { key: 'status', label: 'Status', width: 100, render: (r) => <StatusChip tone={Q_TONE[r.status]}>{label(r.status)}</StatusChip> },
-    { key: 'revise', label: '', width: 105, render: (r) => (['READY', 'SHARED'].includes(r.status)
-      ? <SmallButton variant="outline" icon="refresh" disabled={busy} onClick={(e) => revise(e, r)}>Revise</SmallButton> : null) },
+    // An accepted quotation shows where it is now: its proposal, then its policy (Nov 2026). Hover says it was accepted.
+    { key: 'status', label: 'Status', width: 130, render: (r) => (r.stage
+      ? <span title={`Quotation accepted · ${r.stage.kind === 'POLICY' ? 'policy' : 'proposal'} ${r.stage.number ?? ''}`.trim()}><StatusChip tone={STAGE_TONE[r.stage.status] ?? 'green'}>{r.stage.label}</StatusChip></span>
+      : <StatusChip tone={Q_TONE[r.status]}>{label(r.status)}</StatusChip>) },
+    { key: 'revise', label: '', width: 105, render: (r) => (r.status === 'READY'
+      ? <SmallButton variant="outline" icon="edit" disabled={busy} onClick={(e) => revise(e, r)}>Edit</SmallButton>
+      : REVISE.includes(r.status) ? <SmallButton variant="outline" icon="refresh" disabled={busy} onClick={(e) => revise(e, r)}>Revise</SmallButton> : null) },
     { key: 'go', label: '', width: 30, className: 'justify-end', render: (_r, hot) => <RowChevron on={hot} /> },
   ] // 920 + 7 gaps of 20 + 48 padding = 1108, inside the 1180px table
   if (list.error && !list.data) return <ErrorPanel active="quotations" error={list.error} />
@@ -197,8 +209,8 @@ export function LiveQuotations() {
               <p className="truncate text-[12px] font-medium text-muted">{r.cname}{r.insurerName ? ` \u00b7 ${r.insurerName}` : ''}</p>
               <div className="flex items-center gap-2">
                 <span className="text-[12px] font-semibold text-ink">{fmtMoney(r.premium)}</span>
-                <StatusChip tone={Q_TONE[r.status]}>{label(r.status)}</StatusChip>
-                {['READY', 'SHARED'].includes(r.status) && <button type="button" disabled={busy} onClick={(e) => revise(e, r)} className="ml-auto rounded-[12px] border border-line px-2.5 py-1 text-[11px] font-semibold text-ink">Revise</button>}
+                {r.stage ? <StatusChip tone={STAGE_TONE[r.stage.status] ?? 'green'}>{r.stage.label}</StatusChip> : <StatusChip tone={Q_TONE[r.status]}>{label(r.status)}</StatusChip>}
+                {(r.status === 'READY' || REVISE.includes(r.status)) && <button type="button" disabled={busy} onClick={(e) => revise(e, r)} className="ml-auto rounded-[12px] border border-line px-2.5 py-1 text-[11px] font-semibold text-ink">{r.status === 'READY' ? 'Edit' : 'Revise'}</button>}
               </div>
             </div>
             <RowChevron />
@@ -317,8 +329,8 @@ export function LiveQuotationDetail() {
             {canLink && <SmallButton variant="outline" icon="link" className="self-start" onClick={() => setDlg('link')}>Add payment link</SmallButton>}
           </Panel>
           <Panel className="flex flex-wrap gap-2">
-            {['READY', 'SHARED'].includes(x.status) && <SmallButton variant="outline" icon="refresh" disabled={busy} onClick={() => run(() => api.quotations.revise(x.id, x.version))}>Revise</SmallButton>}
-            {['READY', 'SHARED'].includes(x.status) && <SmallButton variant="outline" icon="edit" disabled={busy} onClick={() => run(() => api.quotations.edit(x.id, x.version))}>Edit</SmallButton>}
+            {['SHARED', 'EXPIRED', 'REJECTED'].includes(x.status) && <SmallButton variant="outline" icon="refresh" disabled={busy} onClick={() => run(() => api.quotations.revise(x.id, x.version))}>Revise</SmallButton>}
+            {x.status === 'READY' && <SmallButton variant="outline" icon="edit" disabled={busy} onClick={() => run(() => api.quotations.edit(x.id, x.version))}>Edit</SmallButton>}
             {x.status === 'SHARED' && <SmallButton variant="danger" onClick={() => setDlg('reject')}>Mark rejected</SmallButton>}
             {!['CANCELLED', 'REJECTED', 'EXPIRED', 'DRAFT'].includes(x.status) && <SmallButton variant="danger" onClick={() => setDlg('cancel')}>Cancel</SmallButton>}
             {x.status === 'DRAFT' && <SmallButton variant="danger" disabled={busy} onClick={() => run(() => api.quotations.deleteDraft(x.id), { onDone: () => navigate('/quotations') })}>Delete draft</SmallButton>}
